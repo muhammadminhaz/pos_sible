@@ -56,4 +56,11 @@ export type Tables = {
 export type TableName = keyof Tables;
 export type Row<T extends TableName> = Tables[T][number];
 
-export type DB = Tables & { settings: Settings; meta: { version: number; seededAt: string; today: string } };
+export type DBMeta = {
+  version: number;
+  seededAt: string;
+  /** Reference counters keyed by prefix ("PO", "SP", …) — next ref = counter + 1. */
+  counters: Record<string, number>;
+};
+
+export type DB = Tables & { settings: Settings; meta: DBMeta };
