@@ -1,0 +1,45 @@
+import type { Transaction } from "@/lib/data/schemas";
+import { getDB } from "@/lib/data/store/db";
+import { roundMoney } from "@/lib/domain/money";
+import { paymentSummary } from "@/lib/domain/payments";
+import { delay } from "./_util";
+
+export type KpiFilters = { locationId?: string | "all"; from: string; to: string };
+export type Kpis = {
+  totalSales: number;
+  /** Sales − sell returns − expenses. */
+  net: number;
+  invoiceDue: number;
+  sellReturn: number;
+  totalPurchase: number;
+  purchaseDue: number;
+  purchaseReturn: number;
+  expense: number;
+};
+
+const inRange = (t: Transaction, f: KpiFilters) => {
+  const d = t.date.slice(0, 10);
+  return d >= f.from && d <= f.to && (!f.locationId || f.locationId === "all" || t.locationId === f.locationId);
+};
+
+export const dashboardService = {
+  async kpis(f: KpiFilters): Promise<Kpis> {
+    await delay();
+    const k = { totalSales: 0, invoiceDue: 0, sellReturn: 0, totalPurchase: 0, purchaseDue: 0, purchaseReturn: 0, expense: 0 };
+    for (const t of getDB().transactions) {
+      if (!inRange(t, f)) continue;
+      const due = paymentSummary(t.totals.total, t.payments).due;
+      if (t.type === "sell" && t.status === "final") {
+        k.totalSales += t.totals.total;
+        k.invoiceDue += due;
+      } else if (t.type === "sell_return") k.sellReturn += t.totals.total;
+      else if (t.type === "purchase" && t.status === "received") {
+        k.totalPurchase += t.totals.total;
+        k.purchaseDue += due;
+      } else if (t.type === "purchase_return") k.purchaseReturn += t.totals.total;
+      else if (t.type === "expense") k.expense += t.totals.total;
+    }
+    const r = Object.fromEntries(Object.entries(k).map(([key, v]) => [key, roundMoney(v)])) as typeof k;
+    return { ...r, net: roundMoney(r.totalSales - r.sellReturn - r.expense) };
+  },
+};
