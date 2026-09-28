@@ -325,6 +325,266 @@
     "open": "খোলা",
     "close": "বন্ধ"
   },
+  "payMethods": {
+    "cash": "নগদ",
+    "card": "কার্ড",
+    "cheque": "চেক",
+    "bank_transfer": "ব্যাংক ট্রান্সফার",
+    "advance": "অগ্রিম",
+    "other": "অন্যান্য",
+    "custom_pay_1": "কাস্টম পেমেন্ট ১",
+    "custom_pay_2": "কাস্টম পেমেন্ট ২",
+    "custom_pay_3": "কাস্টম পেমেন্ট ৩",
+    "custom_pay_4": "কাস্টম পেমেন্ট ৪",
+    "custom_pay_5": "কাস্টম পেমেন্ট ৫",
+    "custom_pay_6": "কাস্টম পেমেন্ট ৬",
+    "custom_pay_7": "কাস্টম পেমেন্ট ৭"
+  },
+  "pos": {
+    "narrow": "POS ব্যবহারের জন্য কমপক্ষে ১০২৪px চওড়া স্ক্রিন প্রয়োজন।",
+    "top": {
+      "location": "লোকেশন",
+      "shortcuts": "শর্টকাট",
+      "suspended": "স্থগিত বিক্রয়",
+      "recent": "সাম্প্রতিক লেনদেন",
+      "addExpense": "খরচ যোগ করুন",
+      "registerDetails": "রেজিস্টারের বিবরণ",
+      "closeRegister": "রেজিস্টার বন্ধ করুন",
+      "sellReturn": "বিক্রয় ফেরত"
+    },
+    "search": {
+      "placeholder": "বারকোড স্ক্যান করুন বা পণ্য খুঁজুন (F3)",
+      "noMatch": "“{term}” এর সাথে কোনো পণ্য মেলেনি",
+      "addProduct": "নতুন পণ্য যোগ করুন",
+      "inStock": "স্টকে {qty}"
+    },
+    "customer": {
+      "label": "গ্রাহক",
+      "search": "নাম, মোবাইল বা কোড খুঁজুন…",
+      "due": "বকেয়া {amount}",
+      "points": "{points} পয়েন্ট",
+      "add": "গ্রাহক যোগ করুন",
+      "added": "গ্রাহক যোগ হয়েছে",
+      "name": "নাম",
+      "mobile": "মোবাইল",
+      "group": "গ্রাহক গ্রুপ",
+      "address": "ঠিকানা"
+    },
+    "meta": {
+      "technician": "টেকনিশিয়ান",
+      "none": "কোনোটি নয়",
+      "layout": "ইনভয়েস লেআউট",
+      "date": "বিক্রয়ের তারিখ"
+    },
+    "cart": {
+      "caption": "বর্তমান বিক্রয়ের পণ্যসমূহ",
+      "product": "পণ্য",
+      "qty": "পরিমাণ",
+      "price": "দাম",
+      "subtotal": "উপমোট",
+      "empty": "কার্ট খালি",
+      "emptyHint": "বারকোড স্ক্যান করুন, উপরে খুঁজুন অথবা ডানের পণ্যে ট্যাপ করুন।",
+      "stockLeft": "{qty} বাকি",
+      "unitPrice": "একক দাম",
+      "discount": "ছাড়",
+      "note": "নোট",
+      "serials": "সিরিয়াল / IMEI",
+      "serialsHint": "প্রতিটি নম্বরের পর Enter চাপুন",
+      "serviceStaff": "সার্ভিস স্টাফ",
+      "remove": "{name} সরান",
+      "increase": "পরিমাণ বাড়ান",
+      "decrease": "পরিমাণ কমান"
+    },
+    "totals": {
+      "items": "আইটেম",
+      "subtotal": "উপমোট",
+      "discount": "ছাড়",
+      "orderTax": "অর্ডার ট্যাক্স",
+      "shipping": "শিপিং",
+      "redeemed": "রিডিম করা পয়েন্ট",
+      "roundOff": "রাউন্ড অফ",
+      "payable": "মোট প্রদেয়",
+      "edit": "{what} সম্পাদনা"
+    },
+    "discount": {
+      "title": "অর্ডার ছাড়",
+      "fixed": "নির্দিষ্ট",
+      "percentage": "শতাংশ",
+      "amount": "পরিমাণ",
+      "preview": "ছাড়: {amount}"
+    },
+    "orderTax": {
+      "title": "অর্ডার ট্যাক্স",
+      "none": "কোনো ট্যাক্স নেই"
+    },
+    "shipping": {
+      "title": "শিপিং",
+      "zone": "এলাকা",
+      "inside_dhaka": "ঢাকার ভিতরে",
+      "outside_dhaka": "ঢাকার বাইরে",
+      "free": "ফ্রি",
+      "charges": "চার্জ",
+      "details": "বিবরণ",
+      "address": "ঠিকানা"
+    },
+    "points": {
+      "title": "পয়েন্ট রিডিম",
+      "available": "প্রাপ্য: {points}",
+      "max": "এই বিক্রয়ে সর্বোচ্চ: {points}",
+      "value": "মূল্য {amount}",
+      "label": "রিডিম করার পয়েন্ট"
+    },
+    "grid": {
+      "all": "সব",
+      "featured": "বাছাইকৃত",
+      "allCategories": "সব ক্যাটাগরি",
+      "allBrands": "সব ব্র্যান্ড",
+      "outOfStock": "স্টক নেই",
+      "lowStock": "স্টক কম",
+      "chooseVariation": "একটি ভ্যারিয়েশন বাছুন",
+      "empty": "এখানে কোনো পণ্য নেই"
+    },
+    "actions": {
+      "quotation": "কোটেশন",
+      "draft": "খসড়া",
+      "suspend": "স্থগিত",
+      "creditSale": "বাকিতে বিক্রয়",
+      "card": "কার্ড",
+      "multiplePay": "একাধিক পেমেন্ট",
+      "cash": "নগদ",
+      "cancel": "বাতিল"
+    },
+    "pay": {
+      "title": "পেমেন্ট",
+      "addRow": "পেমেন্ট সারি যোগ করুন",
+      "method": "পদ্ধতি",
+      "amount": "পরিমাণ",
+      "given": "প্রদত্ত নগদ",
+      "change": "ফেরত",
+      "remaining": "বাকি",
+      "paid": "পরিশোধিত",
+      "cardNumber": "কার্ড নম্বর (শেষ ৪)",
+      "cardHolder": "কার্ডধারী",
+      "cardType": "কার্ডের ধরন",
+      "txnNo": "ট্রানজেকশন আইডি",
+      "denominations": "নোটের হিসাব",
+      "nonCashOverpaid": "শুধু নগদ মোটের বেশি হতে পারে",
+      "finalize": "পেমেন্ট সম্পন্ন করুন",
+      "removeRow": "পেমেন্ট সারি সরান"
+    },
+    "errors": {
+      "walkInCredit": "বাকিতে বিক্রয়ের জন্য একজন গ্রাহক বাছুন",
+      "serialsRequired": "{product} এর জন্য {count}টি সিরিয়াল নম্বর দিন",
+      "productGone": "{product} আর পাওয়া যাচ্ছে না",
+      "emptyCart": "অন্তত একটি পণ্য যোগ করুন",
+      "notDeletable": "চূড়ান্ত বিক্রয় এখান থেকে মোছা যায় না",
+      "registerOpen": "একটি রেজিস্টার ইতিমধ্যে খোলা আছে",
+      "pointsInvalid": "এই বিক্রয়ে এই পয়েন্ট রিডিম করা যাবে না",
+      "noRegister": "প্রথমে রেজিস্টার খুলুন"
+    },
+    "done": {
+      "final": "বিক্রয় {ref} সম্পন্ন",
+      "draft": "খসড়া {ref} সংরক্ষিত",
+      "quotation": "কোটেশন {ref} সংরক্ষিত",
+      "suspended": "বিক্রয় {ref} হিসেবে স্থগিত",
+      "cancelled": "বিক্রয় বাতিল"
+    },
+    "cancelConfirm": {
+      "title": "এই বিক্রয় বাতিল করবেন?",
+      "body": "কার্টের সব পণ্য সরিয়ে ফেলা হবে।"
+    },
+    "suspend": {
+      "title": "বিক্রয় স্থগিত",
+      "note": "নোট (ঐচ্ছিক)",
+      "confirm": "স্থগিত করুন"
+    },
+    "suspended": {
+      "title": "স্থগিত বিক্রয়",
+      "empty": "কোনো স্থগিত বিক্রয় নেই",
+      "resume": "আবার শুরু",
+      "resumed": "{ref} কার্টে লোড হয়েছে",
+      "replaceCart": "বর্তমান কার্ট প্রতিস্থাপিত হবে।"
+    },
+    "recent": {
+      "title": "সাম্প্রতিক লেনদেন",
+      "empty": "এখনো কিছু নেই",
+      "deleted": "{ref} মোছা হয়েছে"
+    },
+    "receipt": {
+      "title": "রসিদ",
+      "newSale": "নতুন বিক্রয়",
+      "a4": "A4 ইনভয়েস",
+      "thermal": "রসিদ (৮০মিমি)",
+      "invoiceNo": "ইনভয়েস নং",
+      "date": "তারিখ",
+      "cashier": "ক্যাশিয়ার",
+      "customer": "গ্রাহক",
+      "item": "পণ্য",
+      "qty": "পরিমাণ",
+      "unitPrice": "একক দাম",
+      "total": "মোট",
+      "paid": "পরিশোধিত",
+      "change": "ফেরত",
+      "due": "বকেয়া",
+      "pointsEarned": "অর্জিত পয়েন্ট: {points}",
+      "mobile": "মোবাইল"
+    },
+    "register": {
+      "openTitle": "ক্যাশ রেজিস্টার খুলুন",
+      "openBody": "{location} এ বিক্রি শুরু করতে ড্রয়ারের নগদ গুনে লিখুন।",
+      "openingCash": "হাতে নগদ",
+      "open": "রেজিস্টার খুলুন",
+      "opened": "রেজিস্টার খোলা হয়েছে",
+      "openedAt": "খোলা হয়েছে {time}",
+      "detailsTitle": "রেজিস্টারের বিবরণ",
+      "closeTitle": "রেজিস্টার বন্ধ করুন",
+      "method": "পেমেন্ট পদ্ধতি",
+      "amount": "পরিমাণ",
+      "opening": "শুরুর নগদ",
+      "sales": "মোট বিক্রয়",
+      "refunds": "নগদ ফেরত",
+      "expenses": "নগদ খরচ",
+      "change": "ফেরত দেওয়া",
+      "expected": "প্রত্যাশিত নগদ",
+      "counted": "গণনাকৃত নগদ",
+      "difference": "পার্থক্য",
+      "cardSlips": "কার্ড স্লিপ",
+      "cheques": "চেক",
+      "note": "বন্ধের নোট",
+      "closed": "রেজিস্টার বন্ধ হয়েছে"
+    },
+    "expense": {
+      "title": "খরচ যোগ করুন",
+      "category": "ক্যাটাগরি",
+      "amount": "পরিমাণ",
+      "method": "যেভাবে পরিশোধ",
+      "note": "নোট",
+      "added": "খরচ {ref} যোগ হয়েছে"
+    },
+    "scale": {
+      "title": "ওজন মাপার বারকোড",
+      "barcode": "বারকোড",
+      "parsed": "SKU {sku} · পরিমাণ {qty}",
+      "invalid": "এটি ওজন মাপার বারকোড নয়"
+    },
+    "shortcuts": {
+      "title": "কিবোর্ড শর্টকাট",
+      "focusSearch": "পণ্য খোঁজায় যান",
+      "help": "এই তালিকা দেখান",
+      "expressCheckout": "দ্রুত চেকআউট (নগদ)",
+      "payAndCheckout": "পেমেন্ট ও চেকআউট",
+      "draft": "খসড়া হিসেবে সংরক্ষণ",
+      "cancel": "বিক্রয় বাতিল",
+      "recentProductQty": "শেষ পণ্যের পরিমাণ সম্পাদনা",
+      "weighingScale": "ওজন মাপার যন্ত্র",
+      "editDiscount": "ছাড় সম্পাদনা",
+      "editOrderTax": "অর্ডার ট্যাক্স সম্পাদনা",
+      "addPaymentRow": "পেমেন্ট সারি যোগ",
+      "finalizePayment": "পেমেন্ট সম্পন্ন",
+      "addNewProduct": "নতুন পণ্য যোগ",
+      "unset": "নির্ধারিত নয়"
+    }
+  },
   "errors": {
     "generic": "কিছু একটা ভুল হয়েছে",
     "genericBody": "একটি অপ্রত্যাশিত সমস্যা হয়েছে। আবার চেষ্টা করুন অথবা হোমে ফিরে যান।",

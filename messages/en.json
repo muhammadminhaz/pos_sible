@@ -325,6 +325,266 @@
     "open": "Open",
     "close": "Closed"
   },
+  "payMethods": {
+    "cash": "Cash",
+    "card": "Card",
+    "cheque": "Cheque",
+    "bank_transfer": "Bank transfer",
+    "advance": "Advance",
+    "other": "Other",
+    "custom_pay_1": "Custom payment 1",
+    "custom_pay_2": "Custom payment 2",
+    "custom_pay_3": "Custom payment 3",
+    "custom_pay_4": "Custom payment 4",
+    "custom_pay_5": "Custom payment 5",
+    "custom_pay_6": "Custom payment 6",
+    "custom_pay_7": "Custom payment 7"
+  },
+  "pos": {
+    "narrow": "The POS needs a screen at least 1024px wide.",
+    "top": {
+      "location": "Location",
+      "shortcuts": "Shortcuts",
+      "suspended": "Suspended sales",
+      "recent": "Recent transactions",
+      "addExpense": "Add expense",
+      "registerDetails": "Register details",
+      "closeRegister": "Close register",
+      "sellReturn": "Sell return"
+    },
+    "search": {
+      "placeholder": "Scan barcode or search products (F3)",
+      "noMatch": "No product matches “{term}”",
+      "addProduct": "Add new product",
+      "inStock": "{qty} in stock"
+    },
+    "customer": {
+      "label": "Customer",
+      "search": "Search name, mobile or code…",
+      "due": "Due {amount}",
+      "points": "{points} points",
+      "add": "Add customer",
+      "added": "Customer added",
+      "name": "Name",
+      "mobile": "Mobile",
+      "group": "Customer group",
+      "address": "Address"
+    },
+    "meta": {
+      "technician": "Technician",
+      "none": "None",
+      "layout": "Invoice layout",
+      "date": "Sale date"
+    },
+    "cart": {
+      "caption": "Items in the current sale",
+      "product": "Product",
+      "qty": "Qty",
+      "price": "Price",
+      "subtotal": "Subtotal",
+      "empty": "The cart is empty",
+      "emptyHint": "Scan a barcode, search above, or tap a product on the right.",
+      "stockLeft": "{qty} left",
+      "unitPrice": "Unit price",
+      "discount": "Discount",
+      "note": "Note",
+      "serials": "Serial / IMEI",
+      "serialsHint": "Press Enter after each number",
+      "serviceStaff": "Service staff",
+      "remove": "Remove {name}",
+      "increase": "Increase quantity",
+      "decrease": "Decrease quantity"
+    },
+    "totals": {
+      "items": "Items",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "orderTax": "Order tax",
+      "shipping": "Shipping",
+      "redeemed": "Points redeemed",
+      "roundOff": "Round off",
+      "payable": "Total payable",
+      "edit": "Edit {what}"
+    },
+    "discount": {
+      "title": "Order discount",
+      "fixed": "Fixed",
+      "percentage": "Percentage",
+      "amount": "Amount",
+      "preview": "Discount: {amount}"
+    },
+    "orderTax": {
+      "title": "Order tax",
+      "none": "No tax"
+    },
+    "shipping": {
+      "title": "Shipping",
+      "zone": "Zone",
+      "inside_dhaka": "Inside Dhaka",
+      "outside_dhaka": "Outside Dhaka",
+      "free": "Free",
+      "charges": "Charges",
+      "details": "Details",
+      "address": "Address"
+    },
+    "points": {
+      "title": "Redeem points",
+      "available": "Available: {points}",
+      "max": "Max for this sale: {points}",
+      "value": "Worth {amount}",
+      "label": "Points to redeem"
+    },
+    "grid": {
+      "all": "All",
+      "featured": "Featured",
+      "allCategories": "All categories",
+      "allBrands": "All brands",
+      "outOfStock": "Out of stock",
+      "lowStock": "Low stock",
+      "chooseVariation": "Choose a variation",
+      "empty": "No products here"
+    },
+    "actions": {
+      "quotation": "Quotation",
+      "draft": "Draft",
+      "suspend": "Suspend",
+      "creditSale": "Credit sale",
+      "card": "Card",
+      "multiplePay": "Multiple pay",
+      "cash": "Cash",
+      "cancel": "Cancel"
+    },
+    "pay": {
+      "title": "Payment",
+      "addRow": "Add payment row",
+      "method": "Method",
+      "amount": "Amount",
+      "given": "Cash given",
+      "change": "Change",
+      "remaining": "Remaining",
+      "paid": "Paid",
+      "cardNumber": "Card number (last 4)",
+      "cardHolder": "Card holder",
+      "cardType": "Card type",
+      "txnNo": "Transaction ID",
+      "denominations": "Cash denominations",
+      "nonCashOverpaid": "Only cash can be more than the total",
+      "finalize": "Finalize payment",
+      "removeRow": "Remove payment row"
+    },
+    "errors": {
+      "walkInCredit": "Choose a named customer for a credit sale",
+      "serialsRequired": "Enter {count} serial numbers for {product}",
+      "productGone": "{product} is no longer available",
+      "emptyCart": "Add at least one item",
+      "notDeletable": "Final sales can't be deleted here",
+      "registerOpen": "A register is already open",
+      "pointsInvalid": "Those points can't be redeemed on this sale",
+      "noRegister": "Open the register first"
+    },
+    "done": {
+      "final": "Sale {ref} completed",
+      "draft": "Draft {ref} saved",
+      "quotation": "Quotation {ref} saved",
+      "suspended": "Sale suspended as {ref}",
+      "cancelled": "Sale cancelled"
+    },
+    "cancelConfirm": {
+      "title": "Cancel this sale?",
+      "body": "Every item in the cart will be removed."
+    },
+    "suspend": {
+      "title": "Suspend sale",
+      "note": "Note (optional)",
+      "confirm": "Suspend"
+    },
+    "suspended": {
+      "title": "Suspended sales",
+      "empty": "No suspended sales",
+      "resume": "Resume",
+      "resumed": "{ref} loaded into the cart",
+      "replaceCart": "The current cart will be replaced."
+    },
+    "recent": {
+      "title": "Recent transactions",
+      "empty": "Nothing here yet",
+      "deleted": "{ref} deleted"
+    },
+    "receipt": {
+      "title": "Receipt",
+      "newSale": "New sale",
+      "a4": "A4 invoice",
+      "thermal": "Receipt (80mm)",
+      "invoiceNo": "Invoice No.",
+      "date": "Date",
+      "cashier": "Cashier",
+      "customer": "Customer",
+      "item": "Item",
+      "qty": "Qty",
+      "unitPrice": "Unit price",
+      "total": "Total",
+      "paid": "Paid",
+      "change": "Change",
+      "due": "Due",
+      "pointsEarned": "Points earned: {points}",
+      "mobile": "Mobile"
+    },
+    "register": {
+      "openTitle": "Open cash register",
+      "openBody": "Count the cash in the drawer to start selling at {location}.",
+      "openingCash": "Cash in hand",
+      "open": "Open register",
+      "opened": "Register opened",
+      "openedAt": "Opened {time}",
+      "detailsTitle": "Register details",
+      "closeTitle": "Close register",
+      "method": "Payment method",
+      "amount": "Amount",
+      "opening": "Opening cash",
+      "sales": "Total sales",
+      "refunds": "Cash refunds",
+      "expenses": "Cash expenses",
+      "change": "Change given",
+      "expected": "Expected cash",
+      "counted": "Counted cash",
+      "difference": "Difference",
+      "cardSlips": "Card slips",
+      "cheques": "Cheques",
+      "note": "Closing note",
+      "closed": "Register closed"
+    },
+    "expense": {
+      "title": "Add expense",
+      "category": "Category",
+      "amount": "Amount",
+      "method": "Paid with",
+      "note": "Note",
+      "added": "Expense {ref} added"
+    },
+    "scale": {
+      "title": "Weighing scale barcode",
+      "barcode": "Barcode",
+      "parsed": "SKU {sku} · Qty {qty}",
+      "invalid": "Not a weighing-scale barcode"
+    },
+    "shortcuts": {
+      "title": "Keyboard shortcuts",
+      "focusSearch": "Focus product search",
+      "help": "Show this list",
+      "expressCheckout": "Express checkout (cash)",
+      "payAndCheckout": "Pay & checkout",
+      "draft": "Save as draft",
+      "cancel": "Cancel sale",
+      "recentProductQty": "Edit last item's quantity",
+      "weighingScale": "Weighing scale",
+      "editDiscount": "Edit discount",
+      "editOrderTax": "Edit order tax",
+      "addPaymentRow": "Add payment row",
+      "finalizePayment": "Finalize payment",
+      "addNewProduct": "Add new product",
+      "unset": "Not set"
+    }
+  },
   "errors": {
     "generic": "Something went wrong",
     "genericBody": "An unexpected error occurred. Try again or go back home.",

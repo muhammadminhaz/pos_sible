@@ -96,6 +96,7 @@ export function defaultSettings(startDate: string): Settings {
       printOnSuspend: false,
       showPricingOnSuggestion: true,
       weighingScale: { prefix: "", skuLength: 5, qtyLength: 3, qtyDecimalLength: 2 },
+      shippingCharges: { inside_dhaka: 60, outside_dhaka: 120 },
     },
     purchase: {
       editProductPriceFromPurchase: true,

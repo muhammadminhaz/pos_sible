@@ -110,6 +110,7 @@ export const settings = z.object({
       qtyLength: z.number().int(),
       qtyDecimalLength: z.number().int(),
     }),
+    shippingCharges: z.object({ inside_dhaka: z.number(), outside_dhaka: z.number() }),
   }),
   purchase: z.object({
     editProductPriceFromPurchase: z.boolean(),
