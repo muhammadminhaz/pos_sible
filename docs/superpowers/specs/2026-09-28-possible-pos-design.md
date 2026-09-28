@@ -71,10 +71,10 @@ The store wraps the ops and keys persistence by location. Switching location swa
    - `status === "final"` with shortfall > 0 requires a non walk-in customer and a balance within `creditLimit`. Otherwise it throws `CreditLimitError` or `AppError("walk_in_credit")`.
    - Any serial-enabled line needs as many serials as its qty.
 2. For `final`: `allocate` FIFO from the lots at the location. A shortfall throws `InsufficientStockError`. Write `lot.qtyRemaining`, `line.allocations`, and `line.unitCost`.
-3. Reference: `final` uses `nextInvoiceNo` from the location's invoice scheme. Draft, quotation, and suspended use `takeRef` with prefixes `DRAFT`/`QUOT`/`SUSP`.
+3. Reference: `final` uses `nextInvoiceNo` from the location's invoice scheme (then `count += 1`). Draft, quotation, and suspended use `takeRef(draft, settings.prefixes.draft)`, matching the seed.
 4. Rewards (final only): `pointsEarned` and the redeemed points update the contact's balance.
 5. Payments: each gets a `refNo` via `takeRef("SP")` and posts to the method's default account from the location. Cash change is recorded as a return payment row (`isReturn: true`).
-6. Set `paymentStatus` via `paymentStatus()`, `channel: "pos"`, `createdBy`, and `registerId` (the current open register).
+6. Set `paymentStatus` via `paymentStatus()`, `channel: "pos"`, and `createdBy`.
 7. If `cart.resumedFromId` is set, delete that suspended or draft transaction.
 8. Return the saved `Transaction`.
 
@@ -94,7 +94,8 @@ Other functions:
   - `expectedCash = opening + cash sales − cash change − cash refunds − cash expenses`
   - card slips count, cheque count
 - `close(registerId, { closingAmount, totalCardSlips, totalCheques, denominations, note })`
-- Schema additions (seed unchanged): transactions get an optional `registerId` field with default `null`; `settings.pos` gets `shippingCharges` (see §3.5).
+- A register's activity is its **time window**: payments with `createdBy = register.userId` on transactions at `register.locationId`, where `openedAt ≤ paidOn ≤ closedAt` (or now while open). This works for seeded registers too, so transactions need no `registerId` field.
+- Schema addition: `settings.pos.shippingCharges` (see §3.5). `SEED_VERSION` is bumped so stored data reseeds.
 
 ## 3. Screen
 
@@ -106,7 +107,7 @@ Other functions:
 
 ### 3.2 Left pane (cart, ~44%, min 440px)
 - **Customer combobox:** searches name, mobile, and code. It shows the balance due and reward points. ➕ opens the AddCustomer dialog (name, mobile, group, address), which calls a new `contactsService.createCustomer` (minimal version; sub-project 5 extends it into the full contact form).
-- **Product search** (autofocus, F2):
+- **Product search** (autofocus, F3):
   - As the user types, it shows suggestions: name, SKU, price, stock. Arrow keys and Enter pick one.
   - Scanner input (fast keystrokes ending in Enter) that exactly matches a SKU or variation SKU adds the item immediately.
   - A weighing-scale barcode (prefix match) is parsed into SKU and qty.
@@ -171,7 +172,8 @@ The settings strings (e.g. `shift+e`) are parsed by `useHotkeys`, which ignores 
   - Express checkout `shift+e`, pay & checkout `shift+p`, draft `shift+d`, cancel `shift+c`
   - Recent product qty `f4`, weighing scale `f9`, edit discount `shift+i`, edit order tax `shift+t`
   - Add payment row `shift+r`, finalize payment `shift+f`, add new product `f6`
-- **Fixed shortcuts:** `F2` focuses search, `?` opens the cheat sheet, and `Esc` closes the topmost dialog.
+- The seed binds `recentProductQty` to `f2` and `addNewProduct` to `f4`; the settings values win over the defaults above.
+- **Fixed shortcuts:** `F3` focuses search, `?` opens the cheat sheet, and `Esc` closes the topmost dialog.
 
 ## 5. Errors and edge cases
 - **Insufficient stock** (from checkout or at add time when the qty would exceed `maxQty`): a toast with the available qty. The offending row gets a danger ring. Checkout is aborted and the cart kept.
