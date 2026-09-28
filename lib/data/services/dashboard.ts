@@ -43,3 +43,36 @@ export const dashboardService = {
     return { ...r, net: roundMoney(r.totalSales - r.sellReturn - r.expense) };
   },
 };
+
+export type ProfitSummary = { sales: number; cost: number; expense: number; grossProfit: number; netProfit: number };
+
+const lineCost = (l: Transaction["lines"][number]) =>
+  l.allocations.length ? l.allocations.reduce((s, a) => s + a.qty * a.unitCost, 0) : l.qty * l.unitCost;
+
+export const profitService = {
+  /** Sales, cost of goods sold and profit for a period — powers the header "Today's profit" popover. */
+  async summary(f: KpiFilters): Promise<ProfitSummary> {
+    await delay();
+    let sales = 0;
+    let cost = 0;
+    let expense = 0;
+    for (const t of getDB().transactions) {
+      if (!inRange(t, f)) continue;
+      if (t.type === "sell" && t.status === "final") {
+        sales += t.totals.total - t.totals.orderTax;
+        cost += t.lines.reduce((s, l) => s + lineCost(l), 0);
+      } else if (t.type === "sell_return") {
+        sales -= t.totals.total - t.totals.orderTax;
+        cost -= t.lines.reduce((s, l) => s + l.qty * l.unitCost, 0);
+      } else if (t.type === "expense") expense += t.totals.total;
+    }
+    const grossProfit = roundMoney(sales - cost);
+    return {
+      sales: roundMoney(sales),
+      cost: roundMoney(cost),
+      expense: roundMoney(expense),
+      grossProfit,
+      netProfit: roundMoney(grossProfit - expense),
+    };
+  },
+};
