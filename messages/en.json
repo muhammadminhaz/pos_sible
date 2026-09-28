@@ -480,7 +480,9 @@
       "notDeletable": "Final sales can't be deleted here",
       "registerOpen": "A register is already open",
       "pointsInvalid": "Those points can't be redeemed on this sale",
-      "noRegister": "Open the register first"
+      "noRegister": "Open the register first",
+      "registerClosed": "This register is already closed.",
+      "saleGone": "This sale is no longer available. It may have been completed or deleted."
     },
     "done": {
       "final": "Sale {ref} completed",

@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { TableName } from "@/lib/data/schemas";
 import { contactsService, type NewCustomer } from "@/lib/data/services/contacts";
 import { expensesService, type NewExpense } from "@/lib/data/services/expenses";
 import { posService, type PosCatalogQuery } from "@/lib/data/services/pos";
@@ -50,15 +51,21 @@ export function usePosCustomers(term: string) {
 
 export function usePosMutations() {
   const qc = useQueryClient();
-  // A sale touches products (stock), contacts (points/due), transactions and registers; refetch everything.
-  const all = () => qc.invalidateQueries();
+  // Invalidate only the tables a mutation actually writes (see each service's commit()), so
+  // every query keyed under those table prefixes (e.g. dashboard and register summary, both
+  // under "transactions") refetches without a full-cache refetch.
+  const invalidate = (tables: TableName[]) => Promise.all(tables.map((t) => qc.invalidateQueries({ queryKey: keys.table(t).all })));
+  // Sale writes: transactions (the sale itself), accountTxns (payments), contacts (points/due);
+  // "products" too, so stock-derived POS catalog/search queries (computed from stockLots) refetch.
+  const saleWrites = () => invalidate(["products", "transactions", "contacts", "accountTxns"]);
+  const registerWrites = () => invalidate(["cashRegisters", "transactions"]);
   return {
-    checkout: useMutation({ mutationFn: (i: CheckoutInput) => salesService.checkout(i), onSuccess: all }),
-    remove: useMutation({ mutationFn: (id: string) => salesService.remove(id), onSuccess: all }),
+    checkout: useMutation({ mutationFn: (i: CheckoutInput) => salesService.checkout(i), onSuccess: saleWrites }),
+    remove: useMutation({ mutationFn: (id: string) => salesService.remove(id), onSuccess: saleWrites }),
     loadCart: useMutation({ mutationFn: (id: string) => salesService.toCart(id) }),
-    openRegister: useMutation({ mutationFn: (a: { locationId: string; openingCash: number }) => registersService.open(a.locationId, a.openingCash), onSuccess: all }),
-    closeRegister: useMutation({ mutationFn: (a: { id: string } & CloseRegisterInput) => registersService.close(a.id, a), onSuccess: all }),
-    createExpense: useMutation({ mutationFn: (i: NewExpense) => expensesService.create(i), onSuccess: all }),
+    openRegister: useMutation({ mutationFn: (a: { locationId: string; openingCash: number }) => registersService.open(a.locationId, a.openingCash), onSuccess: registerWrites }),
+    closeRegister: useMutation({ mutationFn: (a: { id: string } & CloseRegisterInput) => registersService.close(a.id, a), onSuccess: registerWrites }),
+    createExpense: useMutation({ mutationFn: (i: NewExpense) => expensesService.create(i), onSuccess: () => invalidate(["transactions", "accountTxns"]) }),
     createCustomer: useMutation({ mutationFn: (i: NewCustomer) => contactsService.createCustomer(i), onSuccess: () => qc.invalidateQueries({ queryKey: keys.contacts.all }) }),
   };
 }

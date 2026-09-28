@@ -481,6 +481,11 @@ const M = {
       registerOpen: ["A register is already open", "একটি রেজিস্টার ইতিমধ্যে খোলা আছে"],
       pointsInvalid: ["Those points can't be redeemed on this sale", "এই বিক্রয়ে এই পয়েন্ট রিডিম করা যাবে না"],
       noRegister: ["Open the register first", "প্রথমে রেজিস্টার খুলুন"],
+      registerClosed: ["This register is already closed.", "এই ক্যাশ রেজিস্টার ইতিমধ্যে বন্ধ।"],
+      saleGone: [
+        "This sale is no longer available. It may have been completed or deleted.",
+        "এই বিক্রয়টি আর পাওয়া যাচ্ছে না। এটি সম্পন্ন বা মুছে ফেলা হয়ে থাকতে পারে।",
+      ],
     },
     done: {
       final: ["Sale {ref} completed", "বিক্রয় {ref} সম্পন্ন"],

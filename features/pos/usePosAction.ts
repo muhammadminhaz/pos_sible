@@ -29,6 +29,8 @@ export function usePosError() {
         empty_cart: "pos.errors.emptyCart",
         not_deletable: "pos.errors.notDeletable",
         register_open: "pos.errors.registerOpen",
+        register_closed: "pos.errors.registerClosed",
+        not_found: "pos.errors.saleGone",
       };
       if (byCode[e.code]) return toast.error(t(byCode[e.code]));
     }
@@ -46,7 +48,8 @@ export function useCheckout(locationId: string) {
   const { checkout } = usePosMutations();
   const { data: settings } = useSettings();
   const onError = usePosError();
-  const { hide, showReceipt } = usePosDialogs();
+  const hide = usePosDialogs((s) => s.hide);
+  const showReceipt = usePosDialogs((s) => s.showReceipt);
 
   const run = async (status: SaleStatus, payments: CheckoutPayment[] = [], staffNote?: string) => {
     try {
