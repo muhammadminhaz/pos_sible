@@ -11,6 +11,8 @@ export type ProductRow = Product & {
   taxName?: string;
   locationNames: string[];
   stock: number;
+  /** Net units sold (final sales − sell returns) at the filtered location. */
+  unitsSold: number;
   purchasePrice: number;
   sellPrice: number;
   variations: Variation[];
@@ -39,6 +41,12 @@ function toRows(db: DB, locationId?: string): ProductRow[] {
     if (locationId && l.locationId !== locationId) continue;
     stock.set(l.productId, (stock.get(l.productId) ?? 0) + l.qtyRemaining);
   }
+  const sold = new Map<string, number>();
+  for (const t of db.transactions) {
+    if (locationId && t.locationId !== locationId) continue;
+    const sign = t.type === "sell" && t.status === "final" ? 1 : t.type === "sell_return" ? -1 : 0;
+    if (sign) for (const l of t.lines) sold.set(l.productId, (sold.get(l.productId) ?? 0) + sign * l.qty);
+  }
   return db.products.map((p) => {
     const variations = vars.get(p.id) ?? [];
     return {
@@ -49,6 +57,7 @@ function toRows(db: DB, locationId?: string): ProductRow[] {
       taxName: p.taxId ? tax.get(p.taxId) : undefined,
       locationNames: p.locationIds.map((id) => loc.get(id) ?? id),
       stock: roundMoney(stock.get(p.id) ?? 0, 4),
+      unitsSold: roundMoney(sold.get(p.id) ?? 0, 4),
       purchasePrice: variations[0]?.purchasePriceExc ?? 0,
       sellPrice: variations[0]?.sellPriceInc ?? 0,
       variations,

@@ -272,7 +272,20 @@
     "stockValueSale": "Stock value (sale)",
     "potentialProfit": "Potential profit",
     "empty": "No products yet",
-    "emptyHint": "Add your first product to start selling."
+    "emptyHint": "Add your first product to start selling.",
+    "image": "Image",
+    "locations": "Business locations",
+    "activeState": "Active state",
+    "openingStock": "Opening stock",
+    "exportProducts": "Export products",
+    "deleteTitle": "Delete {count, plural, one {# product} other {# products}}?",
+    "deleted": "{count, plural, one {# product} other {# products}} deleted",
+    "deactivated": "{count, plural, one {# product} other {# products}} deactivated",
+    "activated": "Product activated",
+    "locationsUpdated": "Locations updated",
+    "chooseLocations": "Choose locations",
+    "chooseLocationsHint": "Applies to {count, plural, one {# selected product} other {# selected products}}.",
+    "noStock": "Stock not managed"
   },
   "dashboard": {
     "title": "Welcome back, {name}",

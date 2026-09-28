@@ -272,7 +272,20 @@
     "stockValueSale": "স্টক মূল্য (বিক্রয়)",
     "potentialProfit": "সম্ভাব্য লাভ",
     "empty": "এখনো কোনো পণ্য নেই",
-    "emptyHint": "বিক্রয় শুরু করতে প্রথম পণ্য যোগ করুন।"
+    "emptyHint": "বিক্রয় শুরু করতে প্রথম পণ্য যোগ করুন।",
+    "image": "ছবি",
+    "locations": "ব্যবসার লোকেশন",
+    "activeState": "সক্রিয় অবস্থা",
+    "openingStock": "প্রারম্ভিক স্টক",
+    "exportProducts": "পণ্য এক্সপোর্ট",
+    "deleteTitle": "{count}টি পণ্য মুছবেন?",
+    "deleted": "{count}টি পণ্য মুছে ফেলা হয়েছে",
+    "deactivated": "{count}টি পণ্য নিষ্ক্রিয় করা হয়েছে",
+    "activated": "পণ্য সক্রিয় করা হয়েছে",
+    "locationsUpdated": "লোকেশন আপডেট হয়েছে",
+    "chooseLocations": "লোকেশন বেছে নিন",
+    "chooseLocationsHint": "নির্বাচিত {count}টি পণ্যে প্রযোজ্য।",
+    "noStock": "স্টক ট্র্যাক করা হয় না"
   },
   "dashboard": {
     "title": "স্বাগতম, {name}",
