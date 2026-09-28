@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useSession } from "@/lib/auth/session";
-import { AppError, CreditLimitError, InsufficientStockError, ProductUnavailableError, SerialsRequiredError, ValidationError } from "@/lib/data/errors";
+import { AppError, CreditLimitError, InsufficientStockError, NotFoundError, ProductUnavailableError, SerialsRequiredError, ValidationError } from "@/lib/data/errors";
 import { createSeed } from "@/lib/data/seed";
 import { LOC_RANGO, WALK_IN } from "@/lib/data/seed/mk";
 import { commit, getDB, resetDB } from "@/lib/data/store/db";
@@ -155,5 +155,50 @@ describe("salesService.checkout", () => {
     expect(getDB().transactions.some((t) => t.id === d.id)).toBe(false);
     const f = await salesService.checkout({ cart: cartWith(p), locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 1e7 }] });
     await expect(salesService.remove(f.id)).rejects.toMatchObject({ code: "not_deletable" });
+  });
+
+  it("suspend preserves points redemption; resume finalizes it once", async () => {
+    const p = await stocked();
+    const c = customer();
+    commit((d) => {
+      d.settings.rewards.minOrderTotalToRedeem = 0;
+      d.settings.rewards.minRedeemPoint = 1;
+      d.contacts.find((x) => x.id === c.id)!.points = 100;
+    });
+    const pointsBefore = getDB().contacts.find((x) => x.id === c.id)!.points;
+    const cart = patchCart(setContact(cartWith(p), c.id), { pointsRedeemed: 10 });
+
+    const s = await salesService.checkout({ cart, locationId: LOC_RANGO, status: "suspended" });
+    const suspended = getDB().transactions.find((t) => t.id === s.id)!;
+    expect(suspended.pointsRedeemed).toBe(10);
+    expect(getDB().contacts.find((x) => x.id === c.id)!.points).toBe(pointsBefore);
+
+    const resumed = await salesService.toCart(s.id);
+    expect(resumed.pointsRedeemed).toBe(10);
+
+    const res = await salesService.checkout({ cart: resumed, locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 1e7 }] });
+    const finalTxn = getDB().transactions.find((t) => t.id === res.id)!;
+    expect(finalTxn.pointsRedeemed).toBe(10);
+    expect(getDB().contacts.find((x) => x.id === c.id)!.points).toBe(pointsBefore - 10 + finalTxn.pointsEarned);
+  });
+
+  it("resuming from a removed sale throws and writes nothing", async () => {
+    const p = await stocked();
+    const s = await salesService.checkout({ cart: cartWith(p), locationId: LOC_RANGO, status: "suspended" });
+    await salesService.remove(s.id);
+    const cart = patchCart(cartWith(p), { resumedFromId: s.id });
+    const before = structuredClone(getDB());
+    await expect(salesService.checkout({ cart, locationId: LOC_RANGO, status: "draft" })).rejects.toBeInstanceOf(NotFoundError);
+    expect(getDB()).toEqual(before);
+  });
+
+  it("resuming from an already-final sale throws and leaves it intact", async () => {
+    const p = await stocked();
+    const f = await salesService.checkout({ cart: cartWith(p), locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 1e7 }] });
+    const cart = patchCart(cartWith(p), { resumedFromId: f.id });
+    const before = structuredClone(getDB());
+    await expect(salesService.checkout({ cart, locationId: LOC_RANGO, status: "draft" })).rejects.toBeInstanceOf(NotFoundError);
+    expect(getDB()).toEqual(before);
+    expect(getDB().transactions.find((t) => t.id === f.id)).toMatchObject({ status: "final" });
   });
 });

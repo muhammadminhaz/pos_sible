@@ -141,7 +141,8 @@ export const salesService = {
 
       if (cart.resumedFromId) {
         const i = d.transactions.findIndex((t) => t.id === cart.resumedFromId && t.type === "sell" && EDITABLE.includes(t.status));
-        if (i >= 0) d.transactions.splice(i, 1);
+        if (i < 0) throw new NotFoundError("Sale");
+        d.transactions.splice(i, 1);
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -149,7 +150,7 @@ export const salesService = {
       d.transactions.push(transaction.parse({
         id: tid, createdAt: nowISO(), createdBy: by, type: "sell", status, channel: "pos", locationId, contactId: contact.id, refNo, date: at,
         lines, discount: cart.discount, orderTaxId: cart.orderTaxId, orderTaxRate: cart.orderTaxRate,
-        pointsRedeemed: status === "final" ? cart.pointsRedeemed : 0, pointsEarned: earned,
+        pointsRedeemed: cart.pointsRedeemed, pointsEarned: earned,
         shipping: {
           zone: cart.shipping.zone, charges: cart.shipping.charges, details: cart.shipping.details, address: cart.shipping.address,
           status: status === "final" && cart.shipping.zone ? "ordered" : null,
@@ -180,6 +181,7 @@ export const salesService = {
       shipping: { zone: t.shipping.zone, charges: t.shipping.charges, details: t.shipping.details, address: t.shipping.address },
       technicianId: t.technicianId,
       invoiceLayoutId: t.invoiceLayoutId,
+      pointsRedeemed: t.pointsRedeemed,
       resumedFromId: t.id,
       note: t.notes,
       lines: t.lines.map((l) => {
