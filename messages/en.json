@@ -154,7 +154,25 @@
     "roles": "Roles",
     "backup": "Backup",
     "modules": "Modules",
-    "openPos": "Open POS"
+    "openPos": "Open POS",
+    "productDetail": "Product details",
+    "editProduct": "Edit product",
+    "purchaseDetail": "Purchase details",
+    "editPurchase": "Edit purchase",
+    "saleDetail": "Sale details",
+    "editSale": "Edit sale",
+    "transferDetail": "Transfer details",
+    "editExpense": "Edit expense",
+    "accountDetail": "Account book"
+  },
+  "modules": {
+    "catalog": "Catalog",
+    "pos": "POS",
+    "sales": "Sales",
+    "operations": "Contacts, purchases & stock",
+    "finance": "Expenses & accounts",
+    "reports": "Reports & dashboard",
+    "admin": "Settings & admin"
   },
   "auth": {
     "title": "Sign in",

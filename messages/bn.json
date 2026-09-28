@@ -154,7 +154,25 @@
     "roles": "ভূমিকা",
     "backup": "ব্যাকআপ",
     "modules": "মডিউল",
-    "openPos": "POS খুলুন"
+    "openPos": "POS খুলুন",
+    "productDetail": "পণ্যের বিস্তারিত",
+    "editProduct": "পণ্য সম্পাদনা",
+    "purchaseDetail": "ক্রয়ের বিস্তারিত",
+    "editPurchase": "ক্রয় সম্পাদনা",
+    "saleDetail": "বিক্রয়ের বিস্তারিত",
+    "editSale": "বিক্রয় সম্পাদনা",
+    "transferDetail": "স্থানান্তরের বিস্তারিত",
+    "editExpense": "খরচ সম্পাদনা",
+    "accountDetail": "অ্যাকাউন্ট বই"
+  },
+  "modules": {
+    "catalog": "ক্যাটালগ",
+    "pos": "POS",
+    "sales": "বিক্রয়",
+    "operations": "যোগাযোগ, ক্রয় ও স্টক",
+    "finance": "খরচ ও অ্যাকাউন্ট",
+    "reports": "রিপোর্ট ও ড্যাশবোর্ড",
+    "admin": "সেটিংস ও অ্যাডমিন"
   },
   "auth": {
     "title": "সাইন ইন",
