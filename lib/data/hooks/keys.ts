@@ -20,4 +20,13 @@ export const keys = {
   lookups: ["lookups"] as const,
   settings: ["settings"] as const,
   dashboard: (f: object) => ["transactions", "dashboard", f] as const,
+  pos: {
+    products: (q: object) => ["products", "pos", q] as const,
+    search: (q: object) => ["products", "pos-search", q] as const,
+    register: (loc: string) => ["cashRegisters", "current", loc] as const,
+    registerSummary: (id: string) => ["transactions", "register-summary", id] as const,
+    sales: (q: object) => ["transactions", "pos-sales", q] as const,
+    receipt: (id: string) => ["transactions", "receipt", id] as const,
+    customers: (term: string) => ["contacts", "pos", term] as const,
+  },
 };
