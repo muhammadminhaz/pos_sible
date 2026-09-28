@@ -43,3 +43,18 @@ export class NotFoundError extends AppError {
     super(`${what} not found.`, "not_found");
   }
 }
+
+export class SerialsRequiredError extends AppError {
+  constructor(
+    public productName: string,
+    public count: number,
+  ) {
+    super(`Enter ${count} serial numbers for ${productName}.`, "serials_required");
+  }
+}
+
+export class ProductUnavailableError extends AppError {
+  constructor(public productName: string) {
+    super(`${productName} is no longer available.`, "product_unavailable");
+  }
+}

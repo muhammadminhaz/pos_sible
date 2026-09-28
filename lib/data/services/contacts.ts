@@ -1,9 +1,10 @@
-import { NotFoundError } from "@/lib/data/errors";
-import type { Contact, DB } from "@/lib/data/schemas";
+import { currentUser } from "@/lib/auth/session";
+import { NotFoundError, ValidationError } from "@/lib/data/errors";
+import { contact, type Contact, type DB } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
-import { delay, matches, paginate, type ListQuery, type ListResult } from "./_util";
+import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult } from "./_util";
 
 export type ContactRow = Contact & {
   groupName?: string;
@@ -53,6 +54,8 @@ function toRows(db: DB): ContactRow[] {
   });
 }
 
+export type NewCustomer = { name: string; mobile: string; customerGroupId?: string | null; address?: string };
+
 export const contactsService = {
   async list(f: ContactFilters = {}): Promise<ListResult<ContactRow>> {
     await delay();
@@ -80,5 +83,32 @@ export const contactsService = {
     commit((d) => {
       for (const c of d.contacts) if (ids.includes(c.id) && !c.isDefault) c.active = active;
     });
+  },
+
+  async createCustomer(input: NewCustomer): Promise<Contact> {
+    await delay();
+    const name = input.name.trim();
+    const mobile = input.mobile.trim();
+    const fields: Record<string, string> = {};
+    if (!name) fields.name = "required";
+    if (!mobile) fields.mobile = "required";
+    if (Object.keys(fields).length) throw new ValidationError(fields);
+    let created!: Contact;
+    commit((d) => {
+      const n = Math.max(0, ...d.contacts.map((c) => Number(c.code.replace(/\D/g, "")) || 0)) + 1;
+      created = contact.parse({
+        id: uid("c"),
+        createdAt: nowISO(),
+        createdBy: currentUser()?.user.id ?? null,
+        code: `${d.settings.prefixes.contacts}${String(n).padStart(4, "0")}`,
+        type: "customer",
+        name,
+        mobile,
+        customerGroupId: input.customerGroupId ?? null,
+        address: { line1: input.address?.trim() ?? "" },
+      });
+      d.contacts.push(created);
+    });
+    return created;
   },
 };
