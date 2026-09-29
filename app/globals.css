@@ -6,7 +6,7 @@
 
 @theme inline {
   --font-sans: var(--font-inter), var(--font-bangla), ui-sans-serif, system-ui, sans-serif;
-  --font-bangla: var(--font-hind-siliguri), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-bangla: var(--font-anek-bangla), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
 
@@ -181,7 +181,7 @@
     -webkit-font-smoothing: antialiased;
   }
   html:lang(bn) {
-    font-family: var(--font-hind-siliguri), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-anek-bangla), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   }
   /* Rem stays 16px so the 4px spacing grid holds; body copy is 14px. */
   body {
