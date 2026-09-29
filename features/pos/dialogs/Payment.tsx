@@ -39,11 +39,11 @@ function PaymentForm({ location }: { location: Location }) {
   const hide = usePosDialogs((s) => s.hide);
   const { run, pending } = useCheckout(location.id);
   const payable = totals?.total ?? 0;
-  const [rows, setRows] = useState<Row[]>(() => [newRow(mode === "multiple" ? "cash" : mode, payable)]);
-  const [note, setNote] = useState("");
-  const shortcuts = settings?.pos.shortcuts;
   const labels = settings?.customLabels.payments ?? [];
   const methods = settings ? tillMethods(location.paymentMethods, labels) : [];
+  const [rows, setRows] = useState<Row[]>(() => [newRow(mode === "multiple" ? (methods[0] ?? "cash") : mode, payable)]);
+  const [note, setNote] = useState("");
+  const shortcuts = settings?.pos.shortcuts;
   // Shared by the live totals and the submitted payments, so a typed negative amount can't make them disagree.
   const rowAmount = (r: Row) => Math.max(0, Number(r.amount) || 0);
   const state = paymentState(payable, rows.map((r) => ({ method: r.method, amount: rowAmount(r) })));
