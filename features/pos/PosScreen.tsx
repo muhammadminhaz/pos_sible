@@ -10,8 +10,13 @@ import { CustomerPicker } from "./cart/CustomerPicker";
 import { MetaRow } from "./cart/MetaRow";
 import { ProductSearch } from "./cart/ProductSearch";
 import { AddCustomerDialog } from "./dialogs/AddCustomer";
+import { CancelDialog } from "./dialogs/Cancel";
+import { DiscountDialog } from "./dialogs/Discount";
+import { OrderTaxDialog } from "./dialogs/OrderTax";
 import { PaymentDialog } from "./dialogs/Payment";
+import { RedeemPointsDialog } from "./dialogs/RedeemPoints";
 import { RegisterGate } from "./dialogs/RegisterGate";
+import { ShippingDialog } from "./dialogs/Shipping";
 import { ProductGrid } from "./grid/ProductGrid";
 import { Narrow } from "./Narrow";
 import { TopBar } from "./TopBar";
@@ -62,6 +67,11 @@ export function PosScreen() {
         <>
           <AddCustomerDialog locationId={location!.id} />
           <PaymentDialog location={location!} />
+          <DiscountDialog locationId={location!.id} />
+          <OrderTaxDialog locationId={location!.id} />
+          <ShippingDialog locationId={location!.id} />
+          <RedeemPointsDialog locationId={location!.id} />
+          <CancelDialog locationId={location!.id} />
           {/* slot:dialogs */}
         </>
       )}
