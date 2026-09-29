@@ -3,12 +3,14 @@
 import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentRegister } from "@/lib/data/hooks/pos";
+import { ActionBar } from "./ActionBar";
 import { CartTable } from "./cart/CartTable";
 import { CartTotals } from "./cart/CartTotals";
 import { CustomerPicker } from "./cart/CustomerPicker";
 import { MetaRow } from "./cart/MetaRow";
 import { ProductSearch } from "./cart/ProductSearch";
 import { AddCustomerDialog } from "./dialogs/AddCustomer";
+import { PaymentDialog } from "./dialogs/Payment";
 import { RegisterGate } from "./dialogs/RegisterGate";
 import { ProductGrid } from "./grid/ProductGrid";
 import { Narrow } from "./Narrow";
@@ -51,6 +53,7 @@ export function PosScreen() {
                 {/* slot:grid */}
               </section>
             </div>
+            <ActionBar location={location} />
             {/* slot:actions */}
           </>
         )}
@@ -58,6 +61,7 @@ export function PosScreen() {
       {ready && (
         <>
           <AddCustomerDialog locationId={location!.id} />
+          <PaymentDialog location={location!} />
           {/* slot:dialogs */}
         </>
       )}
