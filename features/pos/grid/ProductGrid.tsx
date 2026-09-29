@@ -72,7 +72,7 @@ function ProductCard({ p, locationId }: { p: PosProduct; locationId: string }) {
           initials(p.name)
         )}
         {out && <Badge variant="destructive" className="absolute top-1.5 right-1.5">{t("outOfStock")}</Badge>}
-        {low && <Badge className="absolute top-1.5 right-1.5 bg-warning text-warning-foreground">{t("lowStock")}</Badge>}
+        {low && <Badge className="absolute top-1.5 right-1.5 border-warning/40 bg-warning-soft text-warning-foreground">{t("lowStock")}</Badge>}
       </span>
       <span className="flex flex-1 flex-col gap-1 p-2">
         <span className="line-clamp-2 text-sm leading-snug font-medium">{p.name}</span>

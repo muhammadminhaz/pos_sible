@@ -119,7 +119,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
           </div>
           <span className="mt-0.5 block text-center text-[10px] text-muted-foreground">{line.unitName}</span>
         </td>
-        <td className="py-2 text-right tabular-nums">
+        <td className="py-2 pl-3 text-right tabular-nums">
           {settings?.pos.subtotalEditable && can("pos.edit_price") ? (
             <Input
               type="number"
@@ -134,7 +134,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
             <span className="text-sm">{f.amount(totals.netUnitInc)}</span>
           )}
         </td>
-        <td className="py-2 pr-2 text-right text-sm font-medium tabular-nums">{f.amount(totals.subtotal)}</td>
+        <td className="py-2 pl-3 pr-2 text-right text-sm font-medium tabular-nums">{f.amount(totals.subtotal)}</td>
         <td className="w-10 py-2 pr-2">
           <Button variant="ghost" size="icon-sm" aria-label={t("pos.cart.remove", { name: line.name })} onClick={() => update((c) => removeLine(c, line.key))}>
             <XIcon />

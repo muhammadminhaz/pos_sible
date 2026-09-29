@@ -27,8 +27,8 @@ export function CartTable({ locationId }: { locationId: string }) {
             <th scope="col" className="py-2 pl-3 text-left font-medium">#</th>
             <th scope="col" className="py-2 text-left font-medium">{t("product")}</th>
             <th scope="col" className="py-2 text-left font-medium">{t("qty")}</th>
-            <th scope="col" className="py-2 text-right font-medium">{t("price")}</th>
-            <th scope="col" className="py-2 pr-2 text-right font-medium">{t("subtotal")}</th>
+            <th scope="col" className="py-2 pl-3 text-right font-medium">{t("price")}</th>
+            <th scope="col" className="py-2 pl-3 pr-2 text-right font-medium">{t("subtotal")}</th>
             <th scope="col"><span className="sr-only">{t("remove", { name: "" })}</span></th>
           </tr>
         </thead>
