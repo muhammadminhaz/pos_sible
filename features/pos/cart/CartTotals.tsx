@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { PencilIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ export function CartTotals({ locationId }: { locationId: string }) {
       <PencilIcon />
     </Button>
   );
-  const cell = (label: string, value: string, action?: React.ReactNode) => (
+  const cell = (label: string, value: string, action?: ReactNode) => (
     <div className="flex items-center justify-between gap-2">
       <dt className="flex items-center gap-1 text-muted-foreground">
         {label}

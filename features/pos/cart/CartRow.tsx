@@ -34,6 +34,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
   const { data: lookups } = useLookups();
   const { update } = useCart(locationId);
   const flashKey = useFlash((s) => s.key);
+  const flashToken = useFlash((s) => s.n);
   const ref = useRef<HTMLTableRowElement>(null);
   const [serial, setSerial] = useState("");
   const flagged = useCartFlag((s) => s.name === line.name);
@@ -71,13 +72,14 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
     <>
       <tr
         ref={ref}
-        className={cn(
-          "border-b align-middle transition-colors",
-          flashing && "animate-[pos-flash_1s_ease-out]",
-          over && "bg-danger/5 ring-1 ring-danger ring-inset",
-        )}
+        className={cn("relative border-b align-middle transition-colors", over && "bg-danger/5 ring-1 ring-danger ring-inset")}
       >
-        <td className="w-8 py-2 pl-3 text-xs text-muted-foreground tabular-nums">{f.number(index + 1)}</td>
+        <td className="w-8 py-2 pl-3 text-xs text-muted-foreground tabular-nums">
+          {/* Keyed on the flash token so re-flashing the same line remounts this overlay and replays
+              the CSS animation, without remounting the row (the qty input keeps focus). */}
+          {flashing && <span key={flashToken} aria-hidden className="pointer-events-none absolute inset-0 animate-[pos-flash_1s_ease-out]" />}
+          {f.number(index + 1)}
+        </td>
         <td className="py-2 pr-2">
           <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-start gap-1 text-left">
             <ChevronDownIcon className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
@@ -157,7 +159,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
                 />
                 {line.taxRate > 0 && (
                   <span className="text-[11px] text-muted-foreground">
-                    {`${f.percent(line.taxRate)} · ${line.taxType === "inclusive" ? "inc." : "exc."} · ${f.amount(totals.unitTax)}`}
+                    {`${f.percent(line.taxRate)} · ${line.taxType === "inclusive" ? t("pos.cart.taxInc") : t("pos.cart.taxExc")} · ${f.amount(totals.unitTax)}`}
                   </span>
                 )}
               </div>
@@ -172,7 +174,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
                     value={line.discount?.type ?? "fixed"}
                     onValueChange={(v) => v && update((c) => setLineDiscount(c, line.key, { type: v as "fixed" | "percentage", amount: line.discount?.amount ?? 0 }))}
                   >
-                    <ToggleGroupItem value="fixed" aria-label={t("pos.discount.fixed")}>৳</ToggleGroupItem>
+                    <ToggleGroupItem value="fixed" aria-label={t("pos.discount.fixed")}>{settings?.business.currencySymbol || "৳"}</ToggleGroupItem>
                     <ToggleGroupItem value="percentage" aria-label={t("pos.discount.percentage")}>%</ToggleGroupItem>
                   </ToggleGroup>
                   <Input

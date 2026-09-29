@@ -390,6 +390,8 @@ const M = {
       note: ["Note", "নোট"],
       serials: ["Serial / IMEI", "সিরিয়াল / IMEI"],
       serialsHint: ["Press Enter after each number", "প্রতিটি নম্বরের পর Enter চাপুন"],
+      taxInc: ["inc.", "সহ"],
+      taxExc: ["exc.", "ছাড়া"],
       serviceStaff: ["Service staff", "সার্ভিস স্টাফ"],
       remove: ["Remove {name}", "{name} সরান"],
       increase: ["Increase quantity", "পরিমাণ বাড়ান"],

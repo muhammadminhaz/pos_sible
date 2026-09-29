@@ -30,10 +30,15 @@ export function usePosTotals(locationId: string) {
   return settings ? cartTotals(cart, { rounding: settings.sale.roundingMethod, rewards: settings.rewards }) : null;
 }
 
-/** The line that was just added or bumped; CartRow flashes it and scrolls it into view. */
-export const useFlash = create<{ key: string | null; flash: (key: string) => void }>()((set) => ({
+/**
+ * The line that was just added or bumped; CartRow flashes it and scrolls it into view.
+ * `n` is a monotonic token: it increments on every flash, even repeats of the same key, so a
+ * CartRow can key its flash overlay on `n` and replay the animation without remounting the row.
+ */
+export const useFlash = create<{ key: string | null; n: number; flash: (key: string) => void }>()((set) => ({
   key: null,
-  flash: (key) => set({ key }),
+  n: 0,
+  flash: (key) => set((s) => ({ key, n: s.n + 1 })),
 }));
 
 /** Adds a product to the cart, refusing (with a toast) when it would oversell managed stock. */

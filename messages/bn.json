@@ -387,6 +387,8 @@
       "note": "নোট",
       "serials": "সিরিয়াল / IMEI",
       "serialsHint": "প্রতিটি নম্বরের পর Enter চাপুন",
+      "taxInc": "সহ",
+      "taxExc": "ছাড়া",
       "serviceStaff": "সার্ভিস স্টাফ",
       "remove": "{name} সরান",
       "increase": "পরিমাণ বাড়ান",

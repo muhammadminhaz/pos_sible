@@ -387,6 +387,8 @@
       "note": "Note",
       "serials": "Serial / IMEI",
       "serialsHint": "Press Enter after each number",
+      "taxInc": "inc.",
+      "taxExc": "exc.",
       "serviceStaff": "Service staff",
       "remove": "Remove {name}",
       "increase": "Increase quantity",

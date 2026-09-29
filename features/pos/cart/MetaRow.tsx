@@ -23,10 +23,10 @@ export function MetaRow({ locationId }: { locationId: string }) {
   if (!technicians.length && !showLayout && !showDate) return null;
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="flex flex-wrap gap-2">
       {technicians.length > 0 && (
         <Select value={cart.technicianId ?? NONE} onValueChange={(v) => update((c) => patchCart(c, { technicianId: v === NONE ? null : v }))}>
-          <SelectTrigger size="sm" className="w-full" aria-label={t("technician")}>
+          <SelectTrigger size="sm" className="w-auto min-w-fit flex-1" aria-label={t("technician")}>
             <SelectValue placeholder={t("technician")} />
           </SelectTrigger>
           <SelectContent>
@@ -41,7 +41,7 @@ export function MetaRow({ locationId }: { locationId: string }) {
       )}
       {showLayout && (
         <Select value={cart.invoiceLayoutId ?? NONE} onValueChange={(v) => update((c) => patchCart(c, { invoiceLayoutId: v === NONE ? null : v }))}>
-          <SelectTrigger size="sm" className="w-full" aria-label={t("layout")}>
+          <SelectTrigger size="sm" className="w-auto min-w-fit flex-1" aria-label={t("layout")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -58,7 +58,7 @@ export function MetaRow({ locationId }: { locationId: string }) {
         <Input
           type="datetime-local"
           aria-label={t("date")}
-          className="h-7 text-xs"
+          className="h-7 min-w-[150px] flex-1 text-xs"
           value={cart.date ? format(new Date(cart.date), "yyyy-MM-dd'T'HH:mm") : ""}
           onChange={(e) => update((c) => patchCart(c, { date: e.target.value ? new Date(e.target.value).toISOString() : null }))}
         />
