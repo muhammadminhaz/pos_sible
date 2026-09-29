@@ -10,6 +10,7 @@ import { MetaRow } from "./cart/MetaRow";
 import { ProductSearch } from "./cart/ProductSearch";
 import { AddCustomerDialog } from "./dialogs/AddCustomer";
 import { RegisterGate } from "./dialogs/RegisterGate";
+import { ProductGrid } from "./grid/ProductGrid";
 import { Narrow } from "./Narrow";
 import { TopBar } from "./TopBar";
 import { usePosLocation } from "./usePos";
@@ -46,6 +47,7 @@ export function PosScreen() {
                 {/* slot:cart */}
               </section>
               <section className="flex min-w-0 flex-1 flex-col">
+                <ProductGrid locationId={location.id} />
                 {/* slot:grid */}
               </section>
             </div>
