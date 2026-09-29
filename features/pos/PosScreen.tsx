@@ -3,6 +3,12 @@
 import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentRegister } from "@/lib/data/hooks/pos";
+import { CartTable } from "./cart/CartTable";
+import { CartTotals } from "./cart/CartTotals";
+import { CustomerPicker } from "./cart/CustomerPicker";
+import { MetaRow } from "./cart/MetaRow";
+import { ProductSearch } from "./cart/ProductSearch";
+import { AddCustomerDialog } from "./dialogs/AddCustomer";
 import { RegisterGate } from "./dialogs/RegisterGate";
 import { Narrow } from "./Narrow";
 import { TopBar } from "./TopBar";
@@ -30,6 +36,13 @@ export function PosScreen() {
           <>
             <div className="flex min-h-0 flex-1">
               <section aria-label={t("cart.caption")} className="flex w-[44%] min-w-[440px] flex-col border-r bg-card">
+                <div className="grid gap-2 border-b p-3">
+                  <CustomerPicker locationId={location.id} />
+                  <ProductSearch locationId={location.id} />
+                  <MetaRow locationId={location.id} />
+                </div>
+                <CartTable locationId={location.id} />
+                <CartTotals locationId={location.id} />
                 {/* slot:cart */}
               </section>
               <section className="flex min-w-0 flex-1 flex-col">
@@ -42,6 +55,7 @@ export function PosScreen() {
       </div>
       {ready && (
         <>
+          <AddCustomerDialog locationId={location!.id} />
           {/* slot:dialogs */}
         </>
       )}

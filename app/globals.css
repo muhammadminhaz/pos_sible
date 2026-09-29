@@ -172,6 +172,11 @@
   --sidebar-ring: oklch(0.68 0.17 275 / 55%);
 }
 
+@keyframes pos-flash {
+  from { background-color: color-mix(in oklab, var(--primary) 18%, transparent); }
+  to { background-color: transparent; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
