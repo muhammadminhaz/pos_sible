@@ -42,20 +42,22 @@ function PaymentForm({ location }: { location: Location }) {
   const [rows, setRows] = useState<Row[]>(() => [newRow(mode === "multiple" ? "cash" : mode, payable)]);
   const [note, setNote] = useState("");
   const shortcuts = settings?.pos.shortcuts;
-  const state = paymentState(payable, rows.map((r) => ({ method: r.method, amount: Number(r.amount) || 0 })));
+  const labels = settings?.customLabels.payments ?? [];
+  const methods = settings ? tillMethods(location.paymentMethods, labels) : [];
+  // Shared by the live totals and the submitted payments, so a typed negative amount can't make them disagree.
+  const rowAmount = (r: Row) => Math.max(0, Number(r.amount) || 0);
+  const state = paymentState(payable, rows.map((r) => ({ method: r.method, amount: rowAmount(r) })));
 
-  const addRow = () => setRows((rs) => [...rs, newRow("cash", state.shortfall)]);
+  const addRow = () => setRows((rs) => [...rs, newRow(methods[0] ?? "cash", state.shortfall)]);
   useHotkeys({
     [shortcuts?.addPaymentRow ?? ""]: addRow,
     [shortcuts?.finalizePayment ?? ""]: () => void finalize(),
   });
   if (!settings) return null;
 
-  const labels = settings.customLabels.payments;
-  const methods = tillMethods(location.paymentMethods, labels);
   const pay = settings.payment;
   const denomFor = (m: PaymentMethod) => pay.cashDenominations.length > 0 && pay.denominationMethods.includes(m);
-  const strictMismatch = pay.denominationStrict && rows.some((r) => denomFor(r.method) && denominationTotal(r.counts) !== (Number(r.amount) || 0));
+  const strictMismatch = pay.denominationStrict && rows.some((r) => denomFor(r.method) && denominationTotal(r.counts) !== rowAmount(r));
   const walkIn = cart.contactId === WALK_IN_ID;
   const blocked = state.nonCashOverpaid || strictMismatch || (state.shortfall > 0 && walkIn) || pending;
 
@@ -63,7 +65,7 @@ function PaymentForm({ location }: { location: Location }) {
   async function finalize() {
     if (!settings || blocked) return; // `settings` first: `blocked` isn't initialised on the loading render
     const payments: CheckoutPayment[] = rows
-      .map((r) => ({ method: r.method, amount: Number(r.amount) || 0, details: r.details }))
+      .map((r) => ({ method: r.method, amount: rowAmount(r), details: r.details }))
       .filter((p) => p.amount > 0);
     await run("final", payments, note || undefined);
   }
@@ -72,8 +74,8 @@ function PaymentForm({ location }: { location: Location }) {
     void finalize();
   };
 
-  const detail = (r: Row, key: keyof Payment["details"], label: string, cls = "") => (
-    <div className={cn("grid gap-1", cls)}>
+  const detail = (r: Row, key: keyof Payment["details"], label: string) => (
+    <div className="grid gap-1">
       <Label className="text-xs">{label}</Label>
       <Input value={r.details[key] ?? ""} onChange={(e) => patch(r.id, { details: { ...r.details, [key]: e.target.value } })} className="h-8" />
     </div>

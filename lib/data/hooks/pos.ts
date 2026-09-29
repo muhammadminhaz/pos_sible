@@ -60,7 +60,10 @@ export function usePosMutations() {
   const saleWrites = () => invalidate(["products", "transactions", "contacts", "accountTxns"]);
   const registerWrites = () => invalidate(["cashRegisters", "transactions"]);
   return {
-    checkout: useMutation({ mutationFn: (i: CheckoutInput) => salesService.checkout(i), onSuccess: saleWrites }),
+    // Keyed so every call site (ActionBar's hotkeys, the payment dialog) can read one shared
+    // in-flight state via `useIsMutating({ mutationKey: ["checkout"] })` instead of each getting
+    // its own local `isPending`.
+    checkout: useMutation({ mutationKey: ["checkout"], mutationFn: (i: CheckoutInput) => salesService.checkout(i), onSuccess: saleWrites }),
     remove: useMutation({ mutationFn: (id: string) => salesService.remove(id), onSuccess: saleWrites }),
     loadCart: useMutation({ mutationFn: (id: string) => salesService.toCart(id) }),
     openRegister: useMutation({ mutationFn: (a: { locationId: string; openingCash: number }) => registersService.open(a.locationId, a.openingCash), onSuccess: registerWrites }),

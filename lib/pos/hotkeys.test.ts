@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatHotkey, matchHotkey, parseHotkey } from "./hotkeys";
+import { formatHotkey, matchHotkey, parseHotkey, shouldFire } from "./hotkeys";
 
 const ev = (key: string, mods: Partial<Record<"shiftKey" | "ctrlKey" | "altKey" | "metaKey", boolean>> = {}) => ({
   key, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...mods,
@@ -21,5 +21,17 @@ describe("hotkeys", () => {
   it("formats for display", () => {
     expect(formatHotkey("shift+e")).toBe("Shift + E");
     expect(formatHotkey("f4")).toBe("F4");
+  });
+  it("suppresses a shift-letter hotkey while typing in a field, but fires it elsewhere", () => {
+    const input = { tagName: "INPUT" } as unknown as EventTarget;
+    const body = { tagName: "BODY" } as unknown as EventTarget;
+    expect(shouldFire("shift+f", input)).toBe(false);
+    expect(shouldFire("shift+f", body)).toBe(true);
+  });
+  it("still fires function keys, Escape, and ctrl/alt/meta combos while typing", () => {
+    const input = { tagName: "INPUT" } as unknown as EventTarget;
+    expect(shouldFire("f2", input)).toBe(true);
+    expect(shouldFire("escape", input)).toBe(true);
+    expect(shouldFire("ctrl+shift+f", input)).toBe(true);
   });
 });

@@ -17,10 +17,10 @@ export function Denominations({ notes, counts, onChange }: {
   return (
     <fieldset className="grid gap-2 rounded-lg border p-3">
       <legend className="px-1 text-xs text-muted-foreground">{t("denominations")}</legend>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {notes.map((n) => (
           <label key={n} className="flex items-center gap-2 text-sm">
-            <span className="w-14 text-right tabular-nums">{f.amount(n)} ×</span>
+            <span className="w-20 shrink-0 whitespace-nowrap text-right tabular-nums">{f.amount(n)} ×</span>
             <Input
               type="number"
               min={0}

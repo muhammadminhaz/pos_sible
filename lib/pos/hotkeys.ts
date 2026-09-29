@@ -30,12 +30,31 @@ export function formatHotkey(spec: string): string {
     .join(" + ");
 }
 
-const isTyping = (t: EventTarget | null) =>
-  t instanceof HTMLElement && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName));
+// Duck-typed rather than `instanceof HTMLElement`, so it also works against a plain mock
+// target in tests without a DOM.
+type TypingTarget = { tagName?: string; isContentEditable?: boolean };
+const isTyping = (t: EventTarget | null) => {
+  const el = t as TypingTarget | null;
+  return !!el && (!!el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName ?? ""));
+};
 
 /**
- * Window-level shortcuts. While typing in a field only function keys, Escape and
- * modifier combos fire, so "?" or "e" can still be typed into inputs.
+ * True when `spec` should fire for `target`: function keys, Escape, and ctrl/alt/meta
+ * combos always fire; everything else — including a shift-only letter or symbol — is
+ * suppressed while typing in a field, so ordinary characters (capitals included) reach
+ * the field instead of triggering the hotkey.
+ */
+export function shouldFire(spec: string, target: EventTarget | null): boolean {
+  const h = parseHotkey(spec);
+  if (!h) return false;
+  const fnKey = /^f\d{1,2}$/.test(h.key) || h.key === "escape";
+  return fnKey || h.ctrl || h.alt || h.meta || !isTyping(target);
+}
+
+/**
+ * Window-level shortcuts. While typing in a field, only function keys, Escape, and
+ * ctrl/alt/meta combos fire, so ordinary characters — including shift-capitals — can
+ * still be typed into inputs.
  */
 export function useHotkeys(map: Record<string, (e: KeyboardEvent) => void>, enabled = true) {
   const ref = useRef(map);
@@ -46,10 +65,7 @@ export function useHotkeys(map: Record<string, (e: KeyboardEvent) => void>, enab
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
       for (const [spec, fn] of Object.entries(ref.current)) {
-        if (!spec || !matchHotkey(e, spec)) continue;
-        const h = parseHotkey(spec)!;
-        const fnKey = /^f\d{1,2}$/.test(h.key) || h.key === "escape";
-        if (isTyping(e.target) && !fnKey && !h.ctrl && !h.alt && !h.meta && !(h.shift && h.key.length === 1 && /[a-z]/.test(h.key))) continue;
+        if (!spec || !matchHotkey(e, spec) || !shouldFire(spec, e.target)) continue;
         e.preventDefault();
         fn(e);
         return;

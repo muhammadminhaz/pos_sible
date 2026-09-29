@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef } from "react";
+import { useIsMutating } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { AppError, InsufficientStockError, ProductUnavailableError, SerialsRequiredError, ValidationError } from "@/lib/data/errors";
@@ -41,6 +43,13 @@ export function usePosError() {
 /**
  * Checkout + the follow-up every entry point shares: clear the cart, toast, then the receipt modal
  * for final sales (and suspended ones when `printOnSuspend`). Other statuses get a Print toast action.
+ *
+ * `pending` is read from the shared mutation cache (`mutationKey: ["checkout"]`, set in
+ * `lib/data/hooks/pos.ts`) rather than this call's own `checkout.isPending`, so every entry
+ * point — ActionBar's hotkeys, the payment dialog — agrees on whether a checkout is in flight
+ * even though each calls `useCheckout` (and so `usePosMutations`) separately. `inFlight` is a
+ * synchronous backstop: TanStack Query flushes observer updates on a timer, so `pending` can
+ * still read false for the first instant after `mutateAsync` starts.
  */
 export function useCheckout(locationId: string) {
   const t = useTranslations();
@@ -50,8 +59,12 @@ export function useCheckout(locationId: string) {
   const onError = usePosError();
   const hide = usePosDialogs((s) => s.hide);
   const showReceipt = usePosDialogs((s) => s.showReceipt);
+  const pending = useIsMutating({ mutationKey: ["checkout"] }) > 0;
+  const inFlight = useRef(false);
 
   const run = async (status: SaleStatus, payments: CheckoutPayment[] = [], staffNote?: string) => {
+    if (inFlight.current) return false;
+    inFlight.current = true;
     try {
       const res = await checkout.mutateAsync({ cart, locationId, status, payments, staffNote });
       reset();
@@ -69,7 +82,9 @@ export function useCheckout(locationId: string) {
     } catch (e) {
       onError(e);
       return false;
+    } finally {
+      inFlight.current = false;
     }
   };
-  return { run, pending: checkout.isPending };
+  return { run, pending };
 }
