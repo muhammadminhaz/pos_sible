@@ -10,12 +10,14 @@ import { CustomerPicker } from "./cart/CustomerPicker";
 import { MetaRow } from "./cart/MetaRow";
 import { ProductSearch } from "./cart/ProductSearch";
 import { AddCustomerDialog } from "./dialogs/AddCustomer";
+import { AddExpenseDialog } from "./dialogs/AddExpense";
 import { CancelDialog } from "./dialogs/Cancel";
 import { DiscountDialog } from "./dialogs/Discount";
 import { OrderTaxDialog } from "./dialogs/OrderTax";
 import { PaymentDialog } from "./dialogs/Payment";
 import { RecentSheet } from "./dialogs/Recent";
 import { RedeemPointsDialog } from "./dialogs/RedeemPoints";
+import { RegisterDialog } from "./dialogs/RegisterClose";
 import { RegisterGate } from "./dialogs/RegisterGate";
 import { ShippingDialog } from "./dialogs/Shipping";
 import { SuspendDialog } from "./dialogs/Suspend";
@@ -78,6 +80,8 @@ export function PosScreen() {
           <SuspendDialog locationId={location!.id} />
           <SuspendedSheet locationId={location!.id} />
           <RecentSheet locationId={location!.id} />
+          <RegisterDialog location={location!} />
+          <AddExpenseDialog location={location!} />
           {/* slot:dialogs */}
         </>
       )}
