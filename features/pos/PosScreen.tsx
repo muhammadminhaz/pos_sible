@@ -18,6 +18,9 @@ import { PaymentDialog } from "./dialogs/Payment";
 import { RecentSheet } from "./dialogs/Recent";
 import { RedeemPointsDialog } from "./dialogs/RedeemPoints";
 import { ReceiptModal } from "./receipt/ReceiptModal";
+import { ShortcutsDialog } from "./dialogs/Shortcuts";
+import { WeighingScaleDialog } from "./dialogs/WeighingScale";
+import { PosHotkeys } from "./PosHotkeys";
 import { RegisterDialog } from "./dialogs/RegisterClose";
 import { RegisterGate } from "./dialogs/RegisterGate";
 import { ShippingDialog } from "./dialogs/Shipping";
@@ -69,6 +72,7 @@ export function PosScreen() {
           </>
         )}
       </div>
+      <ShortcutsDialog />
       {ready && (
         <>
           <AddCustomerDialog locationId={location!.id} />
@@ -84,6 +88,8 @@ export function PosScreen() {
           <RegisterDialog location={location!} />
           <AddExpenseDialog location={location!} />
           <ReceiptModal />
+          <WeighingScaleDialog locationId={location!.id} />
+          <PosHotkeys location={location!} />
           {/* slot:dialogs */}
         </>
       )}
