@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Hind_Siliguri, Inter } from "next/font/google";
+import { Anek_Bangla, Inter } from "next/font/google";
 import { getLocale, getMessages } from "next-intl/server";
 import { Providers } from "./providers";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
-const hindSiliguri = Hind_Siliguri({
-  variable: "--font-hind-siliguri",
-  subsets: ["bengali"],
-  weight: ["400", "500", "600"],
+const anekBangla = Anek_Bangla({
+  variable: "--font-anek-bangla",
+  subsets: ["bengali", "latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const messages = await getMessages();
 
   return (
-    <html lang={locale} suppressHydrationWarning className={`${inter.variable} ${hindSiliguri.variable}`}>
+    <html lang={locale} suppressHydrationWarning className={`${inter.variable} ${anekBangla.variable}`}>
       <body className="min-h-dvh">
         <Providers locale={locale} messages={messages}>
           {children}

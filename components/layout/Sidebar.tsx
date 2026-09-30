@@ -188,8 +188,23 @@ export function SidebarContent({ collapsed = false, onNavigate }: { collapsed?: 
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className={cn("flex h-14 shrink-0 items-center border-b", collapsed ? "justify-center" : "px-4")}>
-        <Brand collapsed={collapsed} />
+      <div className={cn("flex h-14 shrink-0 items-center border-b", collapsed ? "justify-center" : "justify-between px-4")}>
+        {collapsed ? (
+          !onNavigate && (
+            <Button variant="ghost" size="icon-sm" onClick={() => setCollapsed(false)} aria-label={t("expand")}>
+              <PanelLeftOpenIcon />
+            </Button>
+          )
+        ) : (
+          <>
+            <Brand collapsed={collapsed} />
+            {!onNavigate && (
+              <Button variant="ghost" size="icon-sm" onClick={() => setCollapsed(true)} aria-label={t("collapse")}>
+                <PanelLeftCloseIcon />
+              </Button>
+            )}
+          </>
+        )}
       </div>
       {!collapsed && (
         <div className="px-3 pt-3">
@@ -201,18 +216,6 @@ export function SidebarContent({ collapsed = false, onNavigate }: { collapsed?: 
       </ScrollArea>
       <div className={cn("flex shrink-0 flex-col gap-2 border-t p-3", collapsed && "items-center")}>
         <OpenPosButton collapsed={collapsed} />
-        {!onNavigate && (
-          <Button
-            variant="ghost"
-            size={collapsed ? "icon" : "sm"}
-            className={cn("text-muted-foreground", !collapsed && "justify-start")}
-            onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? t("expand") : t("collapse")}
-          >
-            {collapsed ? <PanelLeftOpenIcon /> : <PanelLeftCloseIcon />}
-            {!collapsed && t("collapse")}
-          </Button>
-        )}
       </div>
     </div>
   );

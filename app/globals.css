@@ -6,7 +6,7 @@
 
 @theme inline {
   --font-sans: var(--font-inter), var(--font-bangla), ui-sans-serif, system-ui, sans-serif;
-  --font-bangla: var(--font-hind-siliguri), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-bangla: var(--font-anek-bangla), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
 
@@ -172,6 +172,11 @@
   --sidebar-ring: oklch(0.68 0.17 275 / 55%);
 }
 
+@keyframes pos-flash {
+  from { background-color: color-mix(in oklab, var(--primary) 18%, transparent); }
+  to { background-color: transparent; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -181,7 +186,7 @@
     -webkit-font-smoothing: antialiased;
   }
   html:lang(bn) {
-    font-family: var(--font-hind-siliguri), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-anek-bangla), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   }
   /* Rem stays 16px so the 4px spacing grid holds; body copy is 14px. */
   body {
@@ -206,4 +211,16 @@
   body {
     background: white;
   }
+}
+
+/* POS printing: only the [data-print-root] portal is printed. */
+[data-print-root] { display: none; }
+@page thermal { size: 80mm auto; margin: 0; }
+@page a4 { size: A4; margin: 12mm; }
+@media print {
+  body > *:not([data-print-root]) { display: none !important; }
+  [data-print-root] { display: block !important; }
+  [data-print-root="thermal"] { page: thermal; }
+  [data-print-root="a4"] { page: a4; }
+  html, body { background: white !important; }
 }
