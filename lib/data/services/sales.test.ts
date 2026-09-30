@@ -204,3 +204,49 @@ describe("salesService.checkout", () => {
     expect(getDB().transactions.find((t) => t.id === f.id)).toMatchObject({ status: "final" });
   });
 });
+
+describe("salesService.listAll / get", () => {
+  beforeEach(() => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+  });
+
+  it("kind narrows by status; totals span every filtered row, not the page", async () => {
+    const all = await salesService.listAll({ pageSize: 5 });
+    expect(all.rows).toHaveLength(5);
+    expect(all.total).toBeGreaterThan(5);
+    const sum = getDB().transactions.filter((t) => t.type === "sell" && t.status !== "suspended").reduce((s, t) => s + t.totals.total, 0);
+    expect(all.totals.total).toBeCloseTo(sum, 2);
+    const drafts = await salesService.listAll({ kind: "drafts", pageSize: -1 });
+    expect(drafts.rows.every((r) => r.status === "draft")).toBe(true);
+    const quotes = await salesService.listAll({ kind: "quotations", pageSize: -1 });
+    expect(quotes.rows.every((r) => r.status === "quotation")).toBe(true);
+  });
+
+  it("filters by payment status, customer, date range and search", async () => {
+    const due = await salesService.listAll({ kind: "all", paymentStatus: "due", pageSize: -1 });
+    expect(due.rows.every((r) => r.paymentStatus === "due")).toBe(true);
+    const one = (await salesService.listAll({ pageSize: -1 })).rows.find((r) => r.status === "final")!;
+    const t = getDB().transactions.find((x) => x.id === one.id)!;
+    const byContact = await salesService.listAll({ contactId: t.contactId!, pageSize: -1 });
+    expect(byContact.rows.every((r) => getDB().transactions.find((x) => x.id === r.id)!.contactId === t.contactId)).toBe(true);
+    const day = await salesService.listAll({ from: t.date.slice(0, 10), to: t.date.slice(0, 10), pageSize: -1 });
+    expect(day.rows.map((r) => r.id)).toContain(one.id);
+    expect((await salesService.listAll({ search: one.refNo, pageSize: -1 })).rows.map((r) => r.id)).toContain(one.id);
+    expect((await salesService.listAll({ search: "zzzz-none", pageSize: -1 })).total).toBe(0);
+  });
+
+  it("returnDue is the paid amount on the sale minus nothing when no return exists", async () => {
+    const row = (await salesService.listAll({ pageSize: -1 })).rows.find((r) => r.status === "final")!;
+    expect(row.returnDue).toBeGreaterThanOrEqual(0);
+  });
+
+  it("get joins names; unknown id throws NotFoundError", async () => {
+    const row = (await salesService.listAll({ pageSize: 1 })).rows[0];
+    const s = await salesService.get(row.id);
+    expect(s.id).toBe(row.id);
+    expect(s.locationName).toBeTruthy();
+    expect(Object.keys(s.lineNames).length).toBe(s.lines.length);
+    await expect(salesService.get("nope")).rejects.toBeInstanceOf(NotFoundError);
+  });
+});

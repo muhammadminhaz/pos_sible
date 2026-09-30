@@ -3,16 +3,16 @@ import { currentUser } from "@/lib/auth/session";
 import {
   AppError, CreditLimitError, InsufficientStockError, NotFoundError, ProductUnavailableError, SerialsRequiredError, ValidationError,
 } from "@/lib/data/errors";
-import { accountTxn, transaction, type DB, type InvoiceLayout, type Location, type Payment, type PaymentMethod, type Transaction } from "@/lib/data/schemas";
+import { accountTxn, transaction, type ShippingStatus, type DB, type InvoiceLayout, type Location, type Payment, type PaymentMethod, type Transaction } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
-import { paymentStatus, paymentSummary } from "@/lib/domain/payments";
+import { paymentStatus, paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
 import { nextInvoiceNo } from "@/lib/domain/refs";
 import { maxRedeemable, pointsEarned } from "@/lib/domain/rewards";
 import { allocate, available } from "@/lib/domain/stock";
 import { emptyCart, WALK_IN_ID, type Cart, type CartLine } from "@/lib/pos/cart";
 import { cartTotals, paymentState } from "@/lib/pos/selectors";
-import { delay, nowISO, takeRef, uid } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
 
 export type SaleStatus = "final" | "draft" | "quotation" | "suspended";
 export type CheckoutPayment = { method: PaymentMethod; amount: number; details?: Payment["details"]; note?: string };
@@ -34,6 +34,18 @@ export type ReceiptData = {
   change: number;
   due: number;
 };
+
+
+export type SaleFilters = ListQuery & {
+  kind?: "all" | "drafts" | "quotations"; locationId?: string; contactId?: string; paymentStatus?: PaymentStatus; from?: string; to?: string;
+  createdBy?: string; agentId?: string; shippingStatus?: ShippingStatus; subscription?: boolean; channel?: "pos" | "web";
+};
+export type SaleListRow = {
+  id: string; refNo: string; date: string; status: Transaction["status"]; contactName: string; mobile: string; locationName: string;
+  paymentStatus: PaymentStatus; methods: PaymentMethod[]; total: number; paid: number; due: number; returnDue: number;
+  shippingStatus: ShippingStatus | null; itemsCount: number; addedBy: string; note: string; staffNote: string; recurring: boolean; channel: "pos" | "web";
+};
+export type SaleDetail = Transaction & { contactName: string; locationName: string; addedBy: string; lineNames: Record<string, string> };
 
 const EDITABLE: Transaction["status"][] = ["draft", "quotation", "suspended"];
 
@@ -215,6 +227,71 @@ export const salesService = {
         id: t.id, refNo: t.refNo, date: t.date, status: t.status as SaleStatus, contactName: names.get(t.contactId ?? "") ?? "",
         itemsCount: t.totals.itemsCount, total: t.totals.total, note: t.staffNote || t.notes,
       }));
+  },
+
+  async listAll(f: SaleFilters = {}): Promise<ListResult<SaleListRow> & { totals: { total: number; paid: number; due: number } }> {
+    await delay();
+    const d = getDB();
+    const contacts = new Map(d.contacts.map((c) => [c.id, c]));
+    const locations = new Map(d.locations.map((l) => [l.id, l.name]));
+    const users = new Map(d.users.map((u) => [u.id, `${u.firstName} ${u.lastName}`.trim()]));
+    const kindStatus = f.kind === "drafts" ? ["draft"] : f.kind === "quotations" ? ["quotation"] : null;
+    const rows = d.transactions
+      .filter((t) => t.type === "sell" && t.status !== "suspended")
+      .filter((t) => !kindStatus || kindStatus.includes(t.status))
+      .filter((t) => !f.locationId || t.locationId === f.locationId)
+      .filter((t) => !f.contactId || t.contactId === f.contactId)
+      .filter((t) => !f.createdBy || t.createdBy === f.createdBy)
+      .filter((t) => !f.agentId || t.commissionAgentId === f.agentId)
+      .filter((t) => !f.channel || t.channel === f.channel)
+      .filter((t) => !f.shippingStatus || t.shipping.status === f.shippingStatus)
+      .filter((t) => !f.subscription || t.recurring != null)
+      .filter((t) => !f.paymentStatus || t.paymentStatus === f.paymentStatus)
+      .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
+      .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
+      .filter((t) => matches(f.search, t.refNo, contacts.get(t.contactId ?? "")?.name, contacts.get(t.contactId ?? "")?.mobile))
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const toRow = (t: Transaction): SaleListRow => {
+      const c = contacts.get(t.contactId ?? "");
+      const sum = paymentSummary(t.totals.total, t.payments);
+      const returnDue = roundMoney(
+        d.transactions.filter((r) => r.type === "sell_return" && r.parentId === t.id)
+          .reduce((s, r) => s + paymentSummary(r.totals.total, r.payments).due, 0),
+      );
+      return {
+        id: t.id, refNo: t.refNo, date: t.date, status: t.status, contactName: c?.name ?? "", mobile: c?.mobile ?? "",
+        locationName: locations.get(t.locationId) ?? "", paymentStatus: t.paymentStatus,
+        methods: [...new Set(t.payments.filter((p) => !p.isReturn).map((p) => p.method))], total: t.totals.total, paid: sum.paid,
+        due: t.status === "final" ? sum.due : 0, returnDue, shippingStatus: t.shipping.status, itemsCount: t.totals.itemsCount,
+        addedBy: users.get(t.createdBy ?? "") ?? "", note: t.notes, staffNote: t.staffNote, recurring: t.recurring != null, channel: t.channel,
+      };
+    };
+    const all = rows.map(toRow);
+    const totals = {
+      total: roundMoney(all.reduce((s, r) => s + r.total, 0)),
+      paid: roundMoney(all.reduce((s, r) => s + r.paid, 0)),
+      due: roundMoney(all.reduce((s, r) => s + r.due, 0)),
+    };
+    return { ...paginate(all, f), totals };
+  },
+
+  async get(id: string): Promise<SaleDetail> {
+    await delay();
+    const d = getDB();
+    const t = d.transactions.find((x) => x.id === id && x.type === "sell");
+    if (!t) throw new NotFoundError("Sale");
+    const user = d.users.find((u) => u.id === t.createdBy);
+    const lineNames: Record<string, string> = {};
+    for (const l of t.lines) {
+      const p = d.products.find((x) => x.id === l.productId);
+      const v = d.variations.find((x) => x.id === l.variationId);
+      lineNames[l.id] = p ? (p.type === "variable" && v ? `${p.name} (${v.name})` : p.name) : l.productId;
+    }
+    return {
+      ...t, contactName: d.contacts.find((c) => c.id === t.contactId)?.name ?? "",
+      locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "",
+      addedBy: user ? `${user.firstName} ${user.lastName}`.trim() : "", lineNames,
+    };
   },
 
   async receipt(id: string): Promise<ReceiptData> {
