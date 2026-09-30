@@ -589,6 +589,12 @@
     }
   },
   "sales": {
+    "listDescription": "সব লোকেশনের ইনভয়েস",
+    "draftsDescription": "পরে সম্পন্ন করার জন্য রাখা বিক্রয়",
+    "quotationsDescription": "গ্রাহকদের পাঠানো কোটেশন",
+    "generated": "ইনভয়েস {refNo} তৈরি হয়েছে",
+    "paymentsTitle": "পেমেন্ট · {refNo}",
+    "shippingTitle": "শিপিং · {refNo}",
     "invoiceNo": "ইনভয়েস নং",
     "refNo": "রেফারেন্স নং",
     "customer": "গ্রাহক",

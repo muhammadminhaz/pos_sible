@@ -592,6 +592,12 @@ const M = {
     },
   },
   sales: {
+    listDescription: ["Every invoice across your locations", "সব লোকেশনের ইনভয়েস"],
+    draftsDescription: ["Sales saved for later", "পরে সম্পন্ন করার জন্য রাখা বিক্রয়"],
+    quotationsDescription: ["Quotes sent to customers", "গ্রাহকদের পাঠানো কোটেশন"],
+    generated: ["Invoice {refNo} generated", "ইনভয়েস {refNo} তৈরি হয়েছে"],
+    paymentsTitle: ["Payments · {refNo}", "পেমেন্ট · {refNo}"],
+    shippingTitle: ["Shipping · {refNo}", "শিপিং · {refNo}"],
     // list columns
     invoiceNo: ["Invoice no.", "ইনভয়েস নং"],
     refNo: ["Reference no.", "রেফারেন্স নং"],

@@ -589,6 +589,12 @@
     }
   },
   "sales": {
+    "listDescription": "Every invoice across your locations",
+    "draftsDescription": "Sales saved for later",
+    "quotationsDescription": "Quotes sent to customers",
+    "generated": "Invoice {refNo} generated",
+    "paymentsTitle": "Payments · {refNo}",
+    "shippingTitle": "Shipping · {refNo}",
     "invoiceNo": "Invoice no.",
     "refNo": "Reference no.",
     "customer": "Customer",

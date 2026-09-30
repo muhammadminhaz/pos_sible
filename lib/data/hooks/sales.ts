@@ -27,6 +27,7 @@ export function useSaleMutations() {
     save: useMutation({ mutationFn: salesService.save, onSuccess: done }),
     convert: useMutation({ mutationFn: (a: { id: string; payments?: Parameters<typeof salesService.convert>[1] }) => salesService.convert(a.id, a.payments), onSuccess: done }),
     remove: useMutation({ mutationFn: (id: string) => salesService.removeAny(id), onSuccess: done }),
+    generateNext: useMutation({ mutationFn: (id: string) => salesService.generateNext(id), onSuccess: done }),
     addPayment: useMutation({ mutationFn: (a: { id: string; payment: Parameters<typeof salesService.addPayment>[1] }) => salesService.addPayment(a.id, a.payment), onSuccess: done }),
     removePayment: useMutation({ mutationFn: (a: { id: string; paymentId: string }) => salesService.removePayment(a.id, a.paymentId), onSuccess: done }),
     setShipping: useMutation({ mutationFn: (a: { id: string; patch: Parameters<typeof salesService.setShipping>[1] }) => salesService.setShipping(a.id, a.patch), onSuccess: done }),

@@ -400,3 +400,32 @@ describe("salesService payments and shipping", () => {
     expect(getDB().transactions.find((t) => t.id === res.id)!.shipping).toMatchObject({ status: "shipped", deliveredTo: "Karim" });
   });
 });
+
+describe("salesService.generateNext", () => {
+  beforeEach(() => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+  });
+
+  it("creates a new unpaid invoice with the same lines and links it to the subscription", async () => {
+    const p = await stocked();
+    const cart = patchCart(cartWith(p, 1), { contactId: customer().id });
+    const first = await salesService.save({
+      cart, locationId: LOC_RANGO, status: "final", payments: [], recurring: { interval: 1, intervalType: "months", repetitions: 3, repeatOn: 5, parentId: null },
+    });
+    const next = await salesService.generateNext(first.id);
+    expect(next.id).not.toBe(first.id);
+    expect(next.refNo).not.toBe(first.refNo);
+    expect(next.due).toBe(first.total);
+    const t = getDB().transactions.find((x) => x.id === next.id)!;
+    expect(t.recurring?.parentId).toBe(first.id);
+    expect(t.lines).toHaveLength(1);
+  });
+
+  it("a sale that isn't a subscription can't be generated from", async () => {
+    const p = await stocked();
+    const cart = patchCart(cartWith(p, 1), { contactId: customer().id });
+    const plain = await salesService.save({ cart, locationId: LOC_RANGO, status: "final", payments: [] });
+    await expect(salesService.generateNext(plain.id)).rejects.toBeInstanceOf(NotFoundError);
+  });
+});

@@ -377,6 +377,23 @@ export const salesService = {
     return result;
   },
 
+  /** Next invoice of a subscription: same lines and customer, dated now, unpaid. */
+  async generateNext(id: string): Promise<CheckoutResult> {
+    await delay();
+    assertCan("sell.create");
+    let result!: CheckoutResult;
+    commit((d) => {
+      const src = d.transactions.find((t) => t.id === id && t.type === "sell" && t.status === "final");
+      if (!src?.recurring) throw new NotFoundError("Subscription");
+      result = writeSale(d, {
+        cart: { ...txnToCart(d, src), resumedFromId: null, date: null, pointsRedeemed: 0 }, locationId: src.locationId, status: "final", payments: [],
+        payTerm: src.payTerm, shipping: { ...src.shipping, status: src.shipping.zone ? "ordered" : null }, additionalExpenses: src.additionalExpenses,
+        commissionAgentId: src.commissionAgentId, recurring: { ...src.recurring, parentId: src.recurring.parentId ?? src.id }, channel: src.channel,
+      });
+    });
+    return result;
+  },
+
   async removeAny(id: string): Promise<void> {
     await delay();
     assertCan("sell.delete");
