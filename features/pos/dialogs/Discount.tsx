@@ -39,7 +39,7 @@ function DiscountForm({ locationId }: { locationId: string }) {
       <DialogHeader>
         <DialogTitle>{t("pos.discount.title")}</DialogTitle>
       </DialogHeader>
-      <ToggleGroup type="single" variant="outline" value={type} onValueChange={(v) => v && setType(v as DiscountInput["type"])} className="w-full">
+      <ToggleGroup type="single" variant="outline" disabled={!can("pos.edit_discount")} value={type} onValueChange={(v) => v && setType(v as DiscountInput["type"])} className="w-full">
         <ToggleGroupItem value="fixed" className="flex-1">{t("pos.discount.fixed")}</ToggleGroupItem>
         <ToggleGroupItem value="percentage" className="flex-1">{t("pos.discount.percentage")}</ToggleGroupItem>
       </ToggleGroup>
@@ -61,7 +61,7 @@ export function DiscountDialog({ locationId }: { locationId: string }) {
   const hide = usePosDialogs((s) => s.hide);
   return (
     <Dialog open={open} onOpenChange={(o) => !o && hide()}>
-      <DialogContent className="sm:max-w-sm">{open && <DiscountForm locationId={locationId} />}</DialogContent>
+      <DialogContent onCloseAutoFocus={(e) => { e.preventDefault(); focusSearch(); }} className="sm:max-w-sm">{open && <DiscountForm locationId={locationId} />}</DialogContent>
     </Dialog>
   );
 }

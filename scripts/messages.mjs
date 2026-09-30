@@ -496,6 +496,8 @@ const M = {
     cancelConfirm: {
       title: ["Cancel this sale?", "এই বিক্রয় বাতিল করবেন?"],
       body: ["Every item in the cart will be removed.", "কার্টের সব পণ্য সরিয়ে ফেলা হবে।"],
+      confirm: ["Cancel sale", "বিক্রয় বাতিল করুন"],
+      keep: ["Keep sale", "বিক্রয় রাখুন"],
     },
     suspend: {
       title: ["Suspend sale", "বিক্রয় স্থগিত"],

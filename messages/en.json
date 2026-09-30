@@ -492,7 +492,9 @@
     },
     "cancelConfirm": {
       "title": "Cancel this sale?",
-      "body": "Every item in the cart will be removed."
+      "body": "Every item in the cart will be removed.",
+      "confirm": "Cancel sale",
+      "keep": "Keep sale"
     },
     "suspend": {
       "title": "Suspend sale",

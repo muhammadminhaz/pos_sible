@@ -18,7 +18,8 @@ export function CancelDialog({ locationId }: { locationId: string }) {
       onOpenChange={(o) => !o && hide()}
       title={t("cancelConfirm.title")}
       description={t("cancelConfirm.body")}
-      confirmLabel={t("actions.cancel")}
+      confirmLabel={t("cancelConfirm.confirm")}
+      cancelLabel={t("cancelConfirm.keep")}
       destructive
       onConfirm={() => {
         reset();

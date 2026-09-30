@@ -20,6 +20,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel,
   destructive,
   onConfirm,
 }: {
@@ -28,6 +29,7 @@ export function ConfirmDialog({
   title?: ReactNode;
   description?: ReactNode;
   confirmLabel?: ReactNode;
+  cancelLabel?: ReactNode;
   destructive?: boolean;
   /** May be async; the dialog stays open with a spinner until it settles, and closes only on success. */
   onConfirm: () => unknown;
@@ -53,7 +55,7 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description ?? t("cannotUndo")}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>{t("cancel")}</AlertDialogCancel>
+          <AlertDialogCancel disabled={busy}>{cancelLabel ?? t("cancel")}</AlertDialogCancel>
           <Button
             variant={destructive ? "destructive" : "default"}
             className={destructive ? "bg-danger text-white hover:bg-danger/90 dark:bg-danger dark:hover:bg-danger/90" : undefined}

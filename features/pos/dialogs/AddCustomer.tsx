@@ -98,7 +98,7 @@ export function AddCustomerDialog({ locationId }: { locationId: string }) {
   const hide = usePosDialogs((s) => s.hide);
   return (
     <Dialog open={open} onOpenChange={(o) => !o && hide()}>
-      <DialogContent className="sm:max-w-md">{open && <AddCustomerForm locationId={locationId} />}</DialogContent>
+      <DialogContent onCloseAutoFocus={(e) => { e.preventDefault(); focusSearch(); }} className="sm:max-w-md">{open && <AddCustomerForm locationId={locationId} />}</DialogContent>
     </Dialog>
   );
 }
