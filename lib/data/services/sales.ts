@@ -12,6 +12,7 @@ import { maxRedeemable, pointsEarned } from "@/lib/domain/rewards";
 import { allocate, available } from "@/lib/domain/stock";
 import { emptyCart, WALK_IN_ID, type Cart, type CartLine } from "@/lib/pos/cart";
 import { cartTotals, paymentState } from "@/lib/pos/selectors";
+import { linkLines, syncOrders } from "./_orders";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
 
 export type SaleStatus = "final" | "draft" | "quotation" | "suspended";
@@ -120,7 +121,7 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
   const totals = cartTotals(cart, { rounding: s.sale.roundingMethod, rewards: s.rewards, additional: (input.additionalExpenses ?? []).map((e) => e.amount) });
   const tid = prev?.id ?? uid("t");
 
-  const lines = cart.lines.map((l, i) => {
+  const built = cart.lines.map((l, i) => {
     const p = d.products.find((x) => x.id === l.productId);
     if (!p || !p.active || p.notForSale || !p.locationIds.includes(locationId)) throw new ProductUnavailableError(l.name);
     let allocations: { lotId: string; qty: number; unitCost: number }[] = [];
@@ -135,6 +136,8 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
       unitCost, allocations, note: l.note, serials: l.serials, serviceStaffId: l.serviceStaffId,
     };
   });
+
+  const lines = linkLines(d, input.salesOrderIds ?? [], built);
 
   if (cart.pointsRedeemed > 0) {
     const cap = isWalkIn ? 0 : maxRedeemable({ total: totals.total + totals.redeemed, balance: contact.points, s: s.rewards });
@@ -216,6 +219,7 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
     invoiceLayoutId: cart.invoiceLayoutId, technicianId: cart.technicianId,
   }));
 
+  syncOrders(d, input.salesOrderIds ?? []);
   return { id: tid, refNo, status, total: totals.total, paid, change, due: roundMoney(Math.max(0, totals.total - paid)) };
 }
 
@@ -233,6 +237,7 @@ function revertSale(d: DB, t: Transaction) {
   }
   d.accountTxns = d.accountTxns.filter((a) => a.transactionId !== t.id);
   d.transactions = d.transactions.filter((x) => x.id !== t.id);
+  syncOrders(d, t.salesOrderIds);
 }
 
 export const salesService = {
