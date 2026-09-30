@@ -224,7 +224,7 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
 }
 
 /** Undo a sell's side effects (stock, ledger, points) and remove it. Drafts and quotations have none of these. */
-function revertSale(d: DB, t: Transaction) {
+export function revertSale(d: DB, t: Transaction) {
   if (t.status === "final") {
     for (const l of t.lines) {
       for (const a of l.allocations) {
