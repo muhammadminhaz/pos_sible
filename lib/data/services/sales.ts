@@ -382,6 +382,51 @@ export const salesService = {
     });
   },
 
+  async addPayment(id: string, p: CheckoutPayment & { paidOn?: string }): Promise<void> {
+    await delay();
+    assertCan("sell.payments");
+    commit((d) => {
+      const t = d.transactions.find((x) => x.id === id && x.type === "sell");
+      if (!t) throw new NotFoundError("Sale");
+      if (t.status !== "final") throw new AppError("Only final sales take payments", "not_final");
+      const amount = roundMoney(p.amount);
+      const due = paymentSummary(t.totals.total, t.payments).due;
+      if (amount <= 0 || amount > due) throw new ValidationError({ amount: "invalid" });
+      const by = currentUser()?.user.id ?? null;
+      const paidOn = p.paidOn ?? nowISO();
+      const accountId = d.locations.find((l) => l.id === t.locationId)?.defaultAccounts[p.method] ?? null;
+      const pid = uid("pay");
+      t.payments.push({ id: pid, refNo: takeRef(d, d.settings.prefixes.sellPayment, paidOn), amount, method: p.method, accountId, paidOn, note: p.note ?? "", isReturn: false, details: p.details ?? {}, createdBy: by });
+      if (accountId) {
+        d.accountTxns.push(accountTxn.parse({ id: uid("at"), createdAt: nowISO(), createdBy: by, accountId, kind: "credit", subType: "payment", amount, date: paidOn, transactionId: t.id, paymentId: pid }));
+      }
+      t.paymentStatus = paymentStatus({ total: t.totals.total, paid: paymentSummary(t.totals.total, t.payments).paid, date: t.date, payTerm: t.payTerm });
+    });
+  },
+
+  async removePayment(id: string, paymentId: string): Promise<void> {
+    await delay();
+    assertCan("sell.payments");
+    commit((d) => {
+      const t = d.transactions.find((x) => x.id === id && x.type === "sell");
+      const pay = t?.payments.find((x) => x.id === paymentId);
+      if (!t || !pay) throw new NotFoundError("Payment");
+      t.payments = t.payments.filter((x) => x.id !== paymentId);
+      d.accountTxns = d.accountTxns.filter((a) => a.paymentId !== paymentId);
+      t.paymentStatus = paymentStatus({ total: t.totals.total, paid: paymentSummary(t.totals.total, t.payments).paid, date: t.date, payTerm: t.payTerm });
+    });
+  },
+
+  async setShipping(id: string, patch: Partial<Pick<Transaction["shipping"], "status" | "deliveredTo" | "deliveryPersonId" | "details" | "address" | "charges">>): Promise<void> {
+    await delay();
+    assertCan("sell.update");
+    commit((d) => {
+      const t = d.transactions.find((x) => x.id === id && x.type === "sell");
+      if (!t) throw new NotFoundError("Sale");
+      t.shipping = { ...t.shipping, ...patch };
+    });
+  },
+
   async receipt(id: string): Promise<ReceiptData> {
     await delay();
     const d = getDB();

@@ -348,3 +348,55 @@ describe("salesService.save / convert / removeAny", () => {
     await expect(salesService.removeAny(res.id)).rejects.toMatchObject({ code: "forbidden" });
   });
 });
+
+describe("salesService payments and shipping", () => {
+  beforeEach(() => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+  });
+
+  async function dueSale() {
+    const p = await stocked();
+    const cart = patchCart(cartWith(p), { contactId: customer().id });
+    const probe = await salesService.save({ cart, locationId: LOC_RANGO, status: "quotation" });
+    const res = await salesService.save({ cart, locationId: LOC_RANGO, status: "final", payments: [] });
+    return { res, total: probe.total };
+  }
+  const status = (id: string) => getDB().transactions.find((t) => t.id === id)!.paymentStatus;
+
+  it("partial then full payment moves due → partial → paid", async () => {
+    const { res, total } = await dueSale();
+    expect(status(res.id)).toBe("due");
+    await salesService.addPayment(res.id, { method: "cash", amount: 1 });
+    expect(status(res.id)).toBe("partial");
+    await salesService.addPayment(res.id, { method: "cash", amount: total - 1 });
+    expect(status(res.id)).toBe("paid");
+  });
+
+  it("overpaying is rejected", async () => {
+    const { res, total } = await dueSale();
+    await expect(salesService.addPayment(res.id, { method: "cash", amount: total + 1 })).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("drafts take no payment", async () => {
+    const p = await stocked();
+    const d = await salesService.save({ cart: cartWith(p), locationId: LOC_RANGO, status: "draft" });
+    await expect(salesService.addPayment(d.id, { method: "cash", amount: 1 })).rejects.toMatchObject({ code: "not_final" });
+  });
+
+  it("removing a payment reverses its ledger row and status", async () => {
+    const { res, total } = await dueSale();
+    await salesService.addPayment(res.id, { method: "cash", amount: total });
+    const pay = getDB().transactions.find((t) => t.id === res.id)!.payments[0];
+    expect(getDB().accountTxns.some((a) => a.paymentId === pay.id)).toBe(true);
+    await salesService.removePayment(res.id, pay.id);
+    expect(getDB().accountTxns.some((a) => a.paymentId === pay.id)).toBe(false);
+    expect(status(res.id)).toBe("due");
+  });
+
+  it("setShipping persists the new status", async () => {
+    const { res } = await dueSale();
+    await salesService.setShipping(res.id, { status: "shipped", deliveredTo: "Karim" });
+    expect(getDB().transactions.find((t) => t.id === res.id)!.shipping).toMatchObject({ status: "shipped", deliveredTo: "Karim" });
+  });
+});
