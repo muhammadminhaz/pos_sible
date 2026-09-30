@@ -625,7 +625,7 @@ export function createHistory(h: HistoryInput): History {
   const overdue = transactions.find((t) => t.type === "sell" && t.paymentStatus === "overdue");
   const nowTs = `${h.today}T09:00:00`;
   const notifications: Notification[] = [
-    mk(notification, { id: id("n"), createdAt: nowTs, createdBy: null, title: "Welcome to Sarkar POS", body: "Your demo business is ready with 6 months of sample data.", kind: "success", href: "/home" }),
+    mk(notification, { id: id("n"), createdAt: nowTs, createdBy: null, title: "Welcome to pos_sible", body: "Your demo business is ready with 6 months of sample data.", kind: "success", href: "/home" }),
     ...(low ? [mk(notification, { id: id("n"), createdAt: nowTs, createdBy: null, title: `Low stock: ${productById.get(low.productId)!.name}`, body: "Stock is below the alert quantity.", kind: "warning", href: "/reports/stock" })] : []),
     ...(overdue ? [mk(notification, { id: id("n"), createdAt: nowTs, createdBy: null, title: `Payment overdue: ${overdue.refNo}`, body: "A customer invoice has passed its pay term.", kind: "danger", href: `/sales/${overdue.id}` })] : []),
     mk(notification, { id: id("n"), createdAt: `${dayStr(1)}T18:00:00`, createdBy: null, title: "Stock expiring soon", body: "Some feed lots expire within 30 days.", kind: "warning", href: "/reports/stock-expiry", readAt: `${dayStr(1)}T19:00:00` }),

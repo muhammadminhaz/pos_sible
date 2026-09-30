@@ -1,6 +1,6 @@
-# Sarkar POS — Sales (sub-project 3) design
+# pos_sible — Sales (sub-project 3) design
 
-Covers `Product.md` §3.5 except the POS screen (done). Frontend only, mock data, same data-layer rules as Foundation and POS.
+Covers every Sales screen except the POS screen (done). Frontend only, mock data, same data-layer rules as Foundation and POS.
 
 ## 1. Scope and rulings
 Routes (all exist as placeholders today): `/sales`, `/sales/new`, `/sales/[id]`, `/sales/[id]/edit`, `/sales/drafts`, `/sales/quotations`, `/sales/orders`, `/sales/returns`, `/sales/returns/new`, `/sales/shipments`, `/sales/discounts`, `/sales/import`.
@@ -10,7 +10,7 @@ Routes (all exist as placeholders today): `/sales`, `/sales/new`, `/sales/[id]`,
 - Ruling: subscriptions (recurring invoices) are stored on `transaction.recurring` and shown as a badge, but no scheduler runs. Cost: nothing is auto-generated; a "Generate now" row action creates the next invoice.
 - Ruling: Import Sales parses CSV in the browser, validates, shows a review table, then commits through `importBatch` (revertable). No XLSX. Cost: CSV only.
 - Ruling: "Attach document" and "Shipping documents" store file names only (no bytes). Cost: no download.
-- Ruling: Sales orders are created from a minimal form (`/sales/orders` dialog), since Product.md gives no separate create route. Linking orders on Add Sale sets `salesOrderIds` and updates the order's status/remaining qty.
+- Ruling: Sales orders are created from a minimal form (`/sales/orders` dialog), since no separate create route is planned. Linking orders on Add Sale sets `salesOrderIds` and updates the order's status/remaining qty.
 
 ## 2. Data layer
 Extend `lib/data/services/sales.ts` (all writes via `commit()`, `await delay()`, `assertCan`):

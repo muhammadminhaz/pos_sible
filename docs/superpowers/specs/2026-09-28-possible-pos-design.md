@@ -1,6 +1,6 @@
 # pos_sible — POS Screen Design (sub-project 2)
 
-- **Requirements:** `Product.md` §3.5 "POS screen", §4.8 (register), §5 (bKash/Nagad buttons, shipping zones, technicians)
+- **Requirements:** the POS screen, cash register, bKash/Nagad buttons, shipping zones and technicians
 - **Builds on:** the foundation (`docs/superpowers/specs/2026-09-27-possible-foundation-design.md`)
 - **Route:** `/pos` in the `(pos)` group: full screen, auth guard, permission `pos.access`
 
@@ -199,6 +199,6 @@ The settings strings (e.g. `shift+e`) are parsed by `useHotkeys`, which ignores 
 - **Playwright smoke:** login → `/pos` → open register → scan by SKU → add a grid item → split Cash + bKash → receipt modal → Enter → Recent shows the invoice → `/products` stock went down → close register.
 
 ## 8. Acceptance
-- Every element in `Product.md` §3.5 "POS screen" is present and working with mock data, as listed in §3 above.
+- Every planned POS screen element is present and working with mock data, as listed in §3 above.
 - Checkout, suspend/resume, draft, quotation, credit sale, split pay, and the register open/close cycle all persist across reloads.
 - The EN/BN and light/dark screens pass a visual check. Typecheck, lint, tests, and build are all clean.
