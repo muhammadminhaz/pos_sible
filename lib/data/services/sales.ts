@@ -6,7 +6,7 @@ import {
 import { accountTxn, transaction, type ShippingStatus, type DB, type InvoiceLayout, type Location, type Payment, type PaymentMethod, type Transaction } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
-import { paymentStatus, paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
+import { paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
 import { nextInvoiceNo } from "@/lib/domain/refs";
 import { maxRedeemable, pointsEarned } from "@/lib/domain/rewards";
 import { allocate, available } from "@/lib/domain/stock";
@@ -17,7 +17,12 @@ import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type Li
 export type SaleStatus = "final" | "draft" | "quotation" | "suspended";
 export type CheckoutPayment = { method: PaymentMethod; amount: number; details?: Payment["details"]; note?: string };
 export type CheckoutInput = { cart: Cart; locationId: string; status: SaleStatus; payments?: CheckoutPayment[]; staffNote?: string };
-export type CheckoutResult = { id: string; refNo: string; status: SaleStatus; total: number; paid: number; change: number; due: number };
+export type SaleInput = Omit<CheckoutInput, "status"> & {
+  status: SaleStatus | "proforma"; id?: string; refNo?: string; payTerm?: PayTerm | null; shipping?: Partial<Transaction["shipping"]>;
+  additionalExpenses?: { name: string; amount: number }[]; salesOrderIds?: string[]; recurring?: Transaction["recurring"];
+  commissionAgentId?: string | null; documents?: string[]; invoiceSchemeId?: string | null; channel?: "pos" | "web";
+};
+export type CheckoutResult = { id: string; refNo: string; status: SaleStatus | "proforma"; total: number; paid: number; change: number; due: number };
 export type SaleRow = { id: string; refNo: string; date: string; status: SaleStatus; contactName: string; itemsCount: number; total: number; note: string };
 export type ReceiptLine = { name: string; sku: string; unitName: string; qty: number; unitPrice: number; discount: number; subtotal: number; serials: string[] };
 export type ReceiptData = {
@@ -69,150 +74,187 @@ function lineAllocation(d: DB, line: CartLine, locationId: string, name: string)
   return { allocations: res.allocations, unitCost: roundMoney(res.cost / line.qty) };
 }
 
+function txnToCart(d: DB, t: Transaction): Cart {
+  const stockOf = (vid: string) => available(d.stockLots, vid, t.locationId);
+  return {
+    ...emptyCart(),
+    contactId: t.contactId ?? WALK_IN_ID,
+    discount: t.discount,
+    orderTaxId: t.orderTaxId,
+    orderTaxRate: t.orderTaxRate,
+    shipping: { zone: t.shipping.zone, charges: t.shipping.charges, details: t.shipping.details, address: t.shipping.address },
+    technicianId: t.technicianId,
+    invoiceLayoutId: t.invoiceLayoutId,
+    pointsRedeemed: t.pointsRedeemed,
+    resumedFromId: t.id,
+    note: t.notes,
+    lines: t.lines.map((l) => {
+      const p = d.products.find((x) => x.id === l.productId);
+      const v = d.variations.find((x) => x.id === l.variationId);
+      const u = d.units.find((x) => x.id === l.unitId);
+      return {
+        key: uid("k"), productId: l.productId, variationId: l.variationId,
+        name: p ? (p.type === "variable" && v ? `${p.name} (${v.name})` : p.name) : l.productId,
+        sku: v?.sku ?? "", unitId: l.unitId, unitName: u?.shortName ?? "", allowDecimal: u?.allowDecimal ?? false,
+        qty: l.qty, unitPrice: l.unitPrice, taxId: l.taxId, taxRate: l.taxRate, taxType: l.taxType, discount: l.discount,
+        note: l.note, serials: l.serials, serviceStaffId: l.serviceStaffId, enableSerial: p?.enableSerial ?? false,
+        maxQty: p?.manageStock ? stockOf(l.variationId) : null,
+      };
+    }),
+  };
+}
+
+/** Validates, allocates stock and writes one sell (any status). `prev` is the already-reverted original when editing. */
+function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult {
+  const { cart, locationId, status } = input;
+  let result!: CheckoutResult;
+  const s = d.settings;
+  const at = cart.date ?? nowISO(); // sale date (may be back-dated)
+  const paidAt = nowISO(); // cash moves now, so it lands in the open register
+  const by = currentUser()?.user.id ?? null;
+  const location = d.locations.find((l) => l.id === locationId);
+  if (!location) throw new NotFoundError("Location");
+  const contact = d.contacts.find((c) => c.id === cart.contactId);
+  if (!contact) throw new NotFoundError("Contact");
+  const isWalkIn = contact.id === WALK_IN_ID || contact.isDefault;
+
+  const totals = cartTotals(cart, { rounding: s.sale.roundingMethod, rewards: s.rewards, additional: (input.additionalExpenses ?? []).map((e) => e.amount) });
+  const tid = prev?.id ?? uid("t");
+
+  const lines = cart.lines.map((l, i) => {
+    const p = d.products.find((x) => x.id === l.productId);
+    if (!p || !p.active || p.notForSale || !p.locationIds.includes(locationId)) throw new ProductUnavailableError(l.name);
+    let allocations: { lotId: string; qty: number; unitCost: number }[] = [];
+    let unitCost = d.variations.find((v) => v.id === l.variationId)?.purchasePriceExc ?? 0;
+    if (status === "final") {
+      if (p.enableSerial && l.serials.length !== l.qty) throw new SerialsRequiredError(l.name, l.qty);
+      if (p.manageStock) ({ allocations, unitCost } = lineAllocation(d, l, locationId, l.name));
+    }
+    return {
+      id: uid("l"), productId: l.productId, variationId: l.variationId, unitId: l.unitId, qty: l.qty, unitPrice: l.unitPrice,
+      taxId: l.taxId, taxRate: l.taxRate, taxType: l.taxType, discount: l.discount, subtotal: totals.lines[i].subtotal,
+      unitCost, allocations, note: l.note, serials: l.serials, serviceStaffId: l.serviceStaffId,
+    };
+  });
+
+  if (cart.pointsRedeemed > 0) {
+    const cap = isWalkIn ? 0 : maxRedeemable({ total: totals.total + totals.redeemed, balance: contact.points, s: s.rewards });
+    if (cart.pointsRedeemed > cap) throw new ValidationError({ pointsRedeemed: "invalid" });
+  }
+
+  const payments: Payment[] = [];
+  let paid = 0;
+  let change = 0;
+  if (status === "final") {
+    const rows = (input.payments ?? []).filter((r) => r.amount > 0).map((r) => ({ ...r, amount: roundMoney(r.amount) }));
+    const st = paymentState(totals.total, rows);
+    if (st.nonCashOverpaid) throw new ValidationError({ payments: "non_cash_overpaid" });
+    const mkPayment = (method: PaymentMethod, amount: number, isReturn: boolean, details: Payment["details"] = {}, note = "") => {
+      const pid = uid("pay");
+      const accountId = location.defaultAccounts[method] ?? null;
+      payments.push({ id: pid, refNo: takeRef(d, s.prefixes.sellPayment, at), amount, method, accountId, paidOn: paidAt, note, isReturn, details, createdBy: by });
+      if (accountId) {
+        d.accountTxns.push(accountTxn.parse({
+          id: uid("at"), createdAt: paidAt, createdBy: by, accountId, kind: isReturn ? "debit" : "credit", subType: "payment",
+          amount, date: paidAt, transactionId: tid, paymentId: pid,
+        }));
+      }
+    };
+    for (const r of rows) mkPayment(r.method, r.amount, false, r.details, r.note);
+    if (st.change > 0) mkPayment("cash", st.change, true);
+    paid = st.paid;
+    change = st.change;
+    const due = roundMoney(Math.max(0, totals.total - paid));
+    if (due > 0 && isWalkIn) throw new AppError("Choose a named customer for a credit sale", "walk_in_credit");
+    if (due > 0 && contact.creditLimit != null && customerDue(d, contact.id) + due > contact.creditLimit) throw new CreditLimitError();
+  }
+
+  let refNo: string;
+  let invoiceSchemeId: string | null = null;
+  if (status === "final") {
+    if (prev?.status === "final") {
+      refNo = prev.refNo;
+      invoiceSchemeId = prev.invoiceSchemeId;
+    } else if (input.refNo) {
+      if (d.transactions.some((x) => x.type === "sell" && x.refNo === input.refNo)) throw new AppError("Invoice number already used", "duplicate_ref");
+      refNo = input.refNo;
+    } else {
+      const scheme = d.invoiceSchemes.find((x) => x.id === (input.invoiceSchemeId ?? location.invoiceSchemeId));
+      if (!scheme) throw new NotFoundError("Invoice scheme");
+      refNo = nextInvoiceNo(scheme);
+      scheme.count += 1;
+      invoiceSchemeId = scheme.id;
+    }
+  } else {
+    refNo = prev && prev.status !== "final" ? prev.refNo : takeRef(d, s.prefixes.draft, at);
+  }
+
+  const earned = status === "final" && !isWalkIn ? pointsEarned(totals.total, s.rewards) : 0;
+  if (status === "final" && !isWalkIn) contact.points = Math.max(0, contact.points - cart.pointsRedeemed + earned);
+
+  if (cart.resumedFromId) {
+    const i = d.transactions.findIndex((t) => t.id === cart.resumedFromId && t.type === "sell" && EDITABLE.includes(t.status));
+    if (i < 0) throw new NotFoundError("Sale");
+    d.transactions.splice(i, 1);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { lines: _l, ...orderTotals } = totals;
+  d.transactions.push(transaction.parse({
+    id: tid, createdAt: prev?.createdAt ?? nowISO(), createdBy: prev?.createdBy ?? by, type: "sell", status, channel: prev?.channel ?? input.channel ?? "pos", locationId, contactId: contact.id, refNo, date: at,
+    lines, discount: cart.discount, orderTaxId: cart.orderTaxId, orderTaxRate: cart.orderTaxRate,
+    pointsRedeemed: cart.pointsRedeemed, pointsEarned: earned,
+    shipping: {
+      zone: cart.shipping.zone, charges: cart.shipping.charges, details: cart.shipping.details, address: cart.shipping.address,
+      status: status === "final" && cart.shipping.zone ? "ordered" : null,
+      ...input.shipping,
+    },
+    additionalExpenses: input.additionalExpenses ?? [], salesOrderIds: input.salesOrderIds ?? [], recurring: input.recurring ?? null,
+    commissionAgentId: input.commissionAgentId ?? null, documents: input.documents ?? [],
+    totals: orderTotals, payments,
+    paymentStatus: status === "final" ? paymentStatus({ total: totals.total, paid, date: at, payTerm: input.payTerm === undefined ? contact.payTerm : input.payTerm }) : "due",
+    payTerm: input.payTerm === undefined ? contact.payTerm : input.payTerm, notes: cart.note, staffNote: input.staffNote ?? "", invoiceSchemeId,
+    invoiceLayoutId: cart.invoiceLayoutId, technicianId: cart.technicianId,
+  }));
+
+  result = { id: tid, refNo, status, total: totals.total, paid, change, due: roundMoney(Math.max(0, totals.total - paid)) };
+  return result;
+}
+
+/** Undo a sell's side effects (stock, ledger, points) and remove it. Drafts and quotations have none of these. */
+function revertSale(d: DB, t: Transaction) {
+  if (t.status === "final") {
+    for (const l of t.lines) {
+      for (const a of l.allocations) {
+        const lot = d.stockLots.find((x) => x.id === a.lotId);
+        if (lot) lot.qtyRemaining = roundMoney(lot.qtyRemaining + a.qty, 4);
+      }
+    }
+    const c = d.contacts.find((x) => x.id === t.contactId);
+    if (c && !c.isDefault && c.id !== WALK_IN_ID) c.points = Math.max(0, c.points + t.pointsRedeemed - t.pointsEarned);
+  }
+  d.accountTxns = d.accountTxns.filter((a) => a.transactionId !== t.id);
+  d.transactions = d.transactions.filter((x) => x.id !== t.id);
+}
+
 export const salesService = {
   async checkout(input: CheckoutInput): Promise<CheckoutResult> {
     await delay();
     assertCan("sell.create");
-    const { cart, locationId, status } = input;
-    if (!cart.lines.length) throw new AppError("Add at least one item", "empty_cart");
+    if (!input.cart.lines.length) throw new AppError("Add at least one item", "empty_cart");
     let result!: CheckoutResult;
-
     commit((d) => {
-      const s = d.settings;
-      const at = cart.date ?? nowISO(); // sale date (may be back-dated)
-      const paidAt = nowISO(); // cash moves now, so it lands in the open register
-      const by = currentUser()?.user.id ?? null;
-      const location = d.locations.find((l) => l.id === locationId);
-      if (!location) throw new NotFoundError("Location");
-      const contact = d.contacts.find((c) => c.id === cart.contactId);
-      if (!contact) throw new NotFoundError("Contact");
-      const isWalkIn = contact.id === WALK_IN_ID || contact.isDefault;
-
-      const totals = cartTotals(cart, { rounding: s.sale.roundingMethod, rewards: s.rewards });
-      const tid = uid("t");
-
-      const lines = cart.lines.map((l, i) => {
-        const p = d.products.find((x) => x.id === l.productId);
-        if (!p || !p.active || p.notForSale || !p.locationIds.includes(locationId)) throw new ProductUnavailableError(l.name);
-        let allocations: { lotId: string; qty: number; unitCost: number }[] = [];
-        let unitCost = d.variations.find((v) => v.id === l.variationId)?.purchasePriceExc ?? 0;
-        if (status === "final") {
-          if (p.enableSerial && l.serials.length !== l.qty) throw new SerialsRequiredError(l.name, l.qty);
-          if (p.manageStock) ({ allocations, unitCost } = lineAllocation(d, l, locationId, l.name));
-        }
-        return {
-          id: uid("l"), productId: l.productId, variationId: l.variationId, unitId: l.unitId, qty: l.qty, unitPrice: l.unitPrice,
-          taxId: l.taxId, taxRate: l.taxRate, taxType: l.taxType, discount: l.discount, subtotal: totals.lines[i].subtotal,
-          unitCost, allocations, note: l.note, serials: l.serials, serviceStaffId: l.serviceStaffId,
-        };
-      });
-
-      if (cart.pointsRedeemed > 0) {
-        const cap = isWalkIn ? 0 : maxRedeemable({ total: totals.total + totals.redeemed, balance: contact.points, s: s.rewards });
-        if (cart.pointsRedeemed > cap) throw new ValidationError({ pointsRedeemed: "invalid" });
-      }
-
-      const payments: Payment[] = [];
-      let paid = 0;
-      let change = 0;
-      if (status === "final") {
-        const rows = (input.payments ?? []).filter((r) => r.amount > 0).map((r) => ({ ...r, amount: roundMoney(r.amount) }));
-        const st = paymentState(totals.total, rows);
-        if (st.nonCashOverpaid) throw new ValidationError({ payments: "non_cash_overpaid" });
-        const mkPayment = (method: PaymentMethod, amount: number, isReturn: boolean, details: Payment["details"] = {}, note = "") => {
-          const pid = uid("pay");
-          const accountId = location.defaultAccounts[method] ?? null;
-          payments.push({ id: pid, refNo: takeRef(d, s.prefixes.sellPayment, at), amount, method, accountId, paidOn: paidAt, note, isReturn, details, createdBy: by });
-          if (accountId) {
-            d.accountTxns.push(accountTxn.parse({
-              id: uid("at"), createdAt: paidAt, createdBy: by, accountId, kind: isReturn ? "debit" : "credit", subType: "payment",
-              amount, date: paidAt, transactionId: tid, paymentId: pid,
-            }));
-          }
-        };
-        for (const r of rows) mkPayment(r.method, r.amount, false, r.details, r.note);
-        if (st.change > 0) mkPayment("cash", st.change, true);
-        paid = st.paid;
-        change = st.change;
-        const due = roundMoney(Math.max(0, totals.total - paid));
-        if (due > 0 && isWalkIn) throw new AppError("Choose a named customer for a credit sale", "walk_in_credit");
-        if (due > 0 && contact.creditLimit != null && customerDue(d, contact.id) + due > contact.creditLimit) throw new CreditLimitError();
-      }
-
-      let refNo: string;
-      let invoiceSchemeId: string | null = null;
-      if (status === "final") {
-        const scheme = d.invoiceSchemes.find((x) => x.id === location.invoiceSchemeId);
-        if (!scheme) throw new NotFoundError("Invoice scheme");
-        refNo = nextInvoiceNo(scheme);
-        scheme.count += 1;
-        invoiceSchemeId = scheme.id;
-      } else {
-        refNo = takeRef(d, s.prefixes.draft, at);
-      }
-
-      const earned = status === "final" && !isWalkIn ? pointsEarned(totals.total, s.rewards) : 0;
-      if (status === "final" && !isWalkIn) contact.points = Math.max(0, contact.points - cart.pointsRedeemed + earned);
-
-      if (cart.resumedFromId) {
-        const i = d.transactions.findIndex((t) => t.id === cart.resumedFromId && t.type === "sell" && EDITABLE.includes(t.status));
-        if (i < 0) throw new NotFoundError("Sale");
-        d.transactions.splice(i, 1);
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { lines: _l, ...orderTotals } = totals;
-      d.transactions.push(transaction.parse({
-        id: tid, createdAt: nowISO(), createdBy: by, type: "sell", status, channel: "pos", locationId, contactId: contact.id, refNo, date: at,
-        lines, discount: cart.discount, orderTaxId: cart.orderTaxId, orderTaxRate: cart.orderTaxRate,
-        pointsRedeemed: cart.pointsRedeemed, pointsEarned: earned,
-        shipping: {
-          zone: cart.shipping.zone, charges: cart.shipping.charges, details: cart.shipping.details, address: cart.shipping.address,
-          status: status === "final" && cart.shipping.zone ? "ordered" : null,
-        },
-        totals: orderTotals, payments,
-        paymentStatus: status === "final" ? paymentStatus({ total: totals.total, paid, date: at, payTerm: contact.payTerm }) : "due",
-        payTerm: contact.payTerm, notes: cart.note, staffNote: input.staffNote ?? "", invoiceSchemeId,
-        invoiceLayoutId: cart.invoiceLayoutId, technicianId: cart.technicianId,
-      }));
-
-      result = { id: tid, refNo, status, total: totals.total, paid, change, due: roundMoney(Math.max(0, totals.total - paid)) };
+      result = writeSale(d, input);
     });
     return result;
   },
 
-  async toCart(id: string): Promise<Cart> {
+  async toCart(id: string, anyStatus = false): Promise<Cart> {
     await delay();
     const d = getDB();
-    const t = d.transactions.find((x) => x.id === id && x.type === "sell" && EDITABLE.includes(x.status));
+    const t = d.transactions.find((x) => x.id === id && x.type === "sell" && (anyStatus ? x.status !== "suspended" : EDITABLE.includes(x.status)));
     if (!t) throw new NotFoundError("Sale");
-    const stockOf = (vid: string) => available(d.stockLots, vid, t.locationId);
-    return {
-      ...emptyCart(),
-      contactId: t.contactId ?? WALK_IN_ID,
-      discount: t.discount,
-      orderTaxId: t.orderTaxId,
-      orderTaxRate: t.orderTaxRate,
-      shipping: { zone: t.shipping.zone, charges: t.shipping.charges, details: t.shipping.details, address: t.shipping.address },
-      technicianId: t.technicianId,
-      invoiceLayoutId: t.invoiceLayoutId,
-      pointsRedeemed: t.pointsRedeemed,
-      resumedFromId: t.id,
-      note: t.notes,
-      lines: t.lines.map((l) => {
-        const p = d.products.find((x) => x.id === l.productId);
-        const v = d.variations.find((x) => x.id === l.variationId);
-        const u = d.units.find((x) => x.id === l.unitId);
-        return {
-          key: uid("k"), productId: l.productId, variationId: l.variationId,
-          name: p ? (p.type === "variable" && v ? `${p.name} (${v.name})` : p.name) : l.productId,
-          sku: v?.sku ?? "", unitId: l.unitId, unitName: u?.shortName ?? "", allowDecimal: u?.allowDecimal ?? false,
-          qty: l.qty, unitPrice: l.unitPrice, taxId: l.taxId, taxRate: l.taxRate, taxType: l.taxType, discount: l.discount,
-          note: l.note, serials: l.serials, serviceStaffId: l.serviceStaffId, enableSerial: p?.enableSerial ?? false,
-          maxQty: p?.manageStock ? stockOf(l.variationId) : null,
-        };
-      }),
-    };
+    return txnToCart(d, t);
   },
 
   async list(q: { locationId: string; status: SaleStatus; limit?: number }): Promise<SaleRow[]> {
@@ -292,6 +334,54 @@ export const salesService = {
       locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "",
       addedBy: user ? `${user.firstName} ${user.lastName}`.trim() : "", lineNames,
     };
+  },
+
+  async save(input: SaleInput): Promise<CheckoutResult> {
+    await delay();
+    assertCan(input.id ? "sell.update" : "sell.create");
+    if (!input.cart.lines.length) throw new AppError("Add at least one item", "empty_cart");
+    if ((input.additionalExpenses ?? []).length > 4) throw new ValidationError({ additionalExpenses: "max_4" });
+    let result!: CheckoutResult;
+    commit((d) => {
+      let prev: Transaction | undefined;
+      let payments = input.payments;
+      if (input.id) {
+        prev = d.transactions.find((t) => t.id === input.id && t.type === "sell" && t.status !== "suspended");
+        if (!prev) throw new NotFoundError("Sale");
+        payments ??= prev.payments.filter((p) => !p.isReturn).map((p) => ({ method: p.method, amount: p.amount, details: p.details, note: p.note }));
+        revertSale(d, prev);
+      }
+      result = writeSale(d, { ...input, payments }, prev);
+    });
+    return result;
+  },
+
+  async convert(id: string, payments: CheckoutPayment[] = []): Promise<CheckoutResult> {
+    await delay();
+    assertCan("sell.update");
+    let result!: CheckoutResult;
+    commit((d) => {
+      const prev = d.transactions.find((t) => t.id === id && t.type === "sell" && ["draft", "quotation", "proforma"].includes(t.status));
+      if (!prev) throw new NotFoundError("Sale");
+      const cart = txnToCart(d, prev);
+      revertSale(d, prev);
+      result = writeSale(d, {
+        cart: { ...cart, resumedFromId: null }, locationId: prev.locationId, status: "final", payments, payTerm: prev.payTerm,
+        shipping: prev.shipping, additionalExpenses: prev.additionalExpenses, salesOrderIds: prev.salesOrderIds,
+        recurring: prev.recurring, commissionAgentId: prev.commissionAgentId, documents: prev.documents, staffNote: prev.staffNote,
+      }, prev);
+    });
+    return result;
+  },
+
+  async removeAny(id: string): Promise<void> {
+    await delay();
+    assertCan("sell.delete");
+    commit((d) => {
+      const t = d.transactions.find((x) => x.id === id && x.type === "sell");
+      if (!t) throw new NotFoundError("Sale");
+      revertSale(d, t);
+    });
   },
 
   async receipt(id: string): Promise<ReceiptData> {

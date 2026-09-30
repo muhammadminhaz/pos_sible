@@ -5,7 +5,7 @@ import { lineTotals, orderTotals, type LineTotals, type OrderTotals } from "@/li
 import type { Cart } from "./cart";
 
 export type CartTotals = OrderTotals & { lines: LineTotals[] };
-export type TotalsContext = { rounding: RoundingMode; rewards: RewardSettings };
+export type TotalsContext = { rounding: RoundingMode; rewards: RewardSettings; additional?: number[] };
 
 export function cartTotals(c: Cart, ctx: TotalsContext): CartTotals {
   const inputs = c.lines.map((l) => ({
@@ -16,6 +16,7 @@ export function cartTotals(c: Cart, ctx: TotalsContext): CartTotals {
     discount: c.discount ?? undefined,
     orderTaxRate: c.orderTaxRate,
     shipping: c.shipping.charges,
+    additionalExpenses: ctx.additional,
     rounding: ctx.rounding,
     pointsRedeemed: redeemValue(c.pointsRedeemed, ctx.rewards),
   });

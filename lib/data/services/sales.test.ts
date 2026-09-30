@@ -250,3 +250,101 @@ describe("salesService.listAll / get", () => {
     await expect(salesService.get("nope")).rejects.toBeInstanceOf(NotFoundError);
   });
 });
+
+describe("salesService.save / convert / removeAny", () => {
+  const lotsLeft = (vid: string) =>
+    getDB().stockLots.filter((l) => l.variationId === vid && l.locationId === LOC_RANGO).reduce((s, l) => s + l.qtyRemaining, 0);
+  const cash = (amount: number) => [{ method: "cash" as const, amount }];
+
+  beforeEach(() => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+  });
+
+  async function finalSale(qty = 2) {
+    const p = await stocked();
+    const vid = p.variations[0].id;
+    const before = lotsLeft(vid);
+    const cart = patchCart(cartWith(p, qty), { contactId: customer().id });
+    const probe = await salesService.save({ cart, locationId: LOC_RANGO, status: "quotation" });
+    const res = await salesService.save({ cart, locationId: LOC_RANGO, status: "final", payments: cash(probe.total) });
+    return { p, vid, before, cart, res };
+  }
+
+  it("editing a final sale twice does not drift stock", async () => {
+    const { p, vid, before, cart, res } = await finalSale(2);
+    expect(lotsLeft(vid)).toBeCloseTo(before - 2, 4);
+    await salesService.save({ id: res.id, cart, locationId: LOC_RANGO, status: "final" });
+    await salesService.save({ id: res.id, cart, locationId: LOC_RANGO, status: "final" });
+    expect(lotsLeft(vid)).toBeCloseTo(before - 2, 4);
+    const t = getDB().transactions.find((x) => x.id === res.id)!;
+    expect(t.refNo).toBe(res.refNo);
+    expect(getDB().transactions.filter((x) => x.refNo === res.refNo)).toHaveLength(1);
+    expect(p).toBeTruthy();
+  });
+
+  it("editing quantity changes stock and payment status", async () => {
+    const { p, vid, before, cart, res } = await finalSale(1);
+    const bigger = patchCart({ ...cart, lines: cart.lines.map((l) => ({ ...l, qty: 2 })) }, {});
+    const out = await salesService.save({ id: res.id, cart: bigger, locationId: LOC_RANGO, status: "final" });
+    expect(lotsLeft(vid)).toBeCloseTo(before - 2, 4);
+    expect(out.due).toBeGreaterThan(0);
+    expect(getDB().transactions.find((x) => x.id === res.id)!.paymentStatus).not.toBe("paid");
+    expect(p).toBeTruthy();
+  });
+
+  it("additional expenses add to the total; a fifth is rejected", async () => {
+    const p = await stocked();
+    const cart = patchCart(cartWith(p), { contactId: customer().id });
+    const base = await salesService.save({ cart, locationId: LOC_RANGO, status: "draft" });
+    const plus = await salesService.save({ cart, locationId: LOC_RANGO, status: "draft", additionalExpenses: [{ name: "Packing", amount: 25 }] });
+    expect(plus.total - base.total).toBe(25);
+    const five = Array.from({ length: 5 }, (_, i) => ({ name: `e${i}`, amount: 1 }));
+    await expect(salesService.save({ cart, locationId: LOC_RANGO, status: "draft", additionalExpenses: five })).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("a manual invoice number must be unique", async () => {
+    const { cart, res } = await finalSale(1);
+    const dup = salesService.save({ cart, locationId: LOC_RANGO, status: "final", refNo: res.refNo, payments: cash(99999) });
+    await expect(dup).rejects.toMatchObject({ code: "duplicate_ref" });
+  });
+
+  it("convert: quotation becomes final, takes stock and gets an invoice number", async () => {
+    const p = await stocked();
+    const vid = p.variations[0].id;
+    const before = lotsLeft(vid);
+    const cart = patchCart(cartWith(p, 2), { contactId: customer().id });
+    const q = await salesService.save({ cart, locationId: LOC_RANGO, status: "quotation" });
+    const out = await salesService.convert(q.id, cash(q.total));
+    expect(out).toMatchObject({ id: q.id, status: "final", due: 0 });
+    expect(out.refNo).not.toBe(q.refNo);
+    expect(lotsLeft(vid)).toBeCloseTo(before - 2, 4);
+  });
+
+  it("convert with short stock throws and leaves the DB unchanged", async () => {
+    const p = await stocked();
+    const cart = patchCart(cartWith(p, 1), { contactId: customer().id });
+    const q = await salesService.save({ cart, locationId: LOC_RANGO, status: "quotation" });
+    commit((d) => { d.transactions.find((t) => t.id === q.id)!.lines[0].qty = 100000; });
+    const before = structuredClone(getDB());
+    await expect(salesService.convert(q.id)).rejects.toBeInstanceOf(InsufficientStockError);
+    expect(getDB()).toEqual(before);
+  });
+
+  it("removeAny on a final sale restores stock and ledger", async () => {
+    const { vid, before, res } = await finalSale(2);
+    const accounts = getDB().accountTxns.filter((a) => a.transactionId === res.id).length;
+    expect(accounts).toBeGreaterThan(0);
+    await salesService.removeAny(res.id);
+    expect(lotsLeft(vid)).toBeCloseTo(before, 4);
+    expect(getDB().accountTxns.some((a) => a.transactionId === res.id)).toBe(false);
+    expect(getDB().transactions.some((t) => t.id === res.id)).toBe(false);
+  });
+
+  it("edit and delete need sell.update / sell.delete", async () => {
+    const { cart, res } = await finalSale(1);
+    useSession.setState({ userId: "user_cashier" });
+    await expect(salesService.save({ id: res.id, cart, locationId: LOC_RANGO, status: "final" })).rejects.toMatchObject({ code: "forbidden" });
+    await expect(salesService.removeAny(res.id)).rejects.toMatchObject({ code: "forbidden" });
+  });
+});
