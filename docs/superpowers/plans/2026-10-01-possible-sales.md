@@ -7,6 +7,9 @@
 **Tech Stack:** Next.js 16, React 19 (React Compiler lint rules), TanStack Query, next-intl, zod 3, vitest.
 **Spec:** `docs/superpowers/specs/2026-10-01-possible-sales-design.md`
 
+## Progress
+Tasks 1–8 are done (services, tests, hooks, messages; extras: `generateNext`, `discount.manage` permission, CSV reader `lib/csv.ts`). Task 9 is done (All Sales, Drafts, Quotations, payments and shipping dialogs). Tasks 10–13 remain.
+
 ## Global Constraints
 - DB writes only through `commit()`; services start with `await delay()`, call `assertCan(...)`, throw `AppError` subclasses; UI never imports `getDB`.
 - Query keys start with the table name (`transactions`, `discounts`, `importBatches`).
