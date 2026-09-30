@@ -5,7 +5,7 @@ export const PERMISSIONS = [
   "product.view", "product.create", "product.update", "product.delete", "product.opening_stock",
   "purchase.view", "purchase.create", "purchase.update", "purchase.delete", "purchase.payments", "purchase_return.view",
   "sell.view", "sell.create", "sell.update", "sell.delete", "sell.payments", "sell_return.view", "sales_order.view",
-  "draft.view", "quotation.view", "shipment.view", "discount.view", "sell.import",
+  "draft.view", "quotation.view", "shipment.view", "discount.view", "discount.manage", "sell.import",
   "pos.access", "pos.edit_price", "pos.edit_discount", "cash_register.close",
   "stock_transfer.view", "stock_transfer.create", "stock_adjustment.view", "stock_adjustment.create",
   "expense.view", "expense.create", "expense.update", "expense.delete",

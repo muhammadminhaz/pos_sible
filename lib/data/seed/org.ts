@@ -25,7 +25,8 @@ const DEFAULT_ACCOUNTS = {
 
 export const MANAGER_PERMISSIONS = [
   "dashboard.view", "contacts.supplier", "contacts.customer", "customer_group.view", "product.view", "product.create",
-  "product.update", "product.delete", "purchase.view", "purchase.create", "sell.view", "sell.create", "sell.update",
+  "product.update", "product.delete", "purchase.view", "purchase.create", "sell.view", "sell.create", "sell.update", "sell.payments",
+  "sell_return.view", "sales_order.view", "draft.view", "quotation.view", "shipment.view", "discount.view",
   "pos.access", "stock_transfer.view", "stock_adjustment.view", "expense.view", "expense.create", "account.view",
   "report.view", "settings.barcode", "settings.printer",
 ];
