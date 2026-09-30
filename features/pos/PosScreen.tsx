@@ -14,9 +14,12 @@ import { CancelDialog } from "./dialogs/Cancel";
 import { DiscountDialog } from "./dialogs/Discount";
 import { OrderTaxDialog } from "./dialogs/OrderTax";
 import { PaymentDialog } from "./dialogs/Payment";
+import { RecentSheet } from "./dialogs/Recent";
 import { RedeemPointsDialog } from "./dialogs/RedeemPoints";
 import { RegisterGate } from "./dialogs/RegisterGate";
 import { ShippingDialog } from "./dialogs/Shipping";
+import { SuspendDialog } from "./dialogs/Suspend";
+import { SuspendedSheet } from "./dialogs/Suspended";
 import { ProductGrid } from "./grid/ProductGrid";
 import { Narrow } from "./Narrow";
 import { TopBar } from "./TopBar";
@@ -72,6 +75,9 @@ export function PosScreen() {
           <ShippingDialog locationId={location!.id} />
           <RedeemPointsDialog locationId={location!.id} />
           <CancelDialog locationId={location!.id} />
+          <SuspendDialog locationId={location!.id} />
+          <SuspendedSheet locationId={location!.id} />
+          <RecentSheet locationId={location!.id} />
           {/* slot:dialogs */}
         </>
       )}
