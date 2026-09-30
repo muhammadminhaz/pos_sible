@@ -107,7 +107,6 @@ function txnToCart(d: DB, t: Transaction): Cart {
 /** Validates, allocates stock and writes one sell (any status). `prev` is the already-reverted original when editing. */
 function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult {
   const { cart, locationId, status } = input;
-  let result!: CheckoutResult;
   const s = d.settings;
   const at = cart.date ?? nowISO(); // sale date (may be back-dated)
   const paidAt = nowISO(); // cash moves now, so it lands in the open register
@@ -217,8 +216,7 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
     invoiceLayoutId: cart.invoiceLayoutId, technicianId: cart.technicianId,
   }));
 
-  result = { id: tid, refNo, status, total: totals.total, paid, change, due: roundMoney(Math.max(0, totals.total - paid)) };
-  return result;
+  return { id: tid, refNo, status, total: totals.total, paid, change, due: roundMoney(Math.max(0, totals.total - paid)) };
 }
 
 /** Undo a sell's side effects (stock, ledger, points) and remove it. Drafts and quotations have none of these. */
