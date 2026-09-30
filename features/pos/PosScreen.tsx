@@ -17,6 +17,7 @@ import { OrderTaxDialog } from "./dialogs/OrderTax";
 import { PaymentDialog } from "./dialogs/Payment";
 import { RecentSheet } from "./dialogs/Recent";
 import { RedeemPointsDialog } from "./dialogs/RedeemPoints";
+import { ReceiptModal } from "./receipt/ReceiptModal";
 import { RegisterDialog } from "./dialogs/RegisterClose";
 import { RegisterGate } from "./dialogs/RegisterGate";
 import { ShippingDialog } from "./dialogs/Shipping";
@@ -82,6 +83,7 @@ export function PosScreen() {
           <RecentSheet locationId={location!.id} />
           <RegisterDialog location={location!} />
           <AddExpenseDialog location={location!} />
+          <ReceiptModal />
           {/* slot:dialogs */}
         </>
       )}

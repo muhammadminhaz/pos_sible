@@ -72,12 +72,12 @@ export function useCheckout(locationId: string) {
       const msg = t(`pos.done.${status}`, { ref: res.refNo });
       if (status === "final" || (status === "suspended" && settings?.pos.printOnSuspend)) {
         toast.success(msg);
-        showReceipt(res.id);
+        showReceipt(res.id); // the receipt's own close returns focus to search; "New sale" holds it until then
       } else {
         toast.success(msg, { action: { label: t("common.print"), onClick: () => showReceipt(res.id) } });
         hide();
+        focusSearch();
       }
-      focusSearch();
       return true;
     } catch (e) {
       onError(e);
