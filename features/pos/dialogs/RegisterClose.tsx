@@ -17,6 +17,7 @@ import { roundMoney } from "@/lib/domain/money";
 import { useFormat } from "@/lib/i18n/format";
 import { methodLabel } from "@/lib/pos/methods";
 import { usePosDialogs } from "../dialogStore";
+import { focusSearch } from "../focus";
 import { usePosError } from "../usePosAction";
 import { Denominations, denominationTotal } from "./Denominations";
 
@@ -149,7 +150,7 @@ export function RegisterDialog({ location }: { location: Location }) {
   const shown = open === "registerDetails" || open === "registerClose";
   return (
     <Dialog open={shown} onOpenChange={(o) => !o && hide()}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent onCloseAutoFocus={(e) => { e.preventDefault(); focusSearch(); }} className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
         {shown && <RegisterBody location={location} closing={open === "registerClose"} />}
       </DialogContent>
     </Dialog>
