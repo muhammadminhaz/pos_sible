@@ -1,5 +1,6 @@
 "use client";
 
+import { useIsMutating } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { create } from "zustand";
@@ -48,8 +49,10 @@ export function useAddToCart(locationId: string) {
   const { cart, update } = useCart(locationId);
   const { data: settings } = useSettings();
   const flash = useFlash((s) => s.flash);
+  const checkingOut = useIsMutating({ mutationKey: ["checkout"] }) > 0;
 
   return (p: PosProduct, v: PosVariation, qty = 1) => {
+    if (checkingOut) return false; // the cart is being sold; a new line would be wiped by the post-checkout reset
     const item = toCartItem(p, v, qty);
     const next = addItem(cart, item, settings?.sale.itemAdditionMethod ?? "increase_qty");
     // addItem returns a new object for the touched line, so the changed line is the one not in the old cart.

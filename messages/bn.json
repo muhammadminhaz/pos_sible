@@ -596,6 +596,7 @@
     "required": "এই ঘরটি পূরণ করা আবশ্যক",
     "insufficientStock": "{product} এর মাত্র {available}টি অবশিষ্ট",
     "creditLimit": "ক্রেডিট সীমা অতিক্রম করেছে",
+    "forbidden": "এটি করার অনুমতি আপনার নেই",
     "editWindowExpired": "এই লেনদেন আর সম্পাদনা করা যাবে না",
     "notFoundEntity": "{what} পাওয়া যায়নি",
     "invalidBackup": "এই ফাইলটি সঠিক ব্যাকআপ নয়"

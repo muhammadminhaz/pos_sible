@@ -28,6 +28,12 @@ describe("hotkeys", () => {
     expect(shouldFire("shift+f", input)).toBe(false);
     expect(shouldFire("shift+f", body)).toBe(true);
   });
+  it("fires shift+letter from a number input, which can't receive letters", () => {
+    const num = { tagName: "INPUT", type: "number" } as unknown as EventTarget;
+    const text = { tagName: "INPUT", type: "text" } as unknown as EventTarget;
+    expect(shouldFire("shift+f", num)).toBe(true);
+    expect(shouldFire("shift+f", text)).toBe(false);
+  });
   it("still fires function keys, Escape, and ctrl/alt/meta combos while typing", () => {
     const input = { tagName: "INPUT" } as unknown as EventTarget;
     expect(shouldFire("f2", input)).toBe(true);

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useCan } from "@/lib/auth/useCan";
 import { usePosMutations, usePosSales } from "@/lib/data/hooks/pos";
 import type { SaleRow, SaleStatus } from "@/lib/data/services/sales";
 import { useFormat } from "@/lib/i18n/format";
@@ -25,6 +26,7 @@ export function SaleList({ locationId, status }: { locationId: string; status: S
   const t = useTranslations();
   const f = useFormat();
   const router = useRouter();
+  const can = useCan();
   const { data, isPending } = usePosSales({ locationId, status, limit: status === "suspended" ? 50 : 10 });
   const { loadCart, remove } = usePosMutations();
   const { cart, replace } = useCart(locationId);
@@ -83,7 +85,7 @@ export function SaleList({ locationId, status }: { locationId: string; status: S
                 {status === "suspended" ? t("pos.suspended.resume") : t("common.edit")}
               </Button>
               {status !== "final" && (
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setConfirm({ kind: "delete", row })}>
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled={row.id === cart.resumedFromId || !can("sell.delete")} onClick={() => setConfirm({ kind: "delete", row })}>
                   <Trash2Icon />
                   {t("common.delete")}
                 </Button>

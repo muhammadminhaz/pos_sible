@@ -4,7 +4,7 @@ import { createSeed } from "@/lib/data/seed";
 import { LOC_NIPUN, LOC_RANGO } from "@/lib/data/seed/mk";
 import { cashRegister, transaction, type CashRegister, type PaymentMethod } from "@/lib/data/schemas";
 import { commit, getDB, resetDB } from "@/lib/data/store/db";
-import { addItem, emptyCart } from "@/lib/pos/cart";
+import { addItem, emptyCart, patchCart } from "@/lib/pos/cart";
 import { expensesService } from "./expenses";
 import { posService, toCartItem } from "./pos";
 import { registersService } from "./registers";
@@ -61,6 +61,7 @@ describe("registersService", () => {
   beforeEach(() => {
     resetDB(structuredClone(seed));
     useSession.setState({ userId: "user_cashier" });
+    getDB().roles.find((r) => r.id === "role_cashier")!.permissions.push("expense.create", "cash_register.close"); // the seeded cashier lacks these
     commit((d) => {
       for (const r of d.cashRegisters) if (r.status === "open") Object.assign(r, { status: "close", closedAt: r.openedAt });
     });
@@ -71,6 +72,21 @@ describe("registersService", () => {
     const s = await registersService.summary(reg.id);
     expect(s.expectedCash).toBeCloseTo(reg.closingAmount!, 2);
     expect(s.cardSlips).toBe(reg.totalCardSlips);
+  });
+
+  it("a back-dated cash sale still counts toward the open register's expected cash", async () => {
+    const reg = await registersService.open(LOC_RANGO, 2000);
+    const p = (await posService.products({ locationId: LOC_RANGO, pageSize: -1 })).rows.find((x) => x.manageStock && !x.enableSerial && x.variations[0].stock >= 1)!;
+    const cart = patchCart(addItem(emptyCart(), toCartItem(p, p.variations[0])), { date: "2020-01-01T10:00:00" });
+    const sale = await salesService.checkout({ cart, locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 1e6 }] });
+    const s = await registersService.summary(reg.id);
+    expect(s.expectedCash).toBeCloseTo(2000 + sale.total, 2);
+  });
+
+  it("closing needs cash_register.close", async () => {
+    const reg = await registersService.open(LOC_RANGO, 100);
+    getDB().roles.find((r) => r.id === "role_cashier")!.permissions = ["pos.access"];
+    await expect(registersService.close(reg.id, { closingAmount: 100, totalCardSlips: 0, totalCheques: 0, closingNote: "" } as never)).rejects.toMatchObject({ code: "forbidden" });
   });
 
   it("open → one per user/location, sale and expense flow into the summary, close", async () => {

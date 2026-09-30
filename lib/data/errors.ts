@@ -8,6 +8,12 @@ export class AppError extends Error {
   }
 }
 
+export class ForbiddenError extends AppError {
+  constructor(public permission: string) {
+    super(`Missing permission: ${permission}`, "forbidden");
+  }
+}
+
 export class ValidationError extends AppError {
   constructor(
     public fields: Record<string, string>,

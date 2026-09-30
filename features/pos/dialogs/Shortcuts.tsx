@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useSettings } from "@/lib/data/hooks/settings";
 import { formatHotkey } from "@/lib/pos/hotkeys";
 import { usePosDialogs } from "../dialogStore";
+import { focusSearch } from "../focus";
 
 const Kbd = ({ children }: { children: React.ReactNode }) => (
   <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">{children}</kbd>
@@ -24,7 +25,7 @@ export function ShortcutsDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && hide()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent onCloseAutoFocus={(e) => { e.preventDefault(); focusSearch(); }} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>

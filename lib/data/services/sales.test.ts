@@ -149,6 +149,7 @@ describe("salesService.checkout", () => {
   });
 
   it("remove deletes drafts but refuses final sales", async () => {
+    getDB().roles.find((r) => r.id === "role_cashier")!.permissions.push("sell.delete"); // the seeded cashier lacks these
     const p = await stocked();
     const d = await salesService.checkout({ cart: cartWith(p), locationId: LOC_RANGO, status: "draft" });
     await salesService.remove(d.id);
@@ -183,6 +184,7 @@ describe("salesService.checkout", () => {
   });
 
   it("resuming from a removed sale throws and writes nothing", async () => {
+    getDB().roles.find((r) => r.id === "role_cashier")!.permissions.push("sell.delete"); // the seeded cashier lacks these
     const p = await stocked();
     const s = await salesService.checkout({ cart: cartWith(p), locationId: LOC_RANGO, status: "suspended" });
     await salesService.remove(s.id);

@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useCart } from "@/lib/pos/store";
-import { usePosDialogs } from "../dialogStore";
+import { useCartFlag, usePosDialogs } from "../dialogStore";
 import { focusSearch } from "../focus";
 
 export function CancelDialog({ locationId }: { locationId: string }) {
@@ -23,6 +23,7 @@ export function CancelDialog({ locationId }: { locationId: string }) {
       destructive
       onConfirm={() => {
         reset();
+        useCartFlag.getState().flag(null);
         toast(t("done.cancelled"));
         hide();
         focusSearch();

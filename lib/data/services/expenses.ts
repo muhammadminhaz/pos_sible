@@ -1,3 +1,4 @@
+import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { ValidationError } from "@/lib/data/errors";
 import { accountTxn, transaction, type PaymentMethod, type Transaction } from "@/lib/data/schemas";
@@ -11,6 +12,7 @@ export const expensesService = {
   /** Minimal paid expense (POS "Add expense"); the full form arrives with the Expenses sub-project. */
   async create(input: NewExpense): Promise<Transaction> {
     await delay();
+    assertCan("expense.create");
     const amount = roundMoney(input.amount);
     if (!(amount > 0)) throw new ValidationError({ amount: "positive" });
     if (!input.categoryId) throw new ValidationError({ categoryId: "required" });

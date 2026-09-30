@@ -60,7 +60,7 @@ export function MetaRow({ locationId }: { locationId: string }) {
           aria-label={t("date")}
           className="h-7 min-w-[150px] flex-1 text-xs"
           value={cart.date ? format(new Date(cart.date), "yyyy-MM-dd'T'HH:mm") : ""}
-          onChange={(e) => update((c) => patchCart(c, { date: e.target.value ? new Date(e.target.value).toISOString() : null }))}
+          onChange={(e) => update((c) => patchCart(c, { date: e.target.value ? `${e.target.value}:00` : null }))}
         />
       )}
     </div>

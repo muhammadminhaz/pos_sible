@@ -596,6 +596,7 @@
     "required": "This field is required",
     "insufficientStock": "Only {available} left of {product}",
     "creditLimit": "Credit limit exceeded",
+    "forbidden": "You don't have permission to do that",
     "editWindowExpired": "This transaction can no longer be edited",
     "notFoundEntity": "{what} not found",
     "invalidBackup": "This file isn't a valid backup"

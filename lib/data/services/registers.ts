@@ -1,3 +1,4 @@
+import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError } from "@/lib/data/errors";
 import { cashRegister, type CashRegister, type PaymentMethod } from "@/lib/data/schemas";
@@ -121,6 +122,7 @@ export const registersService = {
 
   async close(id: string, input: CloseRegisterInput): Promise<CashRegister> {
     await delay();
+    assertCan("cash_register.close");
     let closed!: CashRegister;
     commit((d) => {
       const r = d.cashRegisters.find((x) => x.id === id);

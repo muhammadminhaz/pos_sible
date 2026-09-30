@@ -48,7 +48,9 @@ export function shouldFire(spec: string, target: EventTarget | null): boolean {
   const h = parseHotkey(spec);
   if (!h) return false;
   const fnKey = /^f\d{1,2}$/.test(h.key) || h.key === "escape";
-  return fnKey || h.ctrl || h.alt || h.meta || !isTyping(target);
+  // A number field can't take letters, so shift+letter may fire from it (the autofocused payment amount, quantity cells).
+  const numeric = (target as { type?: string } | null)?.type === "number";
+  return fnKey || h.ctrl || h.alt || h.meta || numeric || !isTyping(target);
 }
 
 /**

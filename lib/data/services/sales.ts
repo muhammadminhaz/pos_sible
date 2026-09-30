@@ -1,3 +1,4 @@
+import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import {
   AppError, CreditLimitError, InsufficientStockError, NotFoundError, ProductUnavailableError, SerialsRequiredError, ValidationError,
@@ -59,13 +60,15 @@ function lineAllocation(d: DB, line: CartLine, locationId: string, name: string)
 export const salesService = {
   async checkout(input: CheckoutInput): Promise<CheckoutResult> {
     await delay();
+    assertCan("sell.create");
     const { cart, locationId, status } = input;
     if (!cart.lines.length) throw new AppError("Add at least one item", "empty_cart");
     let result!: CheckoutResult;
 
     commit((d) => {
       const s = d.settings;
-      const at = cart.date ?? nowISO();
+      const at = cart.date ?? nowISO(); // sale date (may be back-dated)
+      const paidAt = nowISO(); // cash moves now, so it lands in the open register
       const by = currentUser()?.user.id ?? null;
       const location = d.locations.find((l) => l.id === locationId);
       if (!location) throw new NotFoundError("Location");
@@ -107,11 +110,11 @@ export const salesService = {
         const mkPayment = (method: PaymentMethod, amount: number, isReturn: boolean, details: Payment["details"] = {}, note = "") => {
           const pid = uid("pay");
           const accountId = location.defaultAccounts[method] ?? null;
-          payments.push({ id: pid, refNo: takeRef(d, s.prefixes.sellPayment, at), amount, method, accountId, paidOn: at, note, isReturn, details, createdBy: by });
+          payments.push({ id: pid, refNo: takeRef(d, s.prefixes.sellPayment, at), amount, method, accountId, paidOn: paidAt, note, isReturn, details, createdBy: by });
           if (accountId) {
             d.accountTxns.push(accountTxn.parse({
-              id: uid("at"), createdAt: at, createdBy: by, accountId, kind: isReturn ? "debit" : "credit", subType: "payment",
-              amount, date: at, transactionId: tid, paymentId: pid,
+              id: uid("at"), createdAt: paidAt, createdBy: by, accountId, kind: isReturn ? "debit" : "credit", subType: "payment",
+              amount, date: paidAt, transactionId: tid, paymentId: pid,
             }));
           }
         };
@@ -250,6 +253,7 @@ export const salesService = {
 
   async remove(id: string): Promise<void> {
     await delay();
+    assertCan("sell.delete");
     commit((d) => {
       const i = d.transactions.findIndex((t) => t.id === id);
       if (i < 0) throw new NotFoundError("Sale");

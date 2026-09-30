@@ -12,6 +12,7 @@ describe("expensesService.create", () => {
   beforeEach(() => {
     resetDB(structuredClone(seed));
     useSession.setState({ userId: "user_cashier" });
+    getDB().roles.find((r) => r.id === "role_cashier")!.permissions.push("expense.create"); // the seeded cashier lacks these
   });
 
   it("records a paid expense with a ledger debit", async () => {

@@ -33,6 +33,7 @@ export function usePosError() {
         register_open: "pos.errors.registerOpen",
         register_closed: "pos.errors.registerClosed",
         not_found: "pos.errors.saleGone",
+        forbidden: "errors.forbidden",
       };
       if (byCode[e.code]) return toast.error(t(byCode[e.code]));
     }

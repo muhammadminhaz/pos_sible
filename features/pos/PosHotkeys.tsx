@@ -20,11 +20,11 @@ export function PosHotkeys({ location }: { location: Location }) {
 
   useHotkeys({ f3: () => focusSearch(), "?": () => show("shortcuts") }, idle);
   useHotkeys(
-    s
+    s && settings
       ? {
-          [s.expressCheckout]: cmd.express,
-          [s.payAndCheckout]: () => cmd.pay("multiple"),
-          [s.draft]: cmd.draft,
+          ...(settings.pos.disableExpressCheckout ? {} : { [s.expressCheckout]: cmd.express }),
+          ...(settings.pos.disableMultiplePay ? {} : { [s.payAndCheckout]: () => cmd.pay("multiple") }),
+          ...(settings.pos.disableDraft ? {} : { [s.draft]: cmd.draft }),
           [s.cancel]: cmd.cancel,
           [s.recentProductQty]: () => {
             const last = cart.lines.at(-1);

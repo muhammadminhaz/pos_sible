@@ -63,7 +63,7 @@ export function WeighingScaleDialog({ locationId }: { locationId: string }) {
   const hide = usePosDialogs((s) => s.hide);
   return (
     <Dialog open={open} onOpenChange={(o) => !o && hide()}>
-      <DialogContent className="sm:max-w-sm">{open && <ScaleForm locationId={locationId} />}</DialogContent>
+      <DialogContent onCloseAutoFocus={(e) => { e.preventDefault(); focusSearch(); }} className="sm:max-w-sm">{open && <ScaleForm locationId={locationId} />}</DialogContent>
     </Dialog>
   );
 }

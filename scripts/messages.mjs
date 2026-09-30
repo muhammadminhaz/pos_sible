@@ -599,6 +599,7 @@ const M = {
     required: ["This field is required", "এই ঘরটি পূরণ করা আবশ্যক"],
     insufficientStock: ["Only {available} left of {product}", "{product} এর মাত্র {available}টি অবশিষ্ট"],
     creditLimit: ["Credit limit exceeded", "ক্রেডিট সীমা অতিক্রম করেছে"],
+    forbidden: ["You don't have permission to do that", "এটি করার অনুমতি আপনার নেই"],
     editWindowExpired: ["This transaction can no longer be edited", "এই লেনদেন আর সম্পাদনা করা যাবে না"],
     notFoundEntity: ["{what} not found", "{what} পাওয়া যায়নি"],
     invalidBackup: ["This file isn't a valid backup", "এই ফাইলটি সঠিক ব্যাকআপ নয়"],
