@@ -162,6 +162,37 @@ function rank(p: ProductRow, term: string): number {
   return -1;
 }
 
+/** Validates and adds a product with its variations to `d`; returns its id. Call inside `commit`. */
+export function insertProduct(d: DB, input: ProductFormData): string {
+  const id = uid("prd");
+  const { sku, variations } = prepare(d, input, null);
+  const by = currentUser()?.user.id ?? null;
+  d.products.push(productSchema.parse({ ...omit(input, "variations"), sku, id, createdAt: nowISO(), createdBy: by }));
+  for (const v of variations) d.variations.push(variationSchema.parse({ ...v, id: uid("var"), productId: id, createdAt: nowISO(), createdBy: by }));
+  return id;
+}
+
+/** Validates and adds one lot per row to `d`; returns the new lot ids. Call inside `commit`. */
+export function pushOpeningStock(d: DB, productId: string, rows: OpeningStockRow[]): string[] {
+  const p = d.products.find((x) => x.id === productId);
+  if (!p) throw new NotFoundError("Product");
+  if (!p.manageStock) throw new AppError("Stock isn't managed for this product.", "stock_not_managed");
+  if (rows.length === 0) throw new ValidationError({ qty: "positive" });
+  return rows.map((r) => {
+    if (!(r.qty > 0)) throw new ValidationError({ qty: "positive" });
+    if (!(r.unitCost >= 0)) throw new ValidationError({ unitCost: "invalid" });
+    if (!d.variations.some((v) => v.id === r.variationId && v.productId === productId)) throw new NotFoundError("Variation");
+    if (!p.locationIds.includes(r.locationId)) throw new ValidationError({ locationId: "not_assigned" });
+    const id = uid("lot");
+    d.stockLots.push(stockLot.parse({
+      id, createdAt: nowISO(), createdBy: currentUser()?.user.id ?? null, locationId: r.locationId, variationId: r.variationId,
+      productId, sourceTxnId: null, lotNo: r.lotNo ?? "", qtyIn: r.qty, qtyRemaining: r.qty, unitCost: r.unitCost, receivedAt: nowISO(),
+      mfgDate: r.mfgDate ?? null, expDate: r.expDate ?? null,
+    }));
+    return id;
+  });
+}
+
 export const productsService = {
   async list(f: ProductFilters = {}): Promise<ListResult<ProductRow>> {
     await delay();
@@ -212,13 +243,8 @@ export const productsService = {
   async create(input: ProductFormData): Promise<{ id: string }> {
     await delay();
     assertCan("product.create");
-    const id = uid("prd");
-    commit((d) => {
-      const { sku, variations } = prepare(d, input, null);
-      const rest = omit(input, "variations");
-      d.products.push(productSchema.parse({ ...rest, sku, id, createdAt: nowISO(), createdBy: currentUser()?.user.id ?? null }));
-      for (const v of variations) d.variations.push(variationSchema.parse({ ...v, id: uid("var"), productId: id, createdAt: nowISO(), createdBy: currentUser()?.user.id ?? null }));
-    });
+    let id = "";
+    commit((d) => void (id = insertProduct(d, input)));
     return { id };
   },
 
@@ -252,23 +278,7 @@ export const productsService = {
   async addOpeningStock(productId: string, rows: OpeningStockRow[]): Promise<void> {
     await delay();
     assertCan("product.opening_stock");
-    commit((d) => {
-      const p = d.products.find((x) => x.id === productId);
-      if (!p) throw new NotFoundError("Product");
-      if (!p.manageStock) throw new AppError("Stock isn't managed for this product.", "stock_not_managed");
-      if (rows.length === 0) throw new ValidationError({ qty: "positive" });
-      for (const r of rows) {
-        if (!(r.qty > 0)) throw new ValidationError({ qty: "positive" });
-        if (!(r.unitCost >= 0)) throw new ValidationError({ unitCost: "invalid" });
-        if (!d.variations.some((v) => v.id === r.variationId && v.productId === productId)) throw new NotFoundError("Variation");
-        if (!p.locationIds.includes(r.locationId)) throw new ValidationError({ locationId: "not_assigned" });
-        d.stockLots.push(stockLot.parse({
-          id: uid("lot"), createdAt: nowISO(), createdBy: currentUser()?.user.id ?? null, locationId: r.locationId, variationId: r.variationId,
-          productId, sourceTxnId: null, lotNo: r.lotNo ?? "", qtyIn: r.qty, qtyRemaining: r.qty, unitCost: r.unitCost, receivedAt: nowISO(),
-          mfgDate: r.mfgDate ?? null, expDate: r.expDate ?? null,
-        }));
-      }
-    });
+    commit((d) => void pushOpeningStock(d, productId, rows));
   },
 
   /** Remaining stock per location and variation, with its value at cost. */

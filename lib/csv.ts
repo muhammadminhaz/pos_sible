@@ -1,5 +1,6 @@
 /** Minimal RFC 4180 reader: quoted fields, doubled quotes, CRLF. Returns rows of trimmed cells, skipping blank lines. */
 export function parseCSV(text: string): string[][] {
+  text = text.replace(/^\uFEFF/, ""); // Excel adds a byte-order mark
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";

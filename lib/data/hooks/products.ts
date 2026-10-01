@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { productImportService } from "@/lib/data/services/productImport";
 import { productsService, type OpeningStockRow, type ProductFilters, type ProductFormData } from "@/lib/data/services/products";
 import { keys } from "./keys";
 
@@ -26,6 +27,10 @@ export function useProductHistory(id: string | undefined) {
 
 export function useProductStock(id: string | undefined) {
   return useQuery({ queryKey: [...keys.products.detail(id ?? ""), "stock"], queryFn: () => productsService.stockByLocation(id!), enabled: !!id });
+}
+
+export function useCatalogImports(kind: "products" | "opening_stock" | "prices") {
+  return useQuery({ queryKey: ["importBatches", "catalog", kind], queryFn: () => productImportService.history(kind) });
 }
 
 export function useProductMutations() {
