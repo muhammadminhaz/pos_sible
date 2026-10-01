@@ -87,3 +87,21 @@ describe("returnsService", () => {
     await expect(returnsService.remove(out.id)).rejects.toBeInstanceOf(NotFoundError);
   });
 });
+
+describe("sales with returns are protected", () => {
+  beforeEach(() => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+  });
+
+  it("can't be edited or deleted until the return is removed", async () => {
+    const { sale } = await sold(2);
+    const out = await returnsService.create({ parentId: sale.id, lines: [{ lineId: sale.lines[0].id, qty: 1 }] });
+    await expect(salesService.removeAny(sale.id)).rejects.toMatchObject({ code: "has_returns" });
+    const cart = await salesService.toCart(sale.id, true);
+    await expect(salesService.save({ id: sale.id, cart, locationId: sale.locationId, status: "final" })).rejects.toMatchObject({ code: "has_returns" });
+    await returnsService.remove(out.id);
+    await salesService.removeAny(sale.id);
+    expect(getDB().transactions.some((t) => t.id === sale.id)).toBe(false);
+  });
+});

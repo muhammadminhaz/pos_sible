@@ -589,6 +589,14 @@
     }
   },
   "sales": {
+    "discountsDescription": "Automatic price rules by brand, category or product",
+    "noDiscounts": "No discounts yet",
+    "activated": "{count} activated",
+    "deactivated": "{count} deactivated",
+    "searchProductsShort": "Search products",
+    "allLocationsOpt": "All locations",
+    "none": "None",
+    "importDescription": "Upload a CSV, review it, then import",
     "ordersDescription": "Customer orders waiting to be fulfilled",
     "returnsDescription": "Items customers brought back",
     "shipmentsDescription": "Track deliveries for your sales",
@@ -773,6 +781,7 @@
       "paid": "Invalid paid amount"
     },
     "errors": {
+      "has_returns": "This sale has returns. Delete them first.",
       "duplicate_ref": "That invoice number is already used",
       "not_final": "Only final sales take payments",
       "stock_used": "The returned stock has already been sold again",

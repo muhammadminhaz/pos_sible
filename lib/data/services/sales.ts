@@ -225,6 +225,7 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
 
 /** Undo a sell's side effects (stock, ledger, points) and remove it. Drafts and quotations have none of these. */
 export function revertSale(d: DB, t: Transaction) {
+  if (d.transactions.some((r) => r.type === "sell_return" && r.parentId === t.id)) throw new AppError("This sale has returns; delete them first", "has_returns");
   if (t.status === "final") {
     for (const l of t.lines) {
       for (const a of l.allocations) {

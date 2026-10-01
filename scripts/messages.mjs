@@ -592,6 +592,14 @@ const M = {
     },
   },
   sales: {
+    discountsDescription: ["Automatic price rules by brand, category or product", "ব্র্যান্ড, ক্যাটাগরি বা পণ্য অনুযায়ী স্বয়ংক্রিয় মূল্য নিয়ম"],
+    noDiscounts: ["No discounts yet", "এখনও কোনো ছাড় নেই"],
+    activated: ["{count} activated", "{count}টি সক্রিয় হয়েছে"],
+    deactivated: ["{count} deactivated", "{count}টি নিষ্ক্রিয় হয়েছে"],
+    searchProductsShort: ["Search products", "পণ্য খুঁজুন"],
+    allLocationsOpt: ["All locations", "সব লোকেশন"],
+    none: ["None", "কোনোটিই নয়"],
+    importDescription: ["Upload a CSV, review it, then import", "CSV আপলোড করুন, পর্যালোচনা করে আমদানি করুন"],
     ordersDescription: ["Customer orders waiting to be fulfilled", "পূরণের অপেক্ষায় থাকা গ্রাহকের অর্ডার"],
     returnsDescription: ["Items customers brought back", "গ্রাহকের ফেরত দেওয়া পণ্য"],
     shipmentsDescription: ["Track deliveries for your sales", "বিক্রয়ের ডেলিভারি ট্র্যাক করুন"],
@@ -784,6 +792,7 @@ const M = {
     },
     // service error codes
     errors: {
+      has_returns: ["This sale has returns. Delete them first.", "এই বিক্রয়ের ফেরত আছে। আগে সেগুলো মুছুন।"],
       duplicate_ref: ["That invoice number is already used", "এই ইনভয়েস নম্বরটি আগেই ব্যবহৃত হয়েছে"],
       not_final: ["Only final sales take payments", "শুধু চূড়ান্ত বিক্রয়ে পেমেন্ট নেওয়া যায়"],
       stock_used: ["The returned stock has already been sold again", "ফেরত আসা স্টক ইতিমধ্যে আবার বিক্রি হয়েছে"],
