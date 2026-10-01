@@ -10,14 +10,14 @@ It is **frontend only**. All data is mock data generated in the browser and save
 
 | # | Sub-project | Status | Plan |
 |---|---|---|---|
-| 1 | Foundation: app shell, auth, data layer, seed data, i18n, theme, Home KPIs, Products list | Done | [plan](docs/superpowers/plans/2026-09-27-possible-foundation.md) |
-| 2 | POS: register, cart, product grid, split payments, suspend/draft/quotation, receipts, shortcuts | Done | [plan](docs/superpowers/plans/2026-09-28-possible-pos.md) |
-| 3 | Sales | **In progress, about 55%** | [plan](docs/superpowers/plans/2026-10-01-possible-sales.md) |
-| 4 | Catalog: product form and detail, units, categories, brands, variations, warranties, price groups, opening stock, imports, labels | Planned | [plan](docs/superpowers/plans/2026-10-02-possible-catalog.md) |
-| 5 | Contacts, Purchases, Stock | Planned | [plan](docs/superpowers/plans/2026-10-03-possible-contacts-purchases-stock.md) |
-| 6 | Expenses and Accounts | Planned | [plan](docs/superpowers/plans/2026-10-04-possible-expenses-accounts.md) |
-| 7 | Reports and Dashboard | Planned | [plan](docs/superpowers/plans/2026-10-05-possible-reports-dashboard.md) |
-| 8 | Settings and Admin, plus POS follow-ups | Planned | [plan](docs/superpowers/plans/2026-10-06-possible-settings-admin.md) |
+| 1 | ✅ Foundation: app shell, auth, data layer, seed data, i18n, theme, Home KPIs, Products list | ✅ Done | [plan](docs/superpowers/plans/2026-09-27-possible-foundation.md) |
+| 2 | ✅ POS: register, cart, product grid, split payments, suspend/draft/quotation, receipts, shortcuts | ✅ Done | [plan](docs/superpowers/plans/2026-09-28-possible-pos.md) |
+| 3 | ⬜ Sales | **In progress, about 55%** | [plan](docs/superpowers/plans/2026-10-01-possible-sales.md) |
+| 4 | ⬜ Catalog: product form and detail, units, categories, brands, variations, warranties, price groups, opening stock, imports, labels | Planned | [plan](docs/superpowers/plans/2026-10-02-possible-catalog.md) |
+| 5 | ⬜ Contacts, Purchases, Stock | Planned | [plan](docs/superpowers/plans/2026-10-03-possible-contacts-purchases-stock.md) |
+| 6 | ⬜ Expenses and Accounts | Planned | [plan](docs/superpowers/plans/2026-10-04-possible-expenses-accounts.md) |
+| 7 | ⬜ Reports and Dashboard | Planned | [plan](docs/superpowers/plans/2026-10-05-possible-reports-dashboard.md) |
+| 8 | ⬜ Settings and Admin, plus POS follow-ups | Planned | [plan](docs/superpowers/plans/2026-10-06-possible-settings-admin.md) |
 
 ### Sales, in detail
 - **Done:** every sales service (list and detail queries, save/edit of a sale of any status, convert draft or quotation to invoice, delete with stock restore, add/remove payments, shipping updates, subscriptions' next invoice, sell returns, sales orders with linking, discounts, CSV import with revert), the query hooks, the `sales` messages, and the All Sales, Drafts and Quotations lists with payments and shipping dialogs.
