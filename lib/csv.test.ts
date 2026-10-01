@@ -11,4 +11,7 @@ describe("parseCSV", () => {
   it("keeps a trailing empty cell", () => {
     expect(parseCSV("a,b,")).toEqual([["a", "b", ""]]);
   });
+  it("ignores a leading byte-order mark", () => {
+    expect(parseCSV("\uFEFFsku,qty\nA,1")).toEqual([["sku", "qty"], ["A", "1"]]);
+  });
 });

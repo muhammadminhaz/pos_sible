@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { ImportProductsPage } from "@/features/catalog/ImportPages";
 
 export default function Page() {
-  return <RoutePlaceholder route="/products/import" />;
+  return (
+    <RequirePermission permission="product.create">
+      <ImportProductsPage />
+    </RequirePermission>
+  );
 }

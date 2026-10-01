@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { ImportOpeningStockPage } from "@/features/catalog/ImportPages";
 
 export default function Page() {
-  return <RoutePlaceholder route="/products/import-opening-stock" />;
+  return (
+    <RequirePermission permission="product.opening_stock">
+      <ImportOpeningStockPage />
+    </RequirePermission>
+  );
 }

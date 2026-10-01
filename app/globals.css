@@ -217,10 +217,12 @@
 [data-print-root] { display: none; }
 @page thermal { size: 80mm auto; margin: 0; }
 @page a4 { size: A4; margin: 12mm; }
+@page labels { margin: 0; }
 @media print {
   body > *:not([data-print-root]) { display: none !important; }
   [data-print-root] { display: block !important; }
   [data-print-root="thermal"] { page: thermal; }
   [data-print-root="a4"] { page: a4; }
+  [data-print-root="labels"] { page: labels; }
   html, body { background: white !important; }
 }

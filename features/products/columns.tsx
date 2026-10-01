@@ -189,10 +189,10 @@ export function productColumns(t: T, f: Formatter, a: ProductActions): ColumnDef
               {
                 label: t("products.openingStock"),
                 icon: PackagePlusIcon,
-                href: `/products/import-opening-stock?product=${p.id}`,
+                href: `/products/${p.id}?opening=1`,
                 hidden: !a.can("product.opening_stock") || !p.manageStock,
               },
-              { label: t("products.stockHistory"), icon: HistoryIcon, href: `/reports/stock?product=${p.id}` },
+              { label: t("products.stockHistory"), icon: HistoryIcon, href: `/products/${p.id}` },
               {
                 label: p.active ? t("common.deactivate") : t("common.activate"),
                 icon: PowerIcon,

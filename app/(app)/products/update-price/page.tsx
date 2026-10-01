@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { UpdatePricePage } from "@/features/catalog/ImportPages";
 
 export default function Page() {
-  return <RoutePlaceholder route="/products/update-price" />;
+  return (
+    <RequirePermission permission="product.update">
+      <UpdatePricePage />
+    </RequirePermission>
+  );
 }
