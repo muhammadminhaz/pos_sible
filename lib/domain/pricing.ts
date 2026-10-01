@@ -32,3 +32,37 @@ export function resolveUnitPrice(args: {
   }
   return base;
 }
+
+export type PriceField = "purchasePriceExc" | "purchasePriceInc" | "margin" | "sellPriceExc" | "sellPriceInc";
+export type PriceSet = Record<PriceField, number>;
+
+const withTax = (exc: number, rate: number) => roundMoney(exc * (1 + rate / 100));
+const withoutTax = (inc: number, rate: number) => roundMoney(inc / (1 + rate / 100));
+
+/**
+ * Keeps the five price fields consistent after the user edits one of them.
+ * Editing a purchase price keeps the margin and moves the selling price; editing a selling price moves the margin.
+ */
+export function recalcPrices(p: PriceSet, changed: PriceField, taxRate: number): PriceSet {
+  const next = { ...p };
+  switch (changed) {
+    case "purchasePriceExc":
+    case "purchasePriceInc":
+      if (changed === "purchasePriceInc") next.purchasePriceExc = withoutTax(next.purchasePriceInc, taxRate);
+      else next.purchasePriceInc = withTax(next.purchasePriceExc, taxRate);
+      next.sellPriceExc = sellPriceFromMargin(next.purchasePriceExc, next.margin);
+      next.sellPriceInc = withTax(next.sellPriceExc, taxRate);
+      break;
+    case "margin":
+      next.sellPriceExc = sellPriceFromMargin(next.purchasePriceExc, next.margin);
+      next.sellPriceInc = withTax(next.sellPriceExc, taxRate);
+      break;
+    case "sellPriceExc":
+    case "sellPriceInc":
+      if (changed === "sellPriceInc") next.sellPriceExc = withoutTax(next.sellPriceInc, taxRate);
+      else next.sellPriceInc = withTax(next.sellPriceExc, taxRate);
+      next.margin = marginFromPrices(next.purchasePriceExc, next.sellPriceExc);
+      break;
+  }
+  return next;
+}
