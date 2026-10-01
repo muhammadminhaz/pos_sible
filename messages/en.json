@@ -589,6 +589,11 @@
     }
   },
   "sales": {
+    "chooseLocation": "Choose a location first",
+    "customerPoints": "Reward points: {points}",
+    "notFound": "Sale not found",
+    "printSale": "Print",
+    "total": "Total",
     "listDescription": "Every invoice across your locations",
     "draftsDescription": "Sales saved for later",
     "quotationsDescription": "Quotes sent to customers",

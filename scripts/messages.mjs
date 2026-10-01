@@ -592,6 +592,11 @@ const M = {
     },
   },
   sales: {
+    chooseLocation: ["Choose a location first", "আগে একটি লোকেশন বাছুন"],
+    customerPoints: ["Reward points: {points}", "রিওয়ার্ড পয়েন্ট: {points}"],
+    notFound: ["Sale not found", "বিক্রয় পাওয়া যায়নি"],
+    printSale: ["Print", "প্রিন্ট"],
+    total: ["Total", "মোট"],
     listDescription: ["Every invoice across your locations", "সব লোকেশনের ইনভয়েস"],
     draftsDescription: ["Sales saved for later", "পরে সম্পন্ন করার জন্য রাখা বিক্রয়"],
     quotationsDescription: ["Quotes sent to customers", "গ্রাহকদের পাঠানো কোটেশন"],

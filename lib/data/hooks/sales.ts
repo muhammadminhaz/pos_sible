@@ -21,6 +21,10 @@ export function useSale(id: string | undefined) {
   return useQuery({ queryKey: ["transactions", "sale", id], queryFn: () => salesService.get(id!), enabled: !!id });
 }
 
+export function useSaleCart(id: string | undefined) {
+  return useQuery({ queryKey: ["transactions", "sale-cart", id], queryFn: () => salesService.toCart(id!, true), enabled: !!id, gcTime: 0 });
+}
+
 export function useSaleMutations() {
   const done = useRefresh("accountTxns");
   return {

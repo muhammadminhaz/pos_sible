@@ -589,6 +589,11 @@
     }
   },
   "sales": {
+    "chooseLocation": "আগে একটি লোকেশন বাছুন",
+    "customerPoints": "রিওয়ার্ড পয়েন্ট: {points}",
+    "notFound": "বিক্রয় পাওয়া যায়নি",
+    "printSale": "প্রিন্ট",
+    "total": "মোট",
     "listDescription": "সব লোকেশনের ইনভয়েস",
     "draftsDescription": "পরে সম্পন্ন করার জন্য রাখা বিক্রয়",
     "quotationsDescription": "গ্রাহকদের পাঠানো কোটেশন",
