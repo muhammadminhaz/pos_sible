@@ -1,5 +1,11 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { Suspense } from "react";
+import { RequirePermission } from "@/components/shared/Can";
+import { ProductFormPage } from "@/features/catalog/ProductFormPage";
 
 export default function Page() {
-  return <RoutePlaceholder route="/products/new" />;
+  return (
+    <RequirePermission permission="product.create">
+      <Suspense><ProductFormPage /></Suspense>
+    </RequirePermission>
+  );
 }

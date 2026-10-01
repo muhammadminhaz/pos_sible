@@ -210,3 +210,14 @@ describe("productsService", () => {
     });
   });
 });
+
+describe("stockByLocation", () => {
+  beforeEach(() => resetDB(structuredClone(seed)));
+  it("sums remaining lots per location and variation", async () => {
+    const p = getDB().products.find((x) => getDB().stockLots.some((l) => l.productId === x.id && l.qtyRemaining > 0))!;
+    const rows = await productsService.stockByLocation(p.id);
+    const total = getDB().stockLots.filter((l) => l.productId === p.id).reduce((s, l) => s + l.qtyRemaining, 0);
+    expect(rows.reduce((s, r) => s + r.qty, 0)).toBeCloseTo(total, 4);
+    expect(rows.every((r) => r.qty > 0)).toBe(true);
+  });
+});

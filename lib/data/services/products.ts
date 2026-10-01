@@ -271,6 +271,25 @@ export const productsService = {
     });
   },
 
+  /** Remaining stock per location and variation, with its value at cost. */
+  async stockByLocation(id: string): Promise<{ key: string; locationName: string; variationName: string; qty: number; value: number }[]> {
+    await delay();
+    const d = getDB();
+    if (!d.products.some((p) => p.id === id)) throw new NotFoundError("Product");
+    const loc = new Map(d.locations.map((l) => [l.id, l.name]));
+    const vname = new Map(d.variations.filter((v) => v.productId === id).map((v) => [v.id, v.name]));
+    const out = new Map<string, { key: string; locationName: string; variationName: string; qty: number; value: number }>();
+    for (const l of d.stockLots) {
+      if (l.productId !== id || l.qtyRemaining <= 0) continue;
+      const key = `${l.locationId}:${l.variationId}`;
+      const row = out.get(key) ?? { key, locationName: loc.get(l.locationId) ?? "", variationName: vname.get(l.variationId) ?? "", qty: 0, value: 0 };
+      row.qty = roundMoney(row.qty + l.qtyRemaining, 4);
+      row.value = roundMoney(row.value + l.qtyRemaining * l.unitCost);
+      out.set(key, row);
+    }
+    return [...out.values()];
+  },
+
   /** Every stock movement of the product, oldest first: opening lots plus lines of finished transactions. */
   async history(id: string): Promise<HistoryRow[]> {
     await delay();
