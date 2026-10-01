@@ -429,3 +429,18 @@ describe("salesService.generateNext", () => {
     await expect(salesService.generateNext(plain.id)).rejects.toBeInstanceOf(NotFoundError);
   });
 });
+
+describe("salesService.listAll shipments", () => {
+  it("shipped + delivery person filters", async () => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+    const sale = getDB().transactions.find((t) => t.type === "sell" && t.status === "final")!;
+    await salesService.setShipping(sale.id, { status: "packed", deliveryPersonId: "user_manager" });
+    const rows = (await salesService.listAll({ shipped: true, pageSize: -1 })).rows;
+    expect(rows.every((r) => r.shippingStatus)).toBe(true);
+    expect(rows.map((r) => r.id)).toContain(sale.id);
+    const by = (await salesService.listAll({ deliveryPersonId: "user_manager", pageSize: -1 })).rows;
+    expect(by.map((r) => r.id)).toEqual([sale.id]);
+    expect(by[0].deliveryPerson).not.toBe("");
+  });
+});

@@ -589,6 +589,15 @@
     }
   },
   "sales": {
+    "ordersDescription": "পূরণের অপেক্ষায় থাকা গ্রাহকের অর্ডার",
+    "returnsDescription": "গ্রাহকের ফেরত দেওয়া পণ্য",
+    "shipmentsDescription": "বিক্রয়ের ডেলিভারি ট্র্যাক করুন",
+    "noOrders": "এই ফিল্টারে কোনো অর্ডার নেই",
+    "noReturns": "এই ফিল্টারে কোনো ফেরত নেই",
+    "noShipments": "এই ফিল্টারে কোনো শিপমেন্ট নেই",
+    "deleteReturnTitle": "এই ফেরত মুছবেন?",
+    "deleteReturnBody": "ফেরত আসা স্টক আবার বাদ যাবে।",
+    "invoiceSearch": "ইনভয়েস নং বা গ্রাহক খুঁজুন",
     "chooseLocation": "আগে একটি লোকেশন বাছুন",
     "customerPoints": "রিওয়ার্ড পয়েন্ট: {points}",
     "notFound": "বিক্রয় পাওয়া যায়নি",

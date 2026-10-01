@@ -44,12 +44,12 @@ export type ReceiptData = {
 
 export type SaleFilters = ListQuery & {
   kind?: "all" | "drafts" | "quotations"; locationId?: string; contactId?: string; paymentStatus?: PaymentStatus; from?: string; to?: string;
-  createdBy?: string; agentId?: string; shippingStatus?: ShippingStatus; subscription?: boolean; channel?: "pos" | "web";
+  createdBy?: string; agentId?: string; shippingStatus?: ShippingStatus; subscription?: boolean; channel?: "pos" | "web"; deliveryPersonId?: string; shipped?: boolean;
 };
 export type SaleListRow = {
   id: string; refNo: string; date: string; status: Transaction["status"]; contactName: string; mobile: string; locationName: string;
   paymentStatus: PaymentStatus; methods: PaymentMethod[]; total: number; paid: number; due: number; returnDue: number;
-  shippingStatus: ShippingStatus | null; itemsCount: number; addedBy: string; note: string; staffNote: string; recurring: boolean; channel: "pos" | "web";
+  shippingStatus: ShippingStatus | null; deliveryPerson: string; itemsCount: number; addedBy: string; note: string; staffNote: string; recurring: boolean; channel: "pos" | "web";
 };
 export type SaleDetail = Transaction & { contactName: string; locationName: string; addedBy: string; lineNames: Record<string, string> };
 
@@ -291,6 +291,8 @@ export const salesService = {
       .filter((t) => !f.channel || t.channel === f.channel)
       .filter((t) => !f.shippingStatus || t.shipping.status === f.shippingStatus)
       .filter((t) => !f.subscription || t.recurring != null)
+      .filter((t) => !f.deliveryPersonId || t.shipping.deliveryPersonId === f.deliveryPersonId)
+      .filter((t) => !f.shipped || t.shipping.status != null)
       .filter((t) => !f.paymentStatus || t.paymentStatus === f.paymentStatus)
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
@@ -307,7 +309,7 @@ export const salesService = {
         id: t.id, refNo: t.refNo, date: t.date, status: t.status, contactName: c?.name ?? "", mobile: c?.mobile ?? "",
         locationName: locations.get(t.locationId) ?? "", paymentStatus: t.paymentStatus,
         methods: [...new Set(t.payments.filter((p) => !p.isReturn).map((p) => p.method))], total: t.totals.total, paid: sum.paid,
-        due: t.status === "final" ? sum.due : 0, returnDue, shippingStatus: t.shipping.status, itemsCount: t.totals.itemsCount,
+        due: t.status === "final" ? sum.due : 0, returnDue, shippingStatus: t.shipping.status, deliveryPerson: users.get(t.shipping.deliveryPersonId ?? "") ?? "", itemsCount: t.totals.itemsCount,
         addedBy: users.get(t.createdBy ?? "") ?? "", note: t.notes, staffNote: t.staffNote, recurring: t.recurring != null, channel: t.channel,
       };
     };

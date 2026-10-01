@@ -589,6 +589,15 @@
     }
   },
   "sales": {
+    "ordersDescription": "Customer orders waiting to be fulfilled",
+    "returnsDescription": "Items customers brought back",
+    "shipmentsDescription": "Track deliveries for your sales",
+    "noOrders": "No orders match these filters",
+    "noReturns": "No returns match these filters",
+    "noShipments": "No shipments match these filters",
+    "deleteReturnTitle": "Delete this return?",
+    "deleteReturnBody": "The returned stock is taken back out.",
+    "invoiceSearch": "Search invoice no. or customer",
     "chooseLocation": "Choose a location first",
     "customerPoints": "Reward points: {points}",
     "notFound": "Sale not found",
