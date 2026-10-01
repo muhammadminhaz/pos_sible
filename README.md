@@ -6,32 +6,28 @@ It is **frontend only**. All data is mock data generated in the browser and save
 
 ## Status
 
-**Overall: 2 of 8 sub-projects done, a third in progress.** 8 of 86 route pages are live; the other 78 render a "Coming soon" placeholder.
+**Overall: 3 of 8 sub-projects done.** 18 of 86 route pages are live; the other 68 render a "Coming soon" placeholder.
 
 | # | Sub-project | Status | Plan |
 |---|---|---|---|
 | 1 | ✅ Foundation: app shell, auth, data layer, seed data, i18n, theme, Home KPIs, Products list | ✅ Done | [plan](docs/superpowers/plans/2026-09-27-possible-foundation.md) |
 | 2 | ✅ POS: register, cart, product grid, split payments, suspend/draft/quotation, receipts, shortcuts | ✅ Done | [plan](docs/superpowers/plans/2026-09-28-possible-pos.md) |
-| 3 | ⬜ Sales | **In progress, about 55%** | [plan](docs/superpowers/plans/2026-10-01-possible-sales.md) |
+| 3 | ✅ Sales: lists, add/edit sale, detail, payments, shipping, returns, orders, shipments, discounts, CSV import | ✅ Done | [plan](docs/superpowers/plans/2026-10-01-possible-sales.md) |
 | 4 | ⬜ Catalog: product form and detail, units, categories, brands, variations, warranties, price groups, opening stock, imports, labels | Planned | [plan](docs/superpowers/plans/2026-10-02-possible-catalog.md) |
 | 5 | ⬜ Contacts, Purchases, Stock | Planned | [plan](docs/superpowers/plans/2026-10-03-possible-contacts-purchases-stock.md) |
 | 6 | ⬜ Expenses and Accounts | Planned | [plan](docs/superpowers/plans/2026-10-04-possible-expenses-accounts.md) |
 | 7 | ⬜ Reports and Dashboard | Planned | [plan](docs/superpowers/plans/2026-10-05-possible-reports-dashboard.md) |
 | 8 | ⬜ Settings and Admin, plus POS follow-ups | Planned | [plan](docs/superpowers/plans/2026-10-06-possible-settings-admin.md) |
 
-### Sales, in detail
-- **Done:** every sales service (list and detail queries, save/edit of a sale of any status, convert draft or quotation to invoice, delete with stock restore, add/remove payments, shipping updates, subscriptions' next invoice, sell returns, sales orders with linking, discounts, CSV import with revert), the query hooks, the `sales` messages, and the All Sales, Drafts and Quotations lists with payments and shipping dialogs.
-- **Left (plan tasks 10–13):** Add/Edit Sale form and Sale Detail, Sales Orders, Sell Returns and Shipments screens, Discounts and Import Sales screens, wiring POS "edit final sale" to the edit route, smoke test and review.
-
 ### What works today
 - Sign in (demo `admin` / `112233`), app shell, collapsible sidebar, command palette (⌘K), notifications, location switcher, one-click light/dark theme, EN/BN toggle.
 - Home dashboard KPI tiles with location and date filters.
 - Products list with filters, stock report tab, bulk actions and CSV export.
 - Full POS at `/pos`: register open/close, barcode/SKU scanning, grid, variations, serials, line discounts, order discount/tax/shipping, reward points, split payments (cash, card, bKash, Nagad and more), suspend/resume, draft, quotation, credit sale, recent transactions, thermal and A4 receipts with Code 128, keyboard shortcuts, weighing-scale barcodes.
-- Sales lists (all, drafts, quotations) with filters, column chooser, CSV export, payments, shipping and convert/delete actions.
+- Sales: all sales, drafts and quotations lists, add/edit sale (shipping, additional expenses, payments, subscriptions, linked orders), sale detail, payments, convert to invoice, sell returns, sales orders, shipments, discounts and CSV import with revert.
 
 ### Still to build (roughly)
-Every other route in the sidebar: Add/Edit Sale, Sales Orders, Returns, Shipments, Discounts, Import; product create/edit/detail and the reference lists; customers, suppliers, purchases, transfers, adjustments; expenses and accounts; the 18 reports and the rest of the dashboard; all settings, users and roles, backup, profile and calendar. Each has a task list in its plan.
+Every other route in the sidebar: product create/edit/detail and the reference lists; customers, suppliers, purchases, transfers, adjustments; expenses and accounts; the 18 reports and the rest of the dashboard; all settings, users and roles, backup, profile and calendar. Each has a task list in its plan.
 
 ## Tech stack
 Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand (persisted), next-intl, next-themes, zod, recharts, sonner, lucide-react, vitest. Fonts: Inter and Anek Bangla.
@@ -44,7 +40,7 @@ npm run dev        # http://localhost:3000
 Sign in with `admin` / `112233` (also `cashier`, `rafiq`, `nazmul`, all with `112233`). Data is seeded on first load (about six months of history). Clear site storage to reset it.
 
 ```bash
-npm test           # vitest, 169 tests
+npm test           # vitest, 171 tests
 npx tsc --noEmit   # typecheck
 npm run lint
 npm run build
