@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { flushSync } from "react-dom";
 
-export type PrintKind = "thermal" | "a4";
+export type PrintKind = "thermal" | "a4" | "labels";
 
 /**
  * Renders the chosen layout into the print root synchronously, then opens the print dialog.

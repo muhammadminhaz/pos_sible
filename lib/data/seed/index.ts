@@ -6,7 +6,7 @@ import { createDiscounts, createOrg } from "./org";
 import { idFactory, mulberry32 } from "./rng";
 import { defaultSettings } from "./settings";
 
-export const SEED_VERSION = 2;
+export const SEED_VERSION = 3;
 const HISTORY_DAYS = 180;
 
 export function createSeed(opts: { seed?: number; today?: string } = {}): DB {

@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createSeed } from "@/lib/data/seed";
 import { getDB, resetDB } from "@/lib/data/store/db";
 import { available } from "@/lib/domain/stock";
+import { addItem, emptyCart } from "@/lib/pos/cart";
+import { posService, toCartItem } from "./pos";
+import { salesService } from "./sales";
 import { productsService, type ProductFormData } from "./products";
 
 const seed = createSeed({ seed: 42, today: "2026-09-27" });
@@ -219,5 +222,31 @@ describe("stockByLocation", () => {
     const total = getDB().stockLots.filter((l) => l.productId === p.id).reduce((s, l) => s + l.qtyRemaining, 0);
     expect(rows.reduce((s, r) => s + r.qty, 0)).toBeCloseTo(total, 4);
     expect(rows.every((r) => r.qty > 0)).toBe(true);
+  });
+});
+
+describe("catalog to POS", () => {
+  beforeEach(() => resetDB(structuredClone(seed)));
+
+  it("a new product with opening stock can be sold, and the sale uses the opening lot", async () => {
+    const base = getDB().products[0];
+    const { id } = await productsService.create({
+      ...(await productsService.getForm(base.id)), name: "Fresh Item", sku: "FRESH-1",
+      variations: [{ name: "DUMMY", sku: "", purchasePriceExc: 100, purchasePriceInc: 100, margin: 20, sellPriceExc: 120, sellPriceInc: 120, groupPrices: {}, image: null, comboItems: [] }],
+      type: "single", taxId: null, enableSerial: false, notForSale: false, manageStock: true, active: true,
+    });
+    const form = await productsService.getForm(id);
+    const loc = form.locationIds[0];
+    await productsService.addOpeningStock(id, [{ variationId: form.variations[0].id!, locationId: loc, qty: 5, unitCost: 80 }]);
+
+    const hit = (await posService.bySku({ locationId: loc, sku: "FRESH-1" }))!;
+    expect(hit.variation.stock).toBe(5);
+    const cart = addItem(emptyCart(), toCartItem(hit.product, hit.variation, 2), "new_row");
+    await salesService.checkout({ cart, locationId: loc, status: "final", payments: [{ method: "cash", amount: 240 }] });
+
+    expect(available(getDB().stockLots, form.variations[0].id!, loc)).toBe(3);
+    const line = getDB().transactions.at(-1)!.lines[0];
+    expect(line.unitCost).toBe(80);
+    expect((await productsService.history(id)).map((r) => r.kind)).toEqual(["opening", "sell"]);
   });
 });

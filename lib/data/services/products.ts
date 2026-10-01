@@ -325,7 +325,9 @@ export const productsService = {
         });
       }
     }
-    return rows.sort((a, b) => a.date.localeCompare(b.date) || a.key.localeCompare(b.key));
+    // On a tie, opening stock comes first: it's what the other movements drew from.
+    const rank = (r: HistoryRow) => (r.kind === "opening" ? 0 : 1);
+    return rows.sort((a, b) => a.date.localeCompare(b.date) || rank(a) - rank(b) || a.key.localeCompare(b.key));
   },
 
   async setActive(ids: string[], active: boolean): Promise<void> {
