@@ -14,7 +14,7 @@ import type { Rng } from "./rng";
 
 export const ACC = { cash: "acc_cash", bkash: "acc_bkash", nagad: "acc_nagad", bank: "acc_city" };
 export const ROLE = { admin: "role_admin", manager: "role_manager", cashier: "role_cashier" };
-export const SCHEME = { default: "scheme_default", haque: "scheme_haque" };
+export const SCHEME = { default: "scheme_default", secondary: "scheme_secondary" };
 export const LAYOUT = { classic: "layout_classic", receipt: "layout_receipt", a4: "layout_a4" };
 
 const PAYMENT_METHODS = ["cash", "card", "cheque", "bank_transfer", "other", "custom_pay_1", "custom_pay_2", "custom_pay_3", "custom_pay_4"] as const;
@@ -25,7 +25,8 @@ const DEFAULT_ACCOUNTS = {
 
 export const MANAGER_PERMISSIONS = [
   "dashboard.view", "contacts.supplier", "contacts.customer", "customer_group.view", "product.view", "product.create",
-  "product.update", "product.delete", "purchase.view", "purchase.create", "sell.view", "sell.create", "sell.update",
+  "product.update", "product.delete", "purchase.view", "purchase.create", "sell.view", "sell.create", "sell.update", "sell.payments",
+  "sell_return.view", "sales_order.view", "draft.view", "quotation.view", "shipment.view", "discount.view",
   "pos.access", "stock_transfer.view", "stock_adjustment.view", "expense.view", "expense.create", "account.view",
   "report.view", "settings.barcode", "settings.printer",
 ];
@@ -54,15 +55,15 @@ export function createOrg(r: Rng, createdAt: string): Org {
     mk(location, {
       ...base, id: LOC_RANGO, code: "BL0001", name: "Rango Electronics", landmark: "Opposite Mirpur 10 Metro Station",
       address: { line1: "Shop 12, Shah Ali Plaza", line2: "Mirpur 10", city: "Dhaka", state: "Dhaka", country: "Bangladesh", zip: "1216" },
-      mobile: "01711223344", email: "rango@sarkarpos.com.bd", priceGroupId: null,
+      mobile: "01711223344", email: "rango@possible.test", priceGroupId: null,
       invoiceSchemeId: SCHEME.default, posLayoutId: LAYOUT.receipt, saleLayoutId: LAYOUT.classic,
       paymentMethods: [...PAYMENT_METHODS], defaultAccounts: DEFAULT_ACCOUNTS, active: true,
     }),
     mk(location, {
       ...base, id: LOC_NIPUN, code: "BL0003", name: "Nipun Poultry & Fish Feed", landmark: "Bhaluka Bazar",
       address: { line1: "Holding 45, Dhaka-Mymensingh Highway", line2: "Bhaluka", city: "Mymensingh", state: "Mymensingh", country: "Bangladesh", zip: "2240" },
-      mobile: "01819556677", email: "nipun@sarkarpos.com.bd", priceGroupId: null,
-      invoiceSchemeId: SCHEME.haque, posLayoutId: LAYOUT.receipt, saleLayoutId: LAYOUT.a4,
+      mobile: "01819556677", email: "nipun@possible.test", priceGroupId: null,
+      invoiceSchemeId: SCHEME.secondary, posLayoutId: LAYOUT.receipt, saleLayoutId: LAYOUT.a4,
       paymentMethods: [...PAYMENT_METHODS], defaultAccounts: DEFAULT_ACCOUNTS, active: true,
     }),
   ];
@@ -85,15 +86,15 @@ export function createOrg(r: Rng, createdAt: string): Org {
   const users = [
     mk(user, {
       ...base, createdBy: null, id: SEED_USER, username: "admin", password: "112233", prefix: "Mr", firstName: "Mahmud",
-      lastName: "Sarkar", email: "admin@sarkarpos.com.bd", roleId: ROLE.admin, profile: { mobile: "01711000001" },
+      lastName: "Rahman", email: "admin@possible.test", roleId: ROLE.admin, profile: { mobile: "01711000001" },
     }),
     mk(user, {
       ...base, id: "user_cashier", username: "cashier", password: "112233", firstName: "Rubel", lastName: "Hossain",
-      email: "cashier@sarkarpos.com.bd", roleId: ROLE.cashier, locationIds: [LOC_RANGO], profile: { mobile: "01711000002" },
+      email: "cashier@possible.test", roleId: ROLE.cashier, locationIds: [LOC_RANGO], profile: { mobile: "01711000002" },
     }),
     ...staff.map(([id, username, firstName, lastName, locationIds, isSalesAgent, commissionPercent], i) =>
       mk(user, {
-        ...base, id, username, password: "112233", firstName, lastName, email: `${username}@sarkarpos.com.bd`,
+        ...base, id, username, password: "112233", firstName, lastName, email: `${username}@possible.test`,
         roleId: i === 0 ? ROLE.manager : ROLE.cashier, locationIds, isSalesAgent, commissionPercent,
         profile: { mobile: mobile(r) },
       }),
@@ -155,7 +156,7 @@ export function createOrg(r: Rng, createdAt: string): Org {
     contacts.push(
       mk(contact, {
         ...base, id: `both_${i + 1}`, code: nextCode(), type: "both", kind: "business",
-        businessName: ["Sarkar Agro Traders", "Haque Electronics Mart"][i], name: `${p.first} ${p.last}`, mobile: mobile(r),
+        businessName: ["Rahman Agro Traders", "Haque Electronics Mart"][i], name: `${p.first} ${p.last}`, mobile: mobile(r),
         payTerm: { number: 30, type: "days" }, address: address(r),
       }),
     );
@@ -188,7 +189,7 @@ export function createOrg(r: Rng, createdAt: string): Org {
 
   const invoiceSchemes = [
     mk(invoiceScheme, { ...base, id: SCHEME.default, name: "Default", prefix: "", numberingType: "sequential", digits: 4, isDefault: true }),
-    mk(invoiceScheme, { ...base, id: SCHEME.haque, name: "Haque", prefix: "HQ-", numberingType: "sequential", digits: 5 }),
+    mk(invoiceScheme, { ...base, id: SCHEME.secondary, name: "Secondary", prefix: "SC-", numberingType: "sequential", digits: 5 }),
   ];
   const invoiceLayouts = [
     mk(invoiceLayout, { ...base, id: LAYOUT.classic, name: "Classic", design: "classic", paper: "a4", footerText: "Thank you for shopping with us.", isDefault: true, showBrand: true, showWarranty: true }),

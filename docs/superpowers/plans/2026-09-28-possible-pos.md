@@ -941,7 +941,7 @@ export function useHotkeys(map: Record<string, (e: KeyboardEvent) => void>, enab
 }
 ```
 
-> Note on the typing rule: UltimatePOS binds `shift+<letter>` shortcuts that fire even while the search box has focus (cashiers type product names in lowercase). Uppercase letters typed with Shift inside inputs therefore trigger the shortcut. That is intended and matches the reference app.
+> Note on the typing rule: The original product binds `shift+<letter>` shortcuts that fire even while the search box has focus (cashiers type product names in lowercase). Uppercase letters typed with Shift inside inputs therefore trigger the shortcut. That is intended and matches the reference app.
 
 ```ts
 // lib/pos/barcode.ts

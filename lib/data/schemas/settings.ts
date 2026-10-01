@@ -3,7 +3,7 @@ import { paymentMethod } from "./common";
 
 const text = z.string().default("");
 
-/** Business settings, grouped exactly like the Business Settings tabs in Product.md §3.11. */
+/** Business settings, grouped like the Business Settings tabs. */
 export const settings = z.object({
   business: z.object({
     name: z.string().min(1),

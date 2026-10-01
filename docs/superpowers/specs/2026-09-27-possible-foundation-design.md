@@ -2,15 +2,15 @@
 
 - **Date:** 2026-09-27
 - **Status:** Approved
-- **Source of requirements:** `Product.md`, the inventory of the Sarkar POS / UltimatePOS demo at demo.posghor.com
+- **Source of requirements:** the product's feature inventory (every screen, field, filter and column)
 
 ## 1. Goal and scope
 
-Rebuild the full UI of the Sarkar POS product as a modern, frontend-only Next.js app. It must have **feature parity with every screen in `Product.md`**, and it runs on a realistic mock data layer that can later be swapped for a real API.
+Build the full UI of pos_sible as a modern, frontend-only Next.js app. It must have **every planned screen**, and it runs on a realistic mock data layer that can later be swapped for a real API.
 
 The work is split into sub-projects. Each gets its own implementation plan:
 
-| # | Sub-project | Covers (`Product.md` sections) |
+| # | Sub-project | Covers |
 |---|---|---|
 | 1 | **Foundation** (this spec, in full detail) | Design system, app shell, shared components, data layer, domain logic, auth, i18n |
 | 2 | POS screen | §3.5 POS |
@@ -21,7 +21,7 @@ The work is split into sub-projects. Each gets its own implementation plan:
 | 7 | Reports and Dashboard | §3.1, §3.9 |
 | 8 | Settings and Admin | §3.10, §3.11, §3.12 |
 
-**Gaps from `Product.md` §6 that this build fills:**
+**Gaps this build fills:**
 - list pages for Stock Transfers and Stock Adjustments
 - a working Customer Groups page
 - Users and Roles pages
@@ -166,7 +166,7 @@ All IDs are strings, and all money is a `number` in major units, rounded by doma
 
 | Entity | Key fields |
 |---|---|
-| Business/Settings | Every field in `Product.md` §3.11 Business Settings, grouped by tab |
+| Business/Settings | Every Business Settings field, grouped by tab |
 | Location | id, code (BL0001), name, landmark, address, priceGroupId, invoiceSchemeId, posLayoutId, saleLayoutId, paymentMethods, defaultAccounts, featuredProductIds, active |
 | User | id, username, password (mock), name, email, roleId, locationIds, commissionPercent, isSalesAgent, profile fields, bank details |
 | Role | id, name, permissions: string[] |
@@ -177,13 +177,13 @@ All IDs are strings, and all money is a `number` in major units, rounded by doma
 | Variation | id, productId, name, sku, purchasePriceExc, purchasePriceInc, margin, sellPriceExc, sellPriceInc, groupPrices{groupId: price}, comboItems? |
 | Unit | id, name, shortName, allowDecimal, baseUnitId?, multiplier? |
 | Category | id, name, code, description, parentId? |
-| Brand, Warranty, PriceGroup, VariationTemplate, ExpenseCategory, TaxRate (+ group subTaxIds) | as in `Product.md` |
+| Brand, Warranty, PriceGroup, VariationTemplate, ExpenseCategory, TaxRate (+ group subTaxIds) | as planned |
 | StockLot | id, locationId, variationId, sourceTxnId, lotNo, qtyIn, qtyRemaining, unitCost, mfgDate, expDate |
 | Transaction | id, type, status, subStatus, locationId, contactId, refNo/invoiceNo, date, lines[], discount, tax, shipping{...}, additionalExpenses[4], totals{...}, payments[], paymentStatus, notes, staffNote, docs, recurring?, parentId?, channel (pos/web), technicianId?, serviceStaffId?, commissionAgentId?, createdBy, createdAt |
 | Payment | id, txnId, amount, method, accountId?, details{}, paidOn, note, isReturn (change), refNo |
 | Account | id, name, typeId, number, note, openingBalance, status; AccountTransaction ledger |
 | Discount | id, name, brandId?, categoryId?, productIds, locationId, priority, type, amount, starts, ends, priceGroups, applyInCustomerGroups, active |
-| InvoiceScheme, InvoiceLayout, BarcodeSetting, Printer | as in `Product.md` §3.11 |
+| InvoiceScheme, InvoiceLayout, BarcodeSetting, Printer | as planned |
 | CashRegister | id, userId, locationId, openedAt, closedAt, openingCash, closingNote, status |
 | ImportBatch, Notification, Backup | metadata records |
 

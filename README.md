@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# pos_sible
 
-## Getting Started
+A modern point-of-sale and back-office app for retail shops: selling, catalog, contacts, purchases, stock, expenses, accounts, reports and settings, in English and Bangla.
 
-First, run the development server:
+It is **frontend only**. All data is mock data generated in the browser and saved to local storage, so every screen can be used, reloaded and demoed without a server. Services are written so a real API can replace them later without touching the UI.
+
+## Status
+
+**Overall: 3 of 8 sub-projects done.** 18 of 86 route pages are live; the other 68 render a "Coming soon" placeholder.
+
+| # | Sub-project | Status | Plan |
+|---|---|---|---|
+| 1 | ✅ Foundation: app shell, auth, data layer, seed data, i18n, theme, Home KPIs, Products list | ✅ Done | [plan](docs/superpowers/plans/2026-09-27-possible-foundation.md) |
+| 2 | ✅ POS: register, cart, product grid, split payments, suspend/draft/quotation, receipts, shortcuts | ✅ Done | [plan](docs/superpowers/plans/2026-09-28-possible-pos.md) |
+| 3 | ✅ Sales: lists, add/edit sale, detail, payments, shipping, returns, orders, shipments, discounts, CSV import | ✅ Done | [plan](docs/superpowers/plans/2026-10-01-possible-sales.md) |
+| 4 | ⬜ Catalog: product form and detail, units, categories, brands, variations, warranties, price groups, opening stock, imports, labels | Planned | [plan](docs/superpowers/plans/2026-10-02-possible-catalog.md) |
+| 5 | ⬜ Contacts, Purchases, Stock | Planned | [plan](docs/superpowers/plans/2026-10-03-possible-contacts-purchases-stock.md) |
+| 6 | ⬜ Expenses and Accounts | Planned | [plan](docs/superpowers/plans/2026-10-04-possible-expenses-accounts.md) |
+| 7 | ⬜ Reports and Dashboard | Planned | [plan](docs/superpowers/plans/2026-10-05-possible-reports-dashboard.md) |
+| 8 | ⬜ Settings and Admin, plus POS follow-ups | Planned | [plan](docs/superpowers/plans/2026-10-06-possible-settings-admin.md) |
+
+### What works today
+- Sign in (demo `admin` / `112233`), app shell, collapsible sidebar, command palette (⌘K), notifications, location switcher, one-click light/dark theme, EN/BN toggle.
+- Home dashboard KPI tiles with location and date filters.
+- Products list with filters, stock report tab, bulk actions and CSV export.
+- Full POS at `/pos`: register open/close, barcode/SKU scanning, grid, variations, serials, line discounts, order discount/tax/shipping, reward points, split payments (cash, card, bKash, Nagad and more), suspend/resume, draft, quotation, credit sale, recent transactions, thermal and A4 receipts with Code 128, keyboard shortcuts, weighing-scale barcodes.
+- Sales: all sales, drafts and quotations lists, add/edit sale (shipping, additional expenses, payments, subscriptions, linked orders), sale detail, payments, convert to invoice, sell returns, sales orders, shipments, discounts and CSV import with revert.
+
+### Still to build (roughly)
+Every other route in the sidebar: product create/edit/detail and the reference lists; customers, suppliers, purchases, transfers, adjustments; expenses and accounts; the 18 reports and the rest of the dashboard; all settings, users and roles, backup, profile and calendar. Each has a task list in its plan.
+
+## Tech stack
+Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand (persisted), next-intl, next-themes, zod, recharts, sonner, lucide-react, vitest. Fonts: Inter and Anek Bangla.
+
+## Getting started
+```bash
+npm install
+npm run dev        # http://localhost:3000
+```
+Sign in with `admin` / `112233` (also `cashier`, `rafiq`, `nazmul`, all with `112233`). Data is seeded on first load (about six months of history). Clear site storage to reset it.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm test           # vitest, 171 tests
+npx tsc --noEmit   # typecheck
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How the code is organised
+```
+app/            routes: (auth) login, (app) back-office screens, (pos) full-screen POS
+components/     ui (shadcn), shared (DataTable, FilterBar, PageHeader, Money, dialogs), layout
+features/       one folder per module: pos, products, sales ...
+lib/data/       schemas (zod), seed, services (the "API"), hooks (TanStack Query), store
+lib/domain/     pure business maths: totals, pricing, stock allocation, payments, rewards, ledger
+lib/pos/        cart operations, selectors, hotkeys, barcode
+lib/auth/       session, permissions, assertCan
+lib/i18n/       formatting and locale
+messages/       generated en.json and bn.json
+scripts/        messages.mjs, the single source of all UI text
+docs/           design specs and implementation plans
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Conventions
+- **Data layer:** UI talks to hooks; hooks call services; services are the only code that touches the database. Every write goes through `commit()`, which rolls back if anything throws. Services start with a simulated delay, check permissions with `assertCan`, and throw typed errors.
+- **Stock** is kept as lots. Sales allocate FIFO or LIFO and record cost, so profit, returns and edits can restore stock exactly.
+- **Text:** all UI strings live in `scripts/messages.mjs` as English/Bangla pairs. Run `node scripts/messages.mjs messages` to regenerate `messages/*.json`; never edit those by hand. A test checks both languages have the same keys.
+- **Money** always goes through `roundMoney` and the `useFormat` hook (Bangla digits in Bangla mode).
+- **Permissions** gate routes (`RequirePermission`), buttons (`useCan`) and services (`assertCan`).
+- **Tests:** domain maths and every service have unit tests; screens are checked in the browser in both languages and themes.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Documentation
+Design specs are in `docs/superpowers/specs/` and step-by-step plans in `docs/superpowers/plans/`. Each sub-project gets a spec, then a plan, then a build on its own branch merged into `main`.

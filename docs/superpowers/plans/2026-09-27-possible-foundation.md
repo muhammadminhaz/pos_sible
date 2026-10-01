@@ -305,7 +305,7 @@ Rules:
 
 Every entity extends `base = { id: z.string(), createdAt: z.string(), createdBy: z.string().nullable() }`.
 
-`Settings` groups fields by tab: `business`, `tax`, `product`, `contact`, `sale`, `pos`, `purchase`, `payment`, `dashboard`, `system`, `prefixes`, `email`, `sms`, `rewards`, `modules`, `customLabels`. The field names follow `Product.md` §3.11 in camelCase.
+`Settings` groups fields by tab: `business`, `tax`, `product`, `contact`, `sale`, `pos`, `purchase`, `payment`, `dashboard`, `system`, `prefixes`, `email`, `sms`, `rewards`, `modules`, `customLabels`. Field names are camelCase.
 
 - [ ] Write the schemas. `index.ts` re-exports them and defines `export type TableName = keyof Omit<DB, "settings">`.
 - [ ] Run `npm run typecheck`. Expected: PASS.
@@ -330,8 +330,8 @@ Every entity extends `base = { id: z.string(), createdAt: z.string(), createdBy:
   - 4 customer groups, 3 technicians, 2 price groups (Wholesale, Dealer)
   - tax rates VAT 5%, VAT 7.5%, and AIT 2%, plus the group "VAT+AIT"
   - accounts Cash, bKash, Nagad, and City Bank; expense categories
-  - invoice schemes Default and Haque; layouts Classic, Compact receipt, and A4 detailed
-  - barcode presets from `Product.md`; 1 printer; 3 discounts
+  - invoice schemes Default and Secondary; layouts Classic, Compact receipt, and A4 detailed
+  - the standard barcode presets; 1 printer; 3 discounts
 - `history.ts` covers the 180 days before `today`:
   - purchases (received) create StockLots
   - sales (POS and web; 85% final, the rest draft or quotation) allocate FIFO, payments are split across cash, card, bKash, and Nagad, and payment status is computed with the domain functions
@@ -436,7 +436,7 @@ Hydration:
   In `next.config.ts`, wrap the config with `createNextIntlPlugin("./i18n/request.ts")`.
 - [ ] `lib/i18n/locale.ts` (`"use server"`): `setLocale(l: "en"|"bn")` sets the cookie (1 year).
 - [ ] `lib/i18n/format.ts`: `useFormat()` uses `useLocale()` and settings (currency precision and symbol placement from `useSettings()`, which falls back to precision 2 and "before"). It returns `money`, `number`, `date` (per the settings format), `dateTime`, `percent`, and `qty`. It uses `Intl.NumberFormat(locale==="bn"?"bn-BD":"en-US", …)` and prefixes `৳`.
-- [ ] `messages/*.json`: the namespaces `common` (save, cancel, add, edit, delete, view, print, export, search, filters, all, actions, status, active, inactive, yes, no, total, loading, noData, comingSoon, …), `nav` (every group and item label in `Product.md` §2 plus users/roles/stockTransfers/stockAdjustments lists), `auth`, `header`, `products`, `dashboard`, `status` (paid/partial/due/overdue/final/draft/quotation/proforma/received/pending/ordered/in_transit/completed/packed/shipped/delivered/cancelled), and `errors`. Every key must exist in both files.
+- [ ] `messages/*.json`: the namespaces `common` (save, cancel, add, edit, delete, view, print, export, search, filters, all, actions, status, active, inactive, yes, no, total, loading, noData, comingSoon, …), `nav` (every group and item label plus users/roles/stockTransfers/stockAdjustments lists), `auth`, `header`, `products`, `dashboard`, `status` (paid/partial/due/overdue/final/draft/quotation/proforma/received/pending/ordered/in_transit/completed/packed/shipped/delivered/cancelled), and `errors`. Every key must exist in both files.
 - [ ] `providers.tsx` (`"use client"`): `ThemeProvider attribute="class" defaultTheme="system"`, `NextIntlClientProvider`, `QueryClientProvider` (staleTime 30s), `TooltipProvider`, `<Toaster richColors position="top-right"/>`, `DataGate`.
 - [ ] Run `npm run build`. Expected: success.
 - [ ] Commit: `feat(ui): tokens, fonts, i18n and providers`.
@@ -581,7 +581,7 @@ export function presetRange(p: RangePreset, today: string, fyStartMonth: number)
 **Files:** `features/products/ProductsList.tsx`, `features/products/columns.tsx`, `app/(app)/products/page.tsx`
 
 - [ ] `PageHeader` with the title "Products" and the description "Manage your products". Actions: "Add product" (→ `/products/new`), plus Import and Export (menu).
-- [ ] Tabs: "All products" and "Stock report". The stock tab reuses `DataTable` with the stock columns from `Product.md` §3.3, computed via `productsService.list` rows.
+- [ ] Tabs: "All products" and "Stock report". The stock tab reuses `DataTable` with the stock columns, computed via `productsService.list` rows.
 - [ ] FilterBar: product type, category, unit, tax, brand, location, active state, and not-for-selling.
 - [ ] Columns:
   - select checkbox, image (thumb or initials tile)

@@ -1,5 +1,13 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { Suspense } from "react";
+import { RequirePermission } from "@/components/shared/Can";
+import { ReturnsList } from "@/features/sales/ReturnsList";
 
 export default function Page() {
-  return <RoutePlaceholder route="/sales/returns" />;
+  return (
+    <RequirePermission permission="sell_return.view">
+      <Suspense>
+        <ReturnsList />
+      </Suspense>
+    </RequirePermission>
+  );
 }
