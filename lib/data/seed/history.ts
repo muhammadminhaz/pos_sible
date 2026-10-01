@@ -433,11 +433,13 @@ export function createHistory(h: HistoryInput): History {
       const p = productById.get(v.productId)!;
       let unitCost = v.purchasePriceExc;
       let allocations: { lotId: string; qty: number; unitCost: number }[] = [];
-      if (status === "completed") {
+      if (status !== "pending") {
         const res = take(from, v.id, qty);
         allocations = res.allocations;
         unitCost = roundMoney(res.cost / qty);
-        for (const al of res.allocations) {
+      }
+      if (status === "completed") {
+        for (const al of allocations) {
           addLot({ id: id("lot"), locationId: to, variationId: v.id, productId: p.id, sourceTxnId: tid, qtyIn: al.qty, qtyRemaining: al.qty, unitCost: al.unitCost, receivedAt: at, expDate: lotById.get(al.lotId)?.expDate ?? null });
         }
       }
