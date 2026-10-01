@@ -71,4 +71,14 @@ describe("catalog crud rules", () => {
     expect(await field(mk(["S", " "]))).toEqual({ values: "empty_value" });
     expect((await mk(["S", "M"])).values).toEqual(["S", "M"]);
   });
+
+  it("customer groups need a price group or a percentage, and can't be deleted while contacts use them", async () => {
+    const mk = (extra: object) => crud("customerGroups").create({ name: "G", calcType: "percentage", amount: 5, priceGroupId: null, ...extra });
+    expect(await field(mk({ calcType: "selling_price_group" }))).toEqual({ priceGroupId: "required" });
+    expect(await field(mk({ amount: 150 }))).toEqual({ amount: "range" });
+    const used = getDB().contacts.find((c) => c.customerGroupId)!.customerGroupId!;
+    expect(await code(crud("customerGroups").remove(used))).toBe("customer_group_in_use");
+    const g = await mk({});
+    await crud("customerGroups").remove(g.id);
+  });
 });

@@ -1,5 +1,11 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { Suspense } from "react";
+import { RequirePermission } from "@/components/shared/Can";
+import { ContactsList } from "@/features/operations/ContactsList";
 
 export default function Page() {
-  return <RoutePlaceholder route="/contacts/customers" />;
+  return (
+    <RequirePermission permission="contacts.customer">
+      <Suspense><ContactsList kind="customer" /></Suspense>
+    </RequirePermission>
+  );
 }

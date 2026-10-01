@@ -87,6 +87,18 @@ const RULES: Partial<Record<TableName, Rules>> = {
     },
     inUse: (db, id) => used("variation_in_use", db.products.some((p) => p.variationTemplateId === id)),
   },
+  customerGroups: {
+    permission: "contacts.customer",
+    check: (_db, row) => {
+      if (row.calcType === "selling_price_group" && !row.priceGroupId) throw new ValidationError({ priceGroupId: "required" });
+      if (row.calcType === "percentage" && (typeof row.amount !== "number" || row.amount < -100 || row.amount > 100)) throw new ValidationError({ amount: "range" });
+    },
+    inUse: (db, id) => used("customer_group_in_use", db.contacts.some((c) => c.customerGroupId === id)),
+  },
+  technicians: {
+    permission: "contacts.customer",
+    inUse: (db, id) => used("technician_in_use", db.transactions.some((t) => t.technicianId === id)),
+  },
   taxRates: {
     permission: "settings.tax",
     inUse: (db, id) => used("tax_in_use", db.products.some((p) => p.taxId === id) || db.taxRates.some((t) => t.subTaxIds.includes(id))),

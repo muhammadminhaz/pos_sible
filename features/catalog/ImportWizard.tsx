@@ -23,7 +23,7 @@ export type ImportWizardProps<R> = {
   /** Header row of the downloadable template. */
   columns: readonly string[];
   templateName: string;
-  historyKind: "products" | "opening_stock" | "prices";
+  historyKind: "products" | "opening_stock" | "prices" | "contacts";
   parse: (csv: string) => Promise<Parse<R>>;
   commit: (rows: R[], fileName: string) => Promise<unknown>;
   /** Columns of the "ready to import" preview. */

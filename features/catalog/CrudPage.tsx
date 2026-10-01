@@ -160,7 +160,7 @@ function EditDialog<N extends TableName>({ cfg, row, onClose }: { cfg: CrudConfi
       cfg.fields.filter((f) => !f.show || f.show(values)).map((f) => [f.key, f.type === "text" ? (values[f.key] as string).trim() : values[f.key]]),
     );
     // A hidden field must not keep a stale value (e.g. a multiplier after the base unit is cleared).
-    for (const f of cfg.fields) if (f.show && !f.show(values)) data[f.key] = f.type === "number" || f.type === "select" ? null : values[f.key];
+    for (const f of cfg.fields) if (f.show && !f.show(values)) data[f.key] = f.type === "number" || f.type === "select" ? (f.type === "number" ? (f.initial ?? null) : null) : values[f.key];
     try {
       if (row) await update.mutateAsync({ id: row.id, patch: data as never });
       else await create.mutateAsync(data as never);
