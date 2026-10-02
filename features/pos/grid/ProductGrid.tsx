@@ -62,7 +62,7 @@ function ProductCard({ p, locationId }: { p: PosProduct; locationId: string }) {
       type="button"
       disabled={out}
       onClick={variable ? undefined : () => pick(0)}
-      className="group flex min-h-44 flex-col overflow-hidden rounded-xl border bg-card text-left shadow-xs transition hover:border-primary/50 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+      className="group flex min-h-44 flex-col overflow-hidden rounded-xl border bg-card text-left shadow-xs transition duration-150 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md active:translate-y-0 active:scale-[0.97] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
     >
       <span className="relative grid aspect-[4/3] place-items-center bg-muted text-lg font-semibold text-muted-foreground">
         {p.image ? (

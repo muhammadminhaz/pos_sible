@@ -86,7 +86,7 @@ export function ActionBar({ location }: { location: Location }) {
         )}
         <div className="shrink-0 px-3 text-right" aria-live="polite">
           <div className="text-xs text-muted-foreground">{t("pos.totals.payable")}</div>
-          <div className="text-2xl font-semibold tabular-nums">{f.money(cmd.payable)}</div>
+          <div key={cmd.payable} className="pop text-2xl font-semibold tabular-nums">{f.money(cmd.payable)}</div>
         </div>
         {!p.disableExpressCheckout && (
           <Button

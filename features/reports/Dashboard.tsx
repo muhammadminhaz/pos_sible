@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { FilterBar, type FilterDef } from "@/components/shared/FilterBar";
 import { Money } from "@/components/shared/Money";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useCountUp } from "@/lib/useCountUp";
 import { StatCard } from "@/components/shared/StatCard";
 import type { Tone } from "@/components/shared/tones";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -58,6 +59,13 @@ function DueTable({ rows, href, empty }: { rows: DuePayment[]; href: (id: string
   );
 }
 
+function KpiTile({ c, value, loading }: { c: (typeof CARDS)[number]; value: number | null; loading: boolean }) {
+  const t = useTranslations("dashboard");
+  const f = useFormat();
+  const shown = useCountUp(value);
+  return <StatCard label={t(c.label)} icon={c.icon} tone={c.tone} loading={loading} value={shown == null ? null : f.money(shown)} />;
+}
+
 export function Dashboard() {
   const t = useTranslations("dashboard");
   const r = useTranslations("reports");
@@ -81,7 +89,7 @@ export function Dashboard() {
       <div className="mb-4"><FilterBar defs={defs} value={rf.shown} onChange={(p) => rf.setUrl(p)} onReset={rf.resetUrl} /></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {CARDS.map((c) => (
-          <StatCard key={c.key} label={t(c.label)} icon={c.icon} tone={c.tone} loading={kpis.isPending} value={kpis.data ? f.money(kpis.data[c.key]) : null} />
+          <KpiTile key={c.key} c={c} value={kpis.data ? kpis.data[c.key] : null} loading={kpis.isPending} />
         ))}
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-3">

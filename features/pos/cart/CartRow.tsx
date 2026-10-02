@@ -72,7 +72,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
     <>
       <tr
         ref={ref}
-        className={cn("relative border-b align-middle transition-colors", over && "bg-danger/5 ring-1 ring-danger ring-inset")}
+        className={cn("relative border-b align-middle transition-colors animate-in fade-in slide-in-from-left-2 duration-200", over && "bg-danger/5 ring-1 ring-danger ring-inset")}
       >
         <td className="w-8 py-2 pl-3 text-xs text-muted-foreground tabular-nums">
           {/* Keyed on the flash token so re-flashing the same line remounts this overlay and replays
