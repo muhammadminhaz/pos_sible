@@ -365,7 +365,8 @@
       "name": "নাম",
       "mobile": "মোবাইল",
       "group": "গ্রাহক গ্রুপ",
-      "address": "ঠিকানা"
+      "address": "ঠিকানা",
+      "mobileDuplicate": "অন্য একজন গ্রাহকের এই মোবাইল নম্বর আছে"
     },
     "meta": {
       "technician": "টেকনিশিয়ান",
@@ -553,6 +554,7 @@
       "difference": "পার্থক্য",
       "cardSlips": "কার্ড স্লিপ",
       "cheques": "চেক",
+      "expectedCount": "রেকর্ড করা: {count}",
       "note": "বন্ধের নোট",
       "closed": "রেজিস্টার বন্ধ হয়েছে"
     },
@@ -1091,6 +1093,8 @@
     "saleStatus": "অবস্থা",
     "invoiceScheme": "ইনভয়েস স্কিম",
     "invoiceNoManual": "ইনভয়েস নং (ঐচ্ছিক)",
+    "payTermType": "মেয়াদের একক",
+    "discountType": "ছাড়ের ধরন",
     "payTerm": "পেমেন্টের মেয়াদ",
     "days": "দিন",
     "months": "মাস",

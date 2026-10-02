@@ -365,7 +365,8 @@
       "name": "Name",
       "mobile": "Mobile",
       "group": "Customer group",
-      "address": "Address"
+      "address": "Address",
+      "mobileDuplicate": "Another customer already uses this mobile number"
     },
     "meta": {
       "technician": "Technician",
@@ -553,6 +554,7 @@
       "difference": "Difference",
       "cardSlips": "Card slips",
       "cheques": "Cheques",
+      "expectedCount": "Recorded: {count}",
       "note": "Closing note",
       "closed": "Register closed"
     },
@@ -1091,6 +1093,8 @@
     "saleStatus": "Status",
     "invoiceScheme": "Invoice scheme",
     "invoiceNoManual": "Invoice no. (optional)",
+    "payTermType": "Pay term unit",
+    "discountType": "Discount type",
     "payTerm": "Pay term",
     "days": "Days",
     "months": "Months",

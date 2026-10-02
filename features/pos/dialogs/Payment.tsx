@@ -92,9 +92,9 @@ function PaymentForm({ location }: { location: Location }) {
             <div key={r.id} className="grid gap-3 rounded-lg border bg-card p-3">
               <div className="flex items-end gap-2">
                 <div className="grid flex-1 gap-1">
-                  <Label className="text-xs">{t("pos.pay.method")}</Label>
+                  <Label htmlFor={`method-${r.id}`} className="text-xs">{t("pos.pay.method")}</Label>
                   <Select value={r.method} onValueChange={(m) => patch(r.id, { method: m as PaymentMethod, details: {}, counts: {} })}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id={`method-${r.id}`} className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -134,9 +134,9 @@ function PaymentForm({ location }: { location: Location }) {
                   {detail(r, "cardNumber", t("pos.pay.cardNumber"))}
                   {detail(r, "cardHolder", t("pos.pay.cardHolder"))}
                   <div className="grid gap-1">
-                    <Label className="text-xs">{t("pos.pay.cardType")}</Label>
+                    <Label htmlFor={`cardtype-${r.id}`} className="text-xs">{t("pos.pay.cardType")}</Label>
                     <Select value={r.details.cardType ?? ""} onValueChange={(v) => patch(r.id, { details: { ...r.details, cardType: v as NonNullable<Payment["details"]["cardType"]> } })}>
-                      <SelectTrigger size="sm" className="w-full">
+                      <SelectTrigger id={`cardtype-${r.id}`} size="sm" className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

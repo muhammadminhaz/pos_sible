@@ -34,6 +34,11 @@ describe("hotkeys", () => {
     expect(shouldFire("shift+f", num)).toBe(true);
     expect(shouldFire("shift+f", text)).toBe(false);
   });
+  it("never steals digits, signs or e from a number input", () => {
+    const num = { tagName: "INPUT", type: "number" } as unknown as EventTarget;
+    for (const k of ["1", ".", "-", "+", "e", ","]) expect(shouldFire(k, num)).toBe(false);
+    expect(shouldFire("f", num)).toBe(true);
+  });
   it("still fires function keys, Escape, and ctrl/alt/meta combos while typing", () => {
     const input = { tagName: "INPUT" } as unknown as EventTarget;
     expect(shouldFire("f2", input)).toBe(true);

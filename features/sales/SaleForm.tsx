@@ -31,9 +31,9 @@ import { saleErrorMessage } from "./saleError";
 type Status = "final" | "draft" | "quotation" | "proforma";
 export type SaleFormInit = { id?: string; cart: Cart; sale?: Transaction; status: Status };
 
-const selectOf = (opts: { value: string; label: string }[], value: string, onChange: (v: string) => void, id?: string) => (
+const selectOf = (opts: { value: string; label: string }[], value: string, onChange: (v: string) => void, id?: string, label?: string) => (
   <Select value={value} onValueChange={onChange}>
-    <SelectTrigger id={id} className="w-full"><SelectValue /></SelectTrigger>
+    <SelectTrigger id={id} aria-label={label} className="w-full"><SelectValue /></SelectTrigger>
     <SelectContent>{opts.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
   </Select>
 );
@@ -117,7 +117,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
         {field(t("sales.payTerm"), "sf-term", (
           <div className="flex gap-2">
             <Input id="sf-term" type="number" min={0} value={payTerm.number} onChange={(e) => setPayTerm({ ...payTerm, number: e.target.value })} className="w-24" />
-            {selectOf([{ value: "days", label: t("sales.days") }, { value: "months", label: t("sales.months") }], payTerm.type, (v) => setPayTerm({ ...payTerm, type: v as "days" | "months" }))}
+            {selectOf([{ value: "days", label: t("sales.days") }, { value: "months", label: t("sales.months") }], payTerm.type, (v) => setPayTerm({ ...payTerm, type: v as "days" | "months" }), undefined, t("sales.payTermType"))}
           </div>))}
         {field(t("sales.commissionAgent"), "sf-agent", selectOf([{ value: "", label: "—" }, ...named(people.filter((p) => lookups?.users.find((u) => u.id === p.id)?.isSalesAgent))].map((o) => ({ ...o, value: o.value || "none" })), agent || "none", (v) => setAgent(v === "none" ? "" : v), "sf-agent"))}
         {field(t("sales.attachDocument"), "sf-doc", <Input id="sf-doc" type="file" onChange={(e) => setDoc(e.target.files?.[0]?.name ?? "")} />)}
@@ -185,7 +185,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
         {field(t("sales.orderDiscount"), "sf-disc", (
           <div className="flex gap-2">
             <Input id="sf-disc" type="number" min={0} step="any" value={cart.discount?.amount ?? ""} onChange={(e) => setCart(patchCart(cart, { discount: e.target.value ? { type: cart.discount?.type ?? "fixed", amount: Number(e.target.value) } : null }))} />
-            {selectOf([{ value: "fixed", label: t("sales.fixed") }, { value: "percentage", label: t("sales.percentage") }], cart.discount?.type ?? "fixed", (v) => cart.discount && setCart(patchCart(cart, { discount: { ...cart.discount, type: v as "fixed" | "percentage" } })))}
+            {selectOf([{ value: "fixed", label: t("sales.fixed") }, { value: "percentage", label: t("sales.percentage") }], cart.discount?.type ?? "fixed", (v) => cart.discount && setCart(patchCart(cart, { discount: { ...cart.discount, type: v as "fixed" | "percentage" } })), undefined, t("sales.discountType"))}
           </div>))}
         {field(t("sales.orderTax"), "sf-tax", selectOf([{ value: "none", label: "—" }, ...(lookups?.taxRates ?? []).map((x) => ({ value: x.id, label: `${x.name} (${x.rate}%)` }))], cart.orderTaxId ?? "none", (v) => { const r = lookups?.taxRates.find((x) => x.id === v); setCart(patchCart(cart, { orderTaxId: r?.id ?? null, orderTaxRate: r?.rate ?? 0 })); }, "sf-tax"))}
         {customer && customer.points > 0 && settings?.rewards.enabled && field(t("sales.redeemPoints"), "sf-pts", <Input id="sf-pts" type="number" min={0} max={customer.points} value={cart.pointsRedeemed || ""} onChange={(e) => setCart(patchCart(cart, { pointsRedeemed: Number(e.target.value) || 0 }))} />)}
@@ -228,7 +228,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
           </div>
           {pays.map((p, i) => (
             <div key={i} className="flex gap-2">
-              {selectOf(methods.map((m) => ({ value: m, label: methodLabel(m, t, labels) })), p.method, (v) => setPays(pays.map((y, j) => (j === i ? { ...y, method: v as PaymentMethod } : y))))}
+              {selectOf(methods.map((m) => ({ value: m, label: methodLabel(m, t, labels) })), p.method, (v) => setPays(pays.map((y, j) => (j === i ? { ...y, method: v as PaymentMethod } : y))), undefined, t("sales.paymentMethod"))}
               <Input aria-label={t("sales.expenseAmount")} type="number" min={0} step="any" className="w-40 tabular-nums" value={p.amount} onChange={(e) => setPays(pays.map((y, j) => (j === i ? { ...y, amount: e.target.value } : y)))} />
               <Button type="button" variant="ghost" size="icon-sm" aria-label={t("common.remove")} onClick={() => setPays(pays.filter((_, j) => j !== i))}><Trash2Icon /></Button>
             </div>

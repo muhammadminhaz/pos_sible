@@ -34,7 +34,7 @@ export function useRegisterSummary(id: string | undefined) {
 }
 
 export function usePosSales(q: { locationId: string; status: SaleStatus; limit?: number }, enabled = true) {
-  return useQuery({ queryKey: keys.pos.sales(q), queryFn: () => salesService.list(q), enabled });
+  return useQuery({ queryKey: keys.pos.sales(q), queryFn: () => salesService.list({ ...q, channel: "pos" }), enabled });
 }
 
 export function useReceipt(id: string | null | undefined) {

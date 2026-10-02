@@ -44,7 +44,7 @@ export function AreaChart({ data, xKey, yKey, label, height = 240, format }: Cha
     <figure role="img" aria-label={label} className="m-0">
       <div aria-hidden style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
-          <RAreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <RAreaChart accessibilityLayer={false} data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id={`fill-${yKey}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.35} />
@@ -72,7 +72,7 @@ export function BarChart({ data, xKey, yKey, label, height = 280, format, layout
     <figure role="img" aria-label={label} className="m-0">
       <div aria-hidden style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
-          <RBarChart data={data} layout={vertical ? "vertical" : "horizontal"} margin={{ top: 8, right: 8, bottom: 0, left: vertical ? 8 : 0 }}>
+          <RBarChart accessibilityLayer={false} data={data} layout={vertical ? "vertical" : "horizontal"} margin={{ top: 8, right: 8, bottom: 0, left: vertical ? 8 : 0 }}>
             <CartesianGrid horizontal={!vertical} vertical={vertical} stroke="var(--border)" />
             {vertical ? (
               <>

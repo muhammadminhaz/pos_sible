@@ -71,7 +71,7 @@ function PhotoTab({ user }: { user: User }) {
     <div className="flex items-center gap-4">
       <Avatar className="size-20">
         {user.avatar && <AvatarImage src={user.avatar} alt="" />}
-        <AvatarFallback className="text-xl">{user.firstName[0]}{user.lastName?.[0]}</AvatarFallback>
+        <AvatarFallback className="bg-primary text-xl text-primary-foreground">{user.firstName[0]}{user.lastName?.[0]}</AvatarFallback>
       </Avatar>
       <div className="grid gap-2">
         <Label htmlFor="avatar-file">{t("uploadPhoto")}</Label>

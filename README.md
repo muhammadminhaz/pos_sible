@@ -29,7 +29,7 @@ It is **frontend only**. All data is mock data generated in the browser and save
 - Settings and admin: business settings (16 tabs, driven by the settings schema, with a shortcut recorder and mocked test email/SMS), locations, invoice schemes and layouts (with a live preview), barcode sheets, printers, tax rates and groups, users and roles (permission matrix), backup and restore, module switches (hide menu items and routes), profile and calendar.
 
 ### Known gaps
-Some parked POS follow-ups from the Settings plan (task 11) are not done: only the minimum-redeem-points rule and removal of the unused `posService.bySku` were completed. Most field labels inside the Business Settings tabs are generated from the setting names and are English-only in Bangla mode. The layout preview is a sample receipt that follows the toggles, not the real receipt components. The final hardening pass (full accessibility audit, a Playwright suite) was not done; every route was only smoke-tested in the browser.
+Most field labels inside the Business Settings tabs are generated from the setting names and are English-only in Bangla mode. The invoice layout preview is a sample receipt that follows the toggles, not the real receipt components. The native print dialog was checked only up to `window.print()` (the right thermal or A4 layout is rendered and the call is made); the browser's own dialog can't be driven headlessly.
 
 ## Tech stack
 Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand (persisted), next-intl, next-themes, zod, recharts, sonner, lucide-react, vitest. Fonts: Inter and Anek Bangla.
@@ -42,10 +42,11 @@ npm run dev        # http://localhost:3000
 Sign in with `admin` / `112233` (also `cashier`, `rafiq`, `nazmul`, all with `112233`). Data is seeded on first load (about six months of history). Clear site storage to reset it.
 
 ```bash
-npm test           # vitest, 378 tests
+npm test           # vitest, 394 tests
 npx tsc --noEmit   # typecheck
 npm run lint
 npm run build
+npm run e2e        # browser smoke + accessibility (axe) over every route, EN/light and BN/dark; needs a running build
 ```
 
 ## How the code is organised
@@ -69,7 +70,7 @@ docs/           design specs and implementation plans
 - **Text:** all UI strings live in `scripts/messages.mjs` as English/Bangla pairs. Run `node scripts/messages.mjs messages` to regenerate `messages/*.json`; never edit those by hand. A test checks both languages have the same keys.
 - **Money** always goes through `roundMoney` and the `useFormat` hook (Bangla digits in Bangla mode).
 - **Permissions** gate routes (`RequirePermission`), buttons (`useCan`) and services (`assertCan`).
-- **Tests:** domain maths and every service have unit tests; screens are checked in the browser in both languages and themes.
+- **Tests:** domain maths and every service have unit tests; `npm run e2e` loads every route in both languages and themes and runs axe accessibility checks.
 
 ## Documentation
 Design specs are in `docs/superpowers/specs/` and step-by-step plans in `docs/superpowers/plans/`. Each sub-project gets a spec, then a plan, then a build on its own branch merged into `main`.

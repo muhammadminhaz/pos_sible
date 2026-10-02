@@ -42,7 +42,8 @@ export function CalendarPage() {
 
   const first = new Date(cursor.y, cursor.m, 1);
   const days = new Date(cursor.y, cursor.m + 1, 0).getDate();
-  const cells = [...Array(first.getDay()).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+  const lead = [...Array(first.getDay()).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+  const cells = [...lead, ...Array(Math.ceil(lead.length / 7) * 7 - lead.length).fill(null)];
   const shift = (by: number) => setCursor(({ y, m }) => { const d = new Date(y, m + by, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
   const weekdays = Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(locale, { weekday: "short" }).format(new Date(2024, 0, 7 + i)));
 
@@ -64,22 +65,32 @@ export function CalendarPage() {
           </>
         }
       />
-      <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border bg-border text-sm" role="grid">
-        {weekdays.map((w) => <div key={w} role="columnheader" className="bg-muted px-2 py-1.5 text-xs font-medium text-muted-foreground">{w}</div>)}
-        {cells.map((d, i) => {
-          const e = d ? events.get(dayKey(cursor.y, cursor.m, d)) : undefined;
-          return (
-            <div key={i} role="gridcell" className="min-h-20 bg-card p-1.5">
-              {d && (
-                <>
-                  <span className="text-xs text-muted-foreground">{f.number(d)}</span>
-                  {e && e.sales > 0 && <p className="mt-1 truncate rounded bg-primary/10 px-1 text-xs text-primary">{t("salesCount", { count: e.sales })} · {f.money(e.total)}</p>}
-                  {e && e.bookings > 0 && <p className="mt-1 truncate rounded bg-amber-500/15 px-1 text-xs text-amber-700 dark:text-amber-300">{t("bookingsCount", { count: e.bookings })}</p>}
-                </>
-              )}
-            </div>
-          );
-        })}
+      <div className="overflow-hidden rounded-xl border">
+        <table className="w-full table-fixed border-collapse text-sm">
+          <thead>
+            <tr>{weekdays.map((w) => <th key={w} scope="col" className="border-b bg-muted px-2 py-1.5 text-start text-xs font-medium text-muted-foreground">{w}</th>)}</tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: cells.length / 7 }, (_, w) => (
+              <tr key={w}>
+                {cells.slice(w * 7, w * 7 + 7).map((d, i) => {
+                  const e = d ? events.get(dayKey(cursor.y, cursor.m, d)) : undefined;
+                  return (
+                    <td key={i} className="h-20 border-e border-b bg-card p-1.5 align-top last:border-e-0">
+                      {d && (
+                        <>
+                          <span className="text-xs text-muted-foreground">{f.number(d)}</span>
+                          {e && e.sales > 0 && <p className="mt-1 truncate rounded bg-primary/10 px-1 text-xs text-primary">{t("salesCount", { count: e.sales })} · {f.money(e.total)}</p>}
+                          {e && e.bookings > 0 && <p className="mt-1 truncate rounded bg-amber-500/15 px-1 text-xs text-amber-800 dark:text-amber-300">{t("bookingsCount", { count: e.bookings })}</p>}
+                        </>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );

@@ -192,7 +192,7 @@ export function DataTable<T>({
         {toolbar}
       </Toolbar>
 
-      <div className="relative max-h-[calc(100dvh-16rem)] overflow-auto print:max-h-none">
+      <div tabIndex={0} className="relative max-h-[calc(100dvh-16rem)] overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/50 print:max-h-none">
         <table className="w-full caption-bottom text-[13px]">
           <thead className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-backdrop-filter:bg-muted/60">
             {table.getHeaderGroups().map((hg) => (

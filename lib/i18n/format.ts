@@ -25,6 +25,11 @@ const DEFAULTS: FormatOptions = {
   timeZone: "Asia/Dhaka",
 };
 
+const BN_UNITS: Record<string, string> = {
+  "pc(s)": "পিস", pcs: "পিস", pieces: "পিস", kg: "কেজি", kilogram: "কেজি", g: "গ্রাম", gram: "গ্রাম", ltr: "লিটার", l: "লিটার", liter: "লিটার", litre: "লিটার",
+  bag: "বস্তা", box: "বাক্স", pack: "প্যাক", dram: "ড্রাম", set: "সেট", dozen: "ডজন", m: "মিটার", meter: "মিটার",
+};
+
 export type Formatter = ReturnType<typeof createFormatter>;
 
 /** Pure formatter so non-React code (exports, print) formats exactly like the UI. */
@@ -76,7 +81,8 @@ export function createFormatter(locale: string, opts: Partial<FormatOptions> = {
     const { h, min } = parts(d);
     if (o.timeFormat === "24") return `${digitFmt.format(h)}:${digitFmt.format(min)}`;
     const h12 = h % 12 || 12;
-    return `${yearFmt.format(h12)}:${digitFmt.format(min)} ${h < 12 ? "AM" : "PM"}`;
+    const meridiem = locale === "bn" ? (h < 12 ? "পূর্বাহ্ণ" : "অপরাহ্ণ") : h < 12 ? "AM" : "PM";
+    return `${yearFmt.format(h12)}:${digitFmt.format(min)} ${meridiem}`;
   };
 
   return {
@@ -91,6 +97,8 @@ export function createFormatter(locale: string, opts: Partial<FormatOptions> = {
     date,
     time,
     dateTime: (d: string | Date) => `${date(d)} ${time(d)}`,
+    /** Unit labels for display: "Pc(s)" → "পিস" in Bangla; unknown units pass through. */
+    unit: (name: string) => (locale === "bn" ? (BN_UNITS[name.trim().toLowerCase()] ?? name) : name),
     dateLong: (d: string | Date) => longFmt.format(toDate(d)),
   };
 }

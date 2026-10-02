@@ -117,7 +117,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
               <PlusIcon />
             </Button>
           </div>
-          <span className="mt-0.5 block text-center text-[10px] text-muted-foreground">{line.unitName}</span>
+          <span className="mt-0.5 block text-center text-[10px] text-muted-foreground">{f.unit(line.unitName)}</span>
         </td>
         <td className="py-2 pl-3 text-right tabular-nums">
           {settings?.pos.subtotalEditable && can("pos.edit_price") ? (
@@ -223,9 +223,9 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
               )}
               {serviceStaff.length > 0 && (
                 <div className="col-span-2 grid gap-1">
-                  <Label className="text-xs">{t("pos.cart.serviceStaff")}</Label>
+                  <Label htmlFor={`staff-${line.key}`} className="text-xs">{t("pos.cart.serviceStaff")}</Label>
                   <Select value={line.serviceStaffId ?? "none"} onValueChange={(v) => update((c) => setServiceStaff(c, line.key, v === "none" ? null : v))}>
-                    <SelectTrigger size="sm" className="w-full">
+                    <SelectTrigger id={`staff-${line.key}`} size="sm" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

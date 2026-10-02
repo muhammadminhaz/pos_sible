@@ -31,12 +31,15 @@ function RegisterBody({ location, closing }: { location: Location; closing: bool
   const hide = usePosDialogs((s) => s.hide);
   const onError = usePosError();
   const [counted, setCounted] = useState("");
-  const [cardSlips, setCardSlips] = useState("");
-  const [cheques, setCheques] = useState("");
+  const [cardSlips, setCardSlips] = useState<string | null>(null);
+  const [cheques, setCheques] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [counts, setCounts] = useState<Record<string, number>>({});
   if (!register || !sum || !settings) return <Skeleton className="h-64" />;
 
+  // Slip and cheque counts start at what the register recorded; the cashier corrects them against the physical slips.
+  const slipsValue = cardSlips ?? String(sum.cardSlips);
+  const chequesValue = cheques ?? String(sum.cheques);
   const countedCash = Number(counted) || 0;
   const diff = roundMoney(countedCash - sum.expectedCash);
   const row = (label: string, value: number, strong = false) => (
@@ -50,8 +53,8 @@ function RegisterBody({ location, closing }: { location: Location; closing: bool
     e.preventDefault();
     try {
       await closeRegister.mutateAsync({
-        id: register.id, closingAmount: countedCash, totalCardSlips: Number(cardSlips) || 0,
-        totalCheques: Number(cheques) || 0, closingNote: note, denominations: counts,
+        id: register.id, closingAmount: countedCash, totalCardSlips: Number(slipsValue) || 0,
+        totalCheques: Number(chequesValue) || 0, closingNote: note, denominations: counts,
       });
       toast.success(t("pos.register.closed"));
       hide();
@@ -115,11 +118,13 @@ function RegisterBody({ location, closing }: { location: Location; closing: bool
             </div>
             <div className="grid gap-1">
               <Label htmlFor="rc-cards">{t("pos.register.cardSlips")}</Label>
-              <Input id="rc-cards" type="number" min={0} step={1} value={cardSlips} onChange={(e) => setCardSlips(e.target.value)} />
+              <Input id="rc-cards" type="number" min={0} step={1} value={slipsValue} onChange={(e) => setCardSlips(e.target.value)} />
+              <p className="text-xs text-muted-foreground">{t("pos.register.expectedCount", { count: f.number(sum.cardSlips) })}</p>
             </div>
             <div className="grid gap-1">
               <Label htmlFor="rc-cheques">{t("pos.register.cheques")}</Label>
-              <Input id="rc-cheques" type="number" min={0} step={1} value={cheques} onChange={(e) => setCheques(e.target.value)} />
+              <Input id="rc-cheques" type="number" min={0} step={1} value={chequesValue} onChange={(e) => setCheques(e.target.value)} />
+              <p className="text-xs text-muted-foreground">{t("pos.register.expectedCount", { count: f.number(sum.cheques) })}</p>
             </div>
           </div>
           <p className={cn("text-right text-sm font-medium tabular-nums", diff < 0 ? "text-danger" : diff > 0 ? "text-warning-foreground dark:text-warning" : "text-success")}>

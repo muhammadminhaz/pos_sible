@@ -31,7 +31,7 @@ export function UserMenu() {
       <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg p-1 outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring md:pr-2">
         <Avatar className="size-7">
           {user.avatar && <AvatarImage src={user.avatar} alt="" />}
-          <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">{initials}</AvatarFallback>
+          <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">{initials}</AvatarFallback>
         </Avatar>
         <span className="hidden text-left leading-tight md:block">
           <span className="block text-[13px] font-medium">{name}</span>
