@@ -3,6 +3,7 @@ import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError } from "@/lib/data/errors";
 import { cashRegister, type CashRegister, type PaymentMethod } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
+import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { delay, nowISO, uid } from "./_util";
 
@@ -94,7 +95,7 @@ export const registersService = {
         } else if (t.type === "sell_return" && p.method === "cash") {
           refunds += p.amount;
         } else if (t.type === "expense" && p.method === "cash") {
-          expenses += p.amount;
+          expenses += expenseSign(t) * p.amount;
         }
       }
     }

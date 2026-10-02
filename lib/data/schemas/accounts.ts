@@ -15,6 +15,8 @@ export const account = base.extend({
   details: z.array(z.object({ label: z.string(), value: z.string() })).default([]),
   openingBalance: z.number().default(0),
   status: z.enum(["active", "closed"]).default("active"),
+  /** When false, transfers and deposits can't take the balance below zero. */
+  allowOverdraft: z.boolean().default(false),
 });
 export type Account = z.infer<typeof account>;
 

@@ -7,6 +7,7 @@ import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
 import { lineTotals, orderTotals, type DiscountInput } from "@/lib/domain/totals";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { defaultAccountId } from "./_ledger";
 
 export type ReturnFilters = ListQuery & { locationId?: string; contactId?: string; from?: string; to?: string; createdBy?: string };
 export type ReturnRow = {
@@ -106,8 +107,7 @@ export const returnsService = {
       const payments = [];
       if (refund > 0) {
         const pid = uid("pay");
-        const location = d.locations.find((l) => l.id === parent.locationId);
-        const accountId = location?.defaultAccounts[method] ?? null;
+        const accountId = defaultAccountId(d, parent.locationId, method);
         payments.push({ id: pid, refNo: takeRef(d, d.settings.prefixes.sellPayment, at), amount: refund, method, accountId, paidOn: at, note: "", isReturn: false, details: {}, createdBy: by });
         if (accountId) {
           d.accountTxns.push(accountTxn.parse({ id: uid("at"), createdAt: at, createdBy: by, accountId, kind: "debit", subType: "payment", amount: refund, date: at, transactionId: tid, paymentId: pid }));

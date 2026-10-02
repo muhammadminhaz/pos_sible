@@ -1,5 +1,6 @@
 import type { Transaction } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
+import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
 import { delay } from "./_util";
@@ -37,7 +38,7 @@ export const dashboardService = {
         k.totalPurchase += t.totals.total;
         k.purchaseDue += due;
       } else if (t.type === "purchase_return") k.purchaseReturn += t.totals.total;
-      else if (t.type === "expense") k.expense += t.totals.total;
+      else if (t.type === "expense") k.expense += expenseSign(t) * t.totals.total;
     }
     const r = Object.fromEntries(Object.entries(k).map(([key, v]) => [key, roundMoney(v)])) as typeof k;
     return { ...r, net: roundMoney(r.totalSales - r.sellReturn - r.expense) };
@@ -64,7 +65,7 @@ export const profitService = {
       } else if (t.type === "sell_return") {
         sales -= t.totals.total - t.totals.orderTax;
         cost -= t.lines.reduce((s, l) => s + l.qty * l.unitCost, 0);
-      } else if (t.type === "expense") expense += t.totals.total;
+      } else if (t.type === "expense") expense += expenseSign(t) * t.totals.total;
     }
     const grossProfit = roundMoney(sales - cost);
     return {

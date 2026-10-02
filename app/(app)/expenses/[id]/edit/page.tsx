@@ -1,5 +1,12 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { Suspense } from "react";
+import { RequirePermission } from "@/components/shared/Can";
+import { ExpenseFormPage } from "@/features/finance/ExpenseFormPage";
 
-export default function Page() {
-  return <RoutePlaceholder route="/expenses/[id]/edit" />;
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return (
+    <RequirePermission permission="expense.update">
+      <Suspense><ExpenseFormPage id={id} /></Suspense>
+    </RequirePermission>
+  );
 }

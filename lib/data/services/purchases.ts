@@ -8,6 +8,7 @@ import { paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from 
 import { marginFromPrices } from "@/lib/domain/pricing";
 import { lineTotals, orderTotals, type DiscountInput } from "@/lib/domain/totals";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { defaultAccountId } from "./_ledger";
 
 export type PurchaseStatus = "received" | "pending" | "ordered";
 export type PurchaseLineInput = {
@@ -96,7 +97,7 @@ function addPaymentTo(d: DB, t: Transaction, p: PurchasePaymentInput) {
   if (!(amount > 0) || amount > paymentSummary(t.totals.total, t.payments).due) throw new ValidationError({ amount: "invalid" });
   const by = currentUser()?.user.id ?? null;
   const paidOn = p.paidOn ?? nowISO();
-  const accountId = d.locations.find((l) => l.id === t.locationId)?.defaultAccounts[p.method] ?? null;
+  const accountId = defaultAccountId(d, t.locationId, p.method);
   const pid = uid("pay");
   t.payments.push({ id: pid, refNo: takeRef(d, d.settings.prefixes.purchasePayment, paidOn), amount, method: p.method, accountId, paidOn, note: p.note ?? "", isReturn: false, details: p.details ?? {}, createdBy: by });
   if (accountId) d.accountTxns.push(accountTxn.parse({ id: uid("at"), createdAt: nowISO(), createdBy: by, accountId, kind: "debit", subType: "payment", amount, date: paidOn, transactionId: t.id, paymentId: pid }));

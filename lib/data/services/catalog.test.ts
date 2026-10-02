@@ -81,4 +81,42 @@ describe("catalog crud rules", () => {
     const g = await mk({});
     await crud("customerGroups").remove(g.id);
   });
+
+  describe("expense categories", () => {
+    it("allows one level of sub-category and rejects deleting a parent or a category that expenses use", async () => {
+      const top = await crud("expenseCategories").create({ name: "Travel", code: "", parentId: null });
+      const sub = await crud("expenseCategories").create({ name: "Taxi", code: "", parentId: top.id });
+      expect(await field(crud("expenseCategories").create({ name: "Deep", code: "", parentId: sub.id }))).toEqual({ parentId: "invalid_parent" });
+      expect(await field(crud("expenseCategories").update(top.id, { parentId: sub.id }))).toEqual({ parentId: "invalid_parent" });
+      expect(await code(crud("expenseCategories").remove(top.id))).toBe("category_has_children");
+      const exp = getDB().transactions.find((t) => t.type === "expense")!;
+      exp.expenseCategoryId = top.id;
+      exp.expenseSubCategoryId = sub.id;
+      expect(await code(crud("expenseCategories").remove(sub.id))).toBe("expense_category_in_use");
+      exp.expenseSubCategoryId = null;
+      expect(await code(crud("expenseCategories").remove(top.id))).toBe("category_has_children");
+      await crud("expenseCategories").remove(sub.id);
+      expect(await code(crud("expenseCategories").remove(top.id))).toBe("expense_category_in_use");
+    });
+
+    it("moving a sub-category to another parent takes its expenses along", async () => {
+      const a = await crud("expenseCategories").create({ name: "A", code: "", parentId: null });
+      const b = await crud("expenseCategories").create({ name: "B", code: "", parentId: null });
+      const sub = await crud("expenseCategories").create({ name: "S", code: "", parentId: a.id });
+      const exp = getDB().transactions.find((t) => t.type === "expense")!;
+      exp.expenseCategoryId = a.id;
+      exp.expenseSubCategoryId = sub.id;
+      await crud("expenseCategories").update(sub.id, { parentId: b.id });
+      expect(getDB().transactions.find((t) => t.id === exp.id)).toMatchObject({ expenseCategoryId: b.id, expenseSubCategoryId: sub.id });
+    });
+
+    it("promoting a sub-category to top level is refused while expenses use it as a sub-category", async () => {
+      const a = await crud("expenseCategories").create({ name: "A", code: "", parentId: null });
+      const sub = await crud("expenseCategories").create({ name: "S", code: "", parentId: a.id });
+      const exp = getDB().transactions.find((t) => t.type === "expense")!;
+      exp.expenseCategoryId = a.id;
+      exp.expenseSubCategoryId = sub.id;
+      expect(await field(crud("expenseCategories").update(sub.id, { parentId: null }))).toEqual({ parentId: "in_use" });
+    });
+  });
 });

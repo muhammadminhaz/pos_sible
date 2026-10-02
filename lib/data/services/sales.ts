@@ -14,6 +14,7 @@ import { emptyCart, WALK_IN_ID, type Cart, type CartLine } from "@/lib/pos/cart"
 import { cartTotals, paymentState } from "@/lib/pos/selectors";
 import { linkLines, syncOrders } from "./_orders";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { defaultAccountId } from "./_ledger";
 
 export type SaleStatus = "final" | "draft" | "quotation" | "suspended";
 export type CheckoutPayment = { method: PaymentMethod; amount: number; details?: Payment["details"]; note?: string };
@@ -153,7 +154,7 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
     if (st.nonCashOverpaid) throw new ValidationError({ payments: "non_cash_overpaid" });
     const mkPayment = (method: PaymentMethod, amount: number, isReturn: boolean, details: Payment["details"] = {}, note = "") => {
       const pid = uid("pay");
-      const accountId = location.defaultAccounts[method] ?? null;
+      const accountId = defaultAccountId(d, location.id, method);
       payments.push({ id: pid, refNo: takeRef(d, s.prefixes.sellPayment, at), amount, method, accountId, paidOn: paidAt, note, isReturn, details, createdBy: by });
       if (accountId) {
         d.accountTxns.push(accountTxn.parse({
@@ -419,7 +420,7 @@ export const salesService = {
       if (amount <= 0 || amount > due) throw new ValidationError({ amount: "invalid" });
       const by = currentUser()?.user.id ?? null;
       const paidOn = p.paidOn ?? nowISO();
-      const accountId = d.locations.find((l) => l.id === t.locationId)?.defaultAccounts[p.method] ?? null;
+      const accountId = defaultAccountId(d, t.locationId, p.method);
       const pid = uid("pay");
       t.payments.push({ id: pid, refNo: takeRef(d, d.settings.prefixes.sellPayment, paidOn), amount, method: p.method, accountId, paidOn, note: p.note ?? "", isReturn: false, details: p.details ?? {}, createdBy: by });
       if (accountId) {

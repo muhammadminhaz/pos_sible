@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { ExpenseCategoriesPage } from "@/features/finance/ExpenseCategories";
 
 export default function Page() {
-  return <RoutePlaceholder route="/expenses/categories" />;
+  return (
+    <RequirePermission permission="expense.view">
+      <ExpenseCategoriesPage />
+    </RequirePermission>
+  );
 }

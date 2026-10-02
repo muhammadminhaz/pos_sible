@@ -21,6 +21,8 @@ type Rules = {
   check?: (db: DB, row: Record<string, unknown>, id?: string) => void;
   /** Returns an error code if something still points at the row. */
   inUse?: (db: DB, id: string) => string | null;
+  /** Runs inside the update's commit, after the row is replaced, to keep dependent rows consistent. */
+  onUpdate?: (db: DB, before: Record<string, unknown>, after: Record<string, unknown>) => void;
 };
 
 const used = (code: string, hit: boolean) => (hit ? code : null);
@@ -61,6 +63,41 @@ const RULES: Partial<Record<TableName, Rules>> = {
       db.categories.some((c) => c.parentId === id)
         ? "category_has_children"
         : used("category_in_use", db.products.some((p) => p.categoryId === id || p.subCategoryId === id) || db.discounts.some((x) => x.categoryId === id)),
+  },
+  expenseCategories: {
+    permission: "expense.update",
+    check: (db, row, id) => {
+      const parentId = row.parentId as string | null;
+      const was = id ? db.expenseCategories.find((c) => c.id === id) : undefined;
+      if (parentId) {
+        const parent = db.expenseCategories.find((c) => c.id === parentId);
+        if (parentId === id || !parent || parent.parentId) throw new ValidationError({ parentId: "invalid_parent" });
+        if (id && db.expenseCategories.some((c) => c.parentId === id)) throw new ValidationError({ parentId: "has_children" });
+      } else if (was?.parentId && db.transactions.some((t) => t.expenseSubCategoryId === id)) {
+        // Expenses filed under it as a sub-category would lose their parent.
+        throw new ValidationError({ parentId: "in_use" });
+      }
+    },
+    inUse: (db, id) =>
+      db.expenseCategories.some((c) => c.parentId === id)
+        ? "category_has_children"
+        : used("expense_category_in_use", db.transactions.some((t) => t.expenseCategoryId === id || t.expenseSubCategoryId === id)),
+    onUpdate: (db, before, after) => {
+      if (before.parentId === after.parentId || !after.parentId) return;
+      for (const t of db.transactions) if (t.expenseSubCategoryId === after.id) t.expenseCategoryId = after.parentId as string;
+    },
+  },
+  accountTypes: {
+    permission: "account.manage",
+    check: (db, row, id) => {
+      const parentId = row.parentId as string | null;
+      if (!parentId) return;
+      const parent = db.accountTypes.find((t) => t.id === parentId);
+      if (parentId === id || !parent || parent.parentId) throw new ValidationError({ parentId: "invalid_parent" });
+      if (id && db.accountTypes.some((t) => t.parentId === id)) throw new ValidationError({ parentId: "has_children" });
+    },
+    inUse: (db, id) =>
+      db.accountTypes.some((t) => t.parentId === id) ? "category_has_children" : used("account_type_in_use", db.accounts.some((a) => a.typeId === id)),
   },
   brands: {
     permission: "product.update",
@@ -148,8 +185,10 @@ export function crud<N extends TableName, T extends Row<N> & { id: string } = Ro
       commit((d) => {
         const list = d[table] as unknown as T[];
         const i = list.findIndex((r) => r.id === id);
-        next = { ...list[i], ...patch, id };
+        const before = list[i];
+        next = { ...before, ...patch, id };
         list[i] = next;
+        rules.onUpdate?.(d, before as Record<string, unknown>, next as Record<string, unknown>);
       });
       return next;
     },
