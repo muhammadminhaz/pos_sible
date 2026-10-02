@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { AdjustmentForm } from "@/features/operations/Adjustments";
 
 export default function Page() {
-  return <RoutePlaceholder route="/stock/adjustments/new" />;
+  return (
+    <RequirePermission permission="stock_adjustment.create">
+      <AdjustmentForm />
+    </RequirePermission>
+  );
 }
