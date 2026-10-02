@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import type { Settings } from "@/lib/data/schemas";
+import { BusinessLogo } from "./BusinessLogo";
 import { SectionForm } from "./SectionForm";
 
 const TABS = [
@@ -54,6 +55,7 @@ export function BusinessSettings() {
         </TabsList>
         <section className="min-w-0 flex-1 rounded-xl border bg-card p-5" aria-label={t(`tabs.${tab}`)}>
           <h2 className="mb-4 text-lg font-semibold">{t(`tabs.${tab}`)}</h2>
+          {tab === "business" && <BusinessLogo />}
           <SectionForm
             key={tab}
             section={tab}

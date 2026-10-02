@@ -17,7 +17,7 @@ export function Stats({ items, cols = 4 }: { items: { label: string; value: numb
 export function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-xl border bg-card p-4">
-      <h2 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">{title}</h2>
+      <h2 className="mb-3 text-sm font-semibold">{title}</h2>
       {children}
     </section>
   );

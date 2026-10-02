@@ -222,7 +222,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
         </Section>
       </div>
 
-      <div data-print-hide className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 px-6 py-3 backdrop-blur md:left-(--sidebar-width,0px)">
+      <div data-print-hide className="fixed inset-x-0 bottom-0 z-20 border-t bg-background px-6 py-3 md:left-(--sidebar-width,0px)">
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-2">
           <div className="text-sm text-muted-foreground">{t("ops.itemsTotal", { count: f.qty(totals.itemsCount) })} · <span className="font-semibold text-foreground"><Money value={totals.total} /></span></div>
           <div className="flex gap-2">

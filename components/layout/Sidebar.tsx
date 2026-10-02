@@ -46,7 +46,7 @@ function useActive() {
 const itemBase =
   "relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring";
 const itemActive =
-  "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary before:absolute before:-left-3 before:top-1.5 before:bottom-1.5 before:w-0.5 before:rounded-full before:bg-primary";
+  "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary";
 
 function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () => void }) {
   const t = useTranslations("nav");
@@ -187,10 +187,12 @@ function OpenPosButton({ collapsed }: { collapsed?: boolean }) {
 }
 
 function Brand({ collapsed }: { collapsed?: boolean }) {
+  const business = useSettings().data?.business;
+  const name = business?.logo && business.name ? business.name : "pos_sible";
   return (
     <Link href="/home" className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
       <LogoMark />
-      {!collapsed && <span className="text-[15px] font-semibold tracking-tight">pos_sible</span>}
+      {!collapsed && <span className="truncate text-[15px] font-semibold tracking-tight">{name}</span>}
     </Link>
   );
 }

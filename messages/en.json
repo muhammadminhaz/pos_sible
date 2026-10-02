@@ -1593,6 +1593,20 @@
   "settings": {
     "businessSettingsTitle": "Business Settings",
     "businessSettingsDescription": "Changes apply across POS, sales and receipts straight away.",
+    "logo": {
+      "title": "Business logo",
+      "helpEmpty": "Shown in the sidebar, POS and login page, and on receipts and invoices. PNG, JPG, WebP or SVG, up to 2 MB.",
+      "helpSet": "Shown in the sidebar, POS and login page, and on receipts and invoices. Turn it off on receipts in Invoice Settings.",
+      "upload": "Upload logo",
+      "replace": "Replace logo",
+      "remove": "Remove logo",
+      "saved": "Logo updated",
+      "removed": "Logo removed",
+      "invalidType": "Choose a PNG, JPG, WebP or SVG image.",
+      "tooLarge": "That image is over 2 MB. Choose a smaller one.",
+      "svgTooLarge": "SVG logos must be under 100 KB.",
+      "unreadable": "That image could not be read. Try another file."
+    },
     "sections": "Settings sections",
     "fixErrors": "Fix the highlighted fields",
     "shortcuts": "Keyboard shortcuts",

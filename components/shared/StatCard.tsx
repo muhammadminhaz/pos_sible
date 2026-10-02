@@ -26,11 +26,14 @@ export function StatCard({
     <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-card-foreground">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[13px] font-medium text-muted-foreground">{label}</span>
-        {Icon && (
-          <span className={cn("grid size-8 place-items-center rounded-lg", TONE_SOFT[tone === "default" ? "primary" : tone])}>
-            <Icon className="size-4" />
-          </span>
-        )}
+        {Icon &&
+          (tone === "default" ? (
+            <Icon className="size-4 text-muted-foreground" aria-hidden />
+          ) : (
+            <span className={cn("grid size-8 place-items-center rounded-lg", TONE_SOFT[tone])}>
+              <Icon className="size-4" />
+            </span>
+          ))}
       </div>
       {loading ? (
         <Skeleton className="h-7 w-32" />

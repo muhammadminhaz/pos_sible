@@ -250,7 +250,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
         )}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/95 px-6 py-3 backdrop-blur md:left-16">
+      <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background px-6 py-3 md:left-16">
         <span className="mr-auto text-sm text-muted-foreground">{t("common.total")}: <Money value={totals.total} className="text-lg font-semibold text-foreground" /></span>
         <Button type="button" variant="outline" onClick={() => router.back()}>{t("common.cancel")}</Button>
         <Button type="button" variant="outline" disabled={save.isPending} onClick={(e) => submit(e as unknown as FormEvent, true)}>{t("sales.saveAndPrint")}</Button>

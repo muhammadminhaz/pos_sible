@@ -195,7 +195,7 @@ export function DataTable<T>({
 
       <ScrollFade tabIndex={0} className="relative hidden max-h-[calc(100dvh-16rem)] overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:block print:max-h-none">
         <table className="w-full caption-bottom text-[13px]">
-          <thead className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-backdrop-filter:bg-muted/60">
+          <thead className="sticky top-0 z-10 bg-muted">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b">
                 {hg.headers.map((h) => {
@@ -292,7 +292,7 @@ export function DataTable<T>({
             )}
           </tbody>
           {footerCells && data.length > 0 && (
-            <tfoot className="sticky bottom-0 border-t bg-muted/70 font-medium backdrop-blur">
+            <tfoot className="sticky bottom-0 border-t bg-muted font-medium">
               <tr className="h-10">
                 {visibleCols.map((c) => (
                   <td

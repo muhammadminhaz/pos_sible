@@ -33,7 +33,7 @@ export function Notifications() {
         <Button variant="ghost" size="icon" className="relative" aria-label={`${t("notifications")} (${unread})`}>
           <BellIcon />
           {unread > 0 && (
-            <span className="absolute top-1 right-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-danger px-1 text-xs font-semibold text-white tabular">
+            <span className="absolute -top-2.5 -right-1.5 pointer-coarse:-top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-xs leading-none font-semibold text-white ring-2 ring-background tabular">
               {unread > 9 ? "9+" : unread}
             </span>
           )}

@@ -23,12 +23,12 @@ import { useReportFilters } from "./ReportShell";
 
 const CARDS: { key: keyof Kpis; label: string; icon: LucideIcon; tone: Exclude<Tone, "primary"> }[] = [
   { key: "totalSales", label: "totalSales", icon: CircleDollarSignIcon, tone: "default" },
-  { key: "net", label: "net", icon: TrendingUpIcon, tone: "success" },
+  { key: "net", label: "net", icon: TrendingUpIcon, tone: "default" },
   { key: "invoiceDue", label: "invoiceDue", icon: FileClockIcon, tone: "warning" },
-  { key: "sellReturn", label: "totalSellReturn", icon: Undo2Icon, tone: "danger" },
-  { key: "totalPurchase", label: "totalPurchase", icon: ShoppingBagIcon, tone: "info" },
+  { key: "sellReturn", label: "totalSellReturn", icon: Undo2Icon, tone: "default" },
+  { key: "totalPurchase", label: "totalPurchase", icon: ShoppingBagIcon, tone: "default" },
   { key: "purchaseDue", label: "purchaseDue", icon: WalletIcon, tone: "warning" },
-  { key: "purchaseReturn", label: "totalPurchaseReturn", icon: BanknoteIcon, tone: "danger" },
+  { key: "purchaseReturn", label: "totalPurchaseReturn", icon: BanknoteIcon, tone: "default" },
   { key: "expense", label: "expense", icon: ReceiptIcon, tone: "default" },
 ];
 
@@ -82,7 +82,7 @@ export function Dashboard() {
           // A negative net is a loss: say so with colour, icon and sign instead of the neutral green trend.
           const loss = c.key === "net" && (kpis.data?.net ?? 0) < 0;
           return (
-          <StatCard key={c.key} label={t(c.label)} icon={loss ? TrendingDownIcon : c.icon} tone={loss ? "danger" : c.tone} loading={kpis.isPending} value={kpis.data ? f.money(kpis.data[c.key]) : null} />
+          <StatCard key={c.key} label={t(c.label)} icon={loss ? TrendingDownIcon : c.icon} tone={loss ? "danger" : (kpis.data?.[c.key] ?? 0) !== 0 ? c.tone : "default"} loading={kpis.isPending} value={kpis.data ? f.money(kpis.data[c.key]) : null} />
           );
         })}
       </div>

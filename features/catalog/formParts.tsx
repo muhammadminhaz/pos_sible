@@ -10,7 +10,7 @@ const NONE = "__none__";
 export function Section({ id, title, children }: { id?: string; title: string; children: ReactNode }) {
   return (
     <section id={id} className="grid scroll-mt-20 gap-4 rounded-xl border bg-card p-4">
-      <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">{title}</h2>
+      <h2 className="text-sm font-semibold">{title}</h2>
       {children}
     </section>
   );

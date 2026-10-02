@@ -83,7 +83,7 @@ function Group({ title, rows, total, names }: { title: string; rows: SheetRow[];
   const label = useAccountLabel();
   return (
     <section className="rounded-xl border bg-card p-4">
-      <h2 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">{title}</h2>
+      <h2 className="mb-3 text-sm font-semibold">{title}</h2>
       <dl className="grid gap-2 text-sm">
         {rows.length === 0 && <p className="text-muted-foreground">{t("common.noData")}</p>}
         {rows.map((r) => (
