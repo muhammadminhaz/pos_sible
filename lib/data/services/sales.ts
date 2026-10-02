@@ -279,6 +279,12 @@ export const salesService = service("salesService", {
   },
 
   /** An open sales order as a ready-to-edit sale: what is still owed, at the order's prices. */
+  /** Points this customer already promised to other suspended sales. */
+  async reservedPoints(contactId: string, exceptSaleId?: string): Promise<number> {
+    await delay();
+    return reservedPoints(getDB().transactions, contactId, exceptSaleId);
+  },
+
   async fromOrder(orderId: string): Promise<{ locationId: string; cart: Cart }> {
     await delay();
     assertCan("sell.create");

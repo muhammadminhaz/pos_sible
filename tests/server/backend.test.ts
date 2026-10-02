@@ -62,6 +62,10 @@ describe.runIf(up)("Postgres backend", () => {
     expect(await call(admin, "salesService", "constructor")).toMatchObject({ ok: false });
     expect(await call(admin, "nonexistent", "x")).toMatchObject({ ok: false });
     expect(await call(admin, "crud:not_a_table", "list")).toMatchObject({ ok: false });
+    // The generic table endpoint can't be used to read ledgers, stock, contacts or backups around their own services.
+    for (const t of ["transactions", "stockLots", "contacts", "backups", "accountTxns", "products"]) {
+      expect(await call(admin, `crud:${t}`, "all")).toMatchObject({ ok: false, error: { code: "not_found" } });
+    }
   });
 
   it("saves changes in Postgres, and a failed call leaves nothing behind", async () => {
@@ -88,6 +92,13 @@ describe.runIf(up)("Postgres backend", () => {
       expect(await call(cashier, "moneyReports", "profitLoss", {})).toMatchObject({ ok: false, error: { name: "ForbiddenError" } });
       expect(await call(cashier, "settingsService", "update", "business", { name: "Hacked" })).toMatchObject({ ok: false, error: { name: "ForbiddenError" } });
       expect((await ok(admin, "settingsService", "get")).business.name).toBe("Lotus Mart");
+      // Cost prices, supplier balances and account books are behind the same permissions as their menu items.
+      for (const [svc, m] of [["purchasesService", "list"], ["accountsService", "list"], ["expensesService", "list"], ["transfersService", "list"], ["discountsService", "list"]] as const) {
+        expect(await call(cashier, svc, m, {}), `${svc}.${m}`).toMatchObject({ ok: false, error: { name: "ForbiddenError" } });
+      }
+      // …while the till still works: customers, products and the register are available.
+      expect((await call(cashier, "contactsService", "list", { type: "customer", pageSize: 5 })).ok).toBe(true);
+      expect((await call(cashier, "lookupsService", "all")).ok).toBe(true);
     }
   });
 

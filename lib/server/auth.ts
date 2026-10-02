@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { NextRequest } from "next/server";
 import type { Role, User } from "@/lib/data/schemas";
+import type { PublicUser } from "./types";
 import { pool, ready } from "./pool";
 import { loadBusiness } from "./store";
 import { verifyPassword } from "./passwords";
@@ -9,8 +10,7 @@ export const COOKIE = "posible_sid";
 const DAY = 86_400_000;
 
 export type Principal = { businessId: string; userId: string; user: PublicUser; role: Role; businessName: string };
-/** A user as the browser sees it: never the password. */
-export type PublicUser = Omit<User, "password">;
+export type { PublicUser };
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 export const publicUser = ({ password: _password, ...rest }: User): PublicUser => {

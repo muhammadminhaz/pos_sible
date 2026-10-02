@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useReservedPoints } from "@/lib/data/hooks/pos";
 import { useContact } from "@/lib/data/hooks/contacts";
-import { useDB } from "@/lib/data/store/db";
 import { useSettings } from "@/lib/data/hooks/settings";
-import { isValidRedeem, maxRedeemable, redeemValue, reservedPoints } from "@/lib/domain/rewards";
+import { isValidRedeem, maxRedeemable, redeemValue } from "@/lib/domain/rewards";
 import { useFormat } from "@/lib/i18n/format";
 import { patchCart } from "@/lib/pos/cart";
 import { useCart } from "@/lib/pos/store";
@@ -24,13 +24,12 @@ function RedeemForm({ locationId }: { locationId: string }) {
   const { cart, update } = useCart(locationId);
   const { data: contact } = useContact(cart.contactId);
   const totals = usePosTotals(locationId);
-  const transactions = useDB((s) => s.db?.transactions) ?? [];
+  const { data: reservedByOthers = 0 } = useReservedPoints(cart.contactId, cart.resumedFromId);
   const hide = usePosDialogs((s) => s.hide);
   const [points, setPoints] = useState(cart.pointsRedeemed ? String(cart.pointsRedeemed) : "");
   if (!settings || !totals) return null;
 
-  const reserved = reservedPoints(transactions, cart.contactId, cart.resumedFromId ?? undefined);
-  const balance = Math.max(0, (contact?.points ?? 0) - reserved);
+  const balance = Math.max(0, (contact?.points ?? 0) - reservedByOthers);
   const max = maxRedeemable({ total: totals.total + totals.redeemed, balance, s: settings.rewards });
   const n = Math.floor(Number(points) || 0);
   const valid = isValidRedeem(n, max, settings.rewards);

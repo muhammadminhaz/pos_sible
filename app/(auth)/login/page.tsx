@@ -13,7 +13,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { refreshAuth, useAuth } from "@/lib/auth/authStore";
+import { API_MODE } from "@/lib/data/api/mode";
 import { useSession } from "@/lib/auth/session";
+import Link from "next/link";
 
 const schema = z.object({
   username: z.string().trim().min(1),
@@ -21,6 +24,9 @@ const schema = z.object({
   remember: z.boolean(),
 });
 type Values = z.infer<typeof schema>;
+
+/** Quick-fill buttons for the public demo logins: always in the browser demo, opt-in with a server. */
+const showDemo = !API_MODE || process.env.NEXT_PUBLIC_SHOW_DEMO_LOGINS === "true";
 
 const DEMO = [
   { username: "admin", role: "Admin" },
@@ -30,9 +36,11 @@ const DEMO = [
 export default function LoginPage() {
   const t = useTranslations();
   const router = useRouter();
-  const userId = useSession((s) => s.userId);
+  const localUserId = useSession((s) => s.userId);
+  const serverStatus = useAuth((s) => s.status);
+  const userId = API_MODE ? (serverStatus === "in" ? "server" : null) : localUserId;
   const login = useSession((s) => s.login);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<false | "invalid" | "throttled">(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<Values>({
@@ -42,14 +50,28 @@ export default function LoginPage() {
   const { errors, isSubmitting } = form.formState;
 
   useEffect(() => {
+    if (API_MODE && useAuth.getState().status === "loading") void refreshAuth();
+  }, []);
+  useEffect(() => {
     if (userId) router.replace("/home");
   }, [userId, router]);
 
   const onSubmit = form.handleSubmit(async ({ username, password, remember }) => {
     setFailed(false);
+    if (API_MODE) {
+      const res = await fetch("/api/auth/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ username, password, remember }) }).catch(() => null);
+      if (res?.ok) {
+        const body = await res.json();
+        useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName });
+        return;
+      }
+      setFailed(res?.status === 429 ? "throttled" : "invalid");
+      form.setFocus("password");
+      return;
+    }
     await new Promise((r) => setTimeout(r, 250));
     if (!login(username, password, remember)) {
-      setFailed(true);
+      setFailed("invalid");
       form.setFocus("password");
     }
   });
@@ -75,7 +97,7 @@ export default function LoginPage() {
             {failed && (
               <div role="alert" className="flex items-center gap-2 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger-foreground">
                 <AlertCircleIcon className="size-4 shrink-0" />
-                {t("auth.invalid")}
+                {failed === "throttled" ? t("auth.throttled") : t("auth.invalid")}
               </div>
             )}
 
@@ -86,7 +108,7 @@ export default function LoginPage() {
                 autoComplete="username"
                 autoFocus
                 className="h-9"
-                aria-invalid={!!errors.username || failed}
+                aria-invalid={!!errors.username || !!failed}
                 {...form.register("username")}
               />
               {errors.username && <p className="text-xs text-danger">{t("errors.required")}</p>}
@@ -100,7 +122,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   className="h-9 pr-9"
-                  aria-invalid={!!errors.password || failed}
+                  aria-invalid={!!errors.password || !!failed}
                   {...form.register("password")}
                 />
                 <button
@@ -134,6 +156,14 @@ export default function LoginPage() {
         </CardContent>
       </Card>
 
+      {process.env.NEXT_PUBLIC_ALLOW_SIGNUP === "true" && (
+        <p className="text-sm text-muted-foreground">
+          {t("auth.noAccount")}{" "}
+          <Link href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">{t("auth.createAccount")}</Link>
+        </p>
+      )}
+
+      {showDemo && (
       <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
         <span>{t("auth.demoHint")}</span>
         <div className="flex gap-2">
@@ -149,6 +179,7 @@ export default function LoginPage() {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -46,3 +46,5 @@ next-env.d.ts
 # local tooling
 .serena/
 .claude/
+
+!.env.example

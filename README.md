@@ -2,7 +2,7 @@
 
 A modern point-of-sale and back-office app for retail shops: selling, catalog, contacts, purchases, stock, expenses, accounts, reports and settings, in English and Bangla.
 
-It is **frontend only**. All data is mock data generated in the browser and saved to local storage, so every screen can be used, reloaded and demoed without a server. Services are written so a real API can replace them later without touching the UI.
+It runs in two modes from one codebase: a **browser-only demo** (mock data generated in the browser, no server needed) and an **API mode backed by Postgres** inside the same Next.js project (see [docs/backend.md](docs/backend.md)). Screens talk to services; in API mode the same services run on the server, so every business rule is enforced there.
 
 ## Status
 
@@ -29,7 +29,7 @@ It is **frontend only**. All data is mock data generated in the browser and save
 - Settings and admin: business settings (16 tabs, driven by the settings schema, with a shortcut recorder and mocked test email/SMS), locations, invoice schemes and layouts (with a live preview), barcode sheets, printers, tax rates and groups, users and roles (permission matrix), backup and restore, module switches (hide menu items and routes), profile and calendar.
 
 ### Good to know
-- **Frontend only.** All data lives in the browser (IndexedDB, with the old localStorage copy migrated automatically). Nothing is shared between devices or users until the service layer is pointed at a real API. A banner appears if the browser ever refuses to save, and **Backup** exports everything as JSON.
+- **Two modes.** The default is the original browser-only demo (IndexedDB, single device; a banner appears if the browser refuses to save, and **Backup** exports everything). With `NEXT_PUBLIC_DATA_MODE=api` the same app runs against **Postgres inside this Next.js project**: real sign-in, many users and devices, many businesses. See [docs/backend.md](docs/backend.md).
 - **Devices.** Back office works from phone to desktop. The POS works on tablets (768px and up) with a Products/Cart switch, and shows the full two-pane layout from 1024px. The app is installable as a PWA.
 - **Settings are live.** Every switch in Business Settings changes behaviour straight away (edit window, minimum selling price, default discount/tax, expiry stop-selling, theme colour, page size, module switches...). Settings with no feature behind them yet (restaurant modules, payment links, purchase orders/requisitions, reward expiry) are hidden rather than shown as dead switches.
 - **Email/SMS** "test" buttons are mocked; there is no real gateway without a backend.
@@ -46,10 +46,11 @@ npm run dev        # http://localhost:3000
 Sign in with `admin` / `112233` (also `cashier`, `rafiq`, `nazmul`, all with `112233`). Data is seeded on first load (about six months of history). Clear site storage to reset it.
 
 ```bash
-npm test           # vitest, 407 tests incl. a workflow fuzz that runs 1,000 random user actions and checks the books reconcile
+npm test           # vitest, 439 tests incl. Postgres integration tests (skipped without a database) and a workflow fuzz that runs 1,000 random user actions and checks the books reconcile
 npx tsc --noEmit   # typecheck
 npm run lint
 npm run build
+npm run e2e:api    # browser journey against the Postgres-backed build (see docs/backend.md)
 npm run e2e        # browser smoke + accessibility (axe) over every route, EN/light and BN/dark; needs a running build
 ```
 

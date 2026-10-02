@@ -37,6 +37,10 @@ export function usePosSales(q: { locationId: string; status: SaleStatus; limit?:
   return useQuery({ queryKey: keys.pos.sales(q), queryFn: () => salesService.list({ ...q, channel: "pos" }), enabled });
 }
 
+export function useReservedPoints(contactId: string | undefined, exceptSaleId: string | null) {
+  return useQuery({ queryKey: ["transactions", "reserved-points", contactId, exceptSaleId], queryFn: () => salesService.reservedPoints(contactId!, exceptSaleId ?? undefined), enabled: !!contactId });
+}
+
 export function useReceipt(id: string | null | undefined) {
   return useQuery({ queryKey: keys.pos.receipt(id ?? ""), queryFn: () => salesService.receipt(id!), enabled: !!id });
 }

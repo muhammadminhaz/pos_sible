@@ -25,9 +25,9 @@ const CURRENCIES = [
 
 /** First-run setup for whoever can change business settings: pick demo or empty shop, describe the business, choose a look. */
 export function OnboardingGate() {
-  const { onboarding } = useOnboardingState();
+  const { loaded, onboarding } = useOnboardingState();
   const can = useCan();
-  if (!can("settings.business") || onboarding?.done) return null;
+  if (!loaded || !can("settings.business") || onboarding?.done) return null;
   return <Wizard />;
 }
 

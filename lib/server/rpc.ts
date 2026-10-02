@@ -4,6 +4,7 @@ import "./context";
 import "@/lib/data/services/accounts";
 import "@/lib/data/services/adjustments";
 import "@/lib/data/services/admin";
+import "@/lib/data/services/calendar";
 import "@/lib/data/services/contactImport";
 import "@/lib/data/services/contacts";
 import "@/lib/data/services/dashboard";
@@ -57,7 +58,37 @@ const GATES: Record<string, string[]> = {
   dashboardService: ["dashboard.view"],
   profitService: ["dashboard.view", "report.view"],
   backupsService: ["backup"],
+  // Mirrors the permission each screen already requires, so hiding a menu item also closes the door behind it.
+  purchasesService: ["purchase.view", "purchase.create", "purchase.update"],
+  purchaseReturnsService: ["purchase_return.view", "purchase.view", "purchase.update"],
+  purchaseImportService: ["purchase.create"],
+  accountsService: ["account.view", "account.manage"],
+  expensesService: ["expense.view", "expense.create", "expense.update"],
+  transfersService: ["stock_transfer.view", "stock_transfer.create"],
+  adjustmentsService: ["stock_adjustment.view", "stock_adjustment.create"],
+  discountsService: ["discount.view", "discount.manage"],
+  productsService: ["product.view", "product.create", "product.update"],
+  priceSheetService: ["product.view", "product.update"],
+  contactsService: ["contacts.customer", "contacts.supplier", "contacts.import"],
+  contactImportService: ["contacts.import"],
+  productImportService: ["product.create", "product.opening_stock", "product.update"],
+  salesImportService: ["sell.import"],
+  ordersService: ["sales_order.view", "sell.view", "sell.create"],
+  returnsService: ["sell_return.view", "sell.update", "sell.create"],
+  registersService: ["pos.access", "cash_register.close", "report.view"],
+  posService: ["pos.access", "sell.create", "sell.view"],
+  salesService: ["sell.view", "sell.create", "sell.update", "pos.access", "draft.view", "quotation.view", "sales_order.view", "shipment.view", "sell_return.view"],
+  calendarService: ["calendar.view", "dashboard.view"],
 };
+
+/**
+ * The generic CRUD endpoint reaches only the settings-style reference tables the screens edit. Transactions, stock,
+ * contacts, products and backups have their own services with their own rules, and are not readable this way.
+ */
+const CRUD_TABLES = new Set([
+  "accountTypes", "barcodeSettings", "brands", "categories", "customerGroups", "expenseCategories", "invoiceLayouts", "invoiceSchemes",
+  "locations", "priceGroups", "printers", "roles", "taxRates", "technicians", "units", "users", "variationTemplates", "warranties",
+]);
 
 /** Things that are never callable from the network, whatever the service says. */
 const BLOCKED = new Set(["constructor", "__proto__", "prototype"]);
@@ -69,7 +100,7 @@ function resolve(service: string, method: string): { target: Record<string, unkn
   let target: Record<string, unknown> | undefined;
   if (service.startsWith("crud:")) {
     const table = service.slice(5);
-    if (!(TABLE_NAMES as readonly string[]).includes(table)) throw new AppError("Unknown service", "not_found");
+    if (!CRUD_TABLES.has(table) || !(TABLE_NAMES as readonly string[]).includes(table)) throw new AppError("Unknown service", "not_found");
     target = serverCrud(table as (typeof TABLE_NAMES)[number]) as unknown as Record<string, unknown>;
   } else target = serviceRegistry.get(service);
   const fn = target && !BLOCKED.has(method) && Object.hasOwn(target, method) ? target[method] : undefined;

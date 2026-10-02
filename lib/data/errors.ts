@@ -78,10 +78,24 @@ export type WireError = {
   fields?: Record<string, string>; permission?: string; productName?: string; available?: number; count?: number;
 };
 
+/** Class names are mangled in production bundles, so each error type is named explicitly on the wire. */
+function wireName(e: AppError): string {
+  if (e instanceof ForbiddenError) return "ForbiddenError";
+  if (e instanceof ValidationError) return "ValidationError";
+  if (e instanceof InsufficientStockError) return "InsufficientStockError";
+  if (e instanceof CreditLimitError) return "CreditLimitError";
+  if (e instanceof EditWindowExpiredError) return "EditWindowExpiredError";
+  if (e instanceof NotFoundError) return "NotFoundError";
+  if (e instanceof SerialsRequiredError) return "SerialsRequiredError";
+  if (e instanceof ProductUnavailableError) return "ProductUnavailableError";
+  if (e instanceof BelowMinPriceError) return "BelowMinPriceError";
+  return "AppError";
+}
+
 export function serializeError(e: unknown): WireError {
   if (e instanceof AppError) {
     const o = e as AppError & Partial<WireError>;
-    return { name: e.name, code: e.code, message: e.message, fields: o.fields, permission: o.permission, productName: o.productName, available: o.available, count: o.count };
+    return { name: wireName(e), code: e.code, message: e.message, fields: o.fields, permission: o.permission, productName: o.productName, available: o.available, count: o.count };
   }
   return { name: "Error", code: "internal", message: "Something went wrong on the server." };
 }

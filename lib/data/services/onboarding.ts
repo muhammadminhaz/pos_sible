@@ -34,7 +34,15 @@ export function checklistStatus(db: DB): Record<ChecklistStep, boolean> {
   };
 }
 
+export type OnboardingState = { onboarding: Onboarding | undefined; checklist: Record<ChecklistStep, boolean> };
+
 export const onboardingService = service("onboardingService", {
+  async state(): Promise<OnboardingState> {
+    await delay();
+    const db = getDB();
+    return { onboarding: db.meta.onboarding, checklist: checklistStatus(db) };
+  },
+
   /** Applies the wizard: optionally swaps in an empty shop, then the business profile. One step, all or nothing. */
   async complete(input: OnboardingInput): Promise<void> {
     await delay();

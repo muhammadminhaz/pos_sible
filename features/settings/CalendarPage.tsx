@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { useDB } from "@/lib/data/store/db";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { calendarService } from "@/lib/data/services/calendar";
 import { useUI } from "@/lib/data/store/ui";
 import { useFormat } from "@/lib/i18n/format";
 
@@ -20,25 +21,15 @@ export function CalendarPage() {
   const locale = useLocale();
   const f = useFormat();
   const locationId = useUI((s) => s.locationId);
-  const txns = useDB((s) => s.db?.transactions);
-  const bookings = useDB((s) => s.db?.bookings);
-  const bookingsOn = useDB((s) => s.db?.settings.modules.bookings) ?? false;
   const [cursor, setCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
   const [showBookings, setShowBookings] = useState(true);
-
-  const events = useMemo(() => {
-    const out = new Map<string, { sales: number; total: number; bookings: number }>();
-    const slot = (k: string) => out.get(k) ?? out.set(k, { sales: 0, total: 0, bookings: 0 }).get(k)!;
-    for (const x of txns ?? []) {
-      if (x.type !== "sell" || x.status !== "final" || (locationId !== "all" && x.locationId !== locationId)) continue;
-      const e = slot(x.date.slice(0, 10));
-      e.sales += 1;
-      e.total += x.totals.total;
-    }
-    if (bookingsOn && showBookings)
-      for (const b of bookings ?? []) if (locationId === "all" || b.locationId === locationId) slot(b.start.slice(0, 10)).bookings += 1;
-    return out;
-  }, [txns, bookings, locationId, bookingsOn, showBookings]);
+  const { data } = useQuery({
+    queryKey: ["calendar", cursor.y, cursor.m, locationId, showBookings],
+    queryFn: () => calendarService.month({ year: cursor.y, month0: cursor.m, locationId, withBookings: showBookings }),
+    placeholderData: keepPreviousData,
+  });
+  const bookingsOn = data?.bookingsOn ?? false;
+  const events = useMemo(() => new Map(Object.entries(data?.days ?? {})), [data]);
 
   const first = new Date(cursor.y, cursor.m, 1);
   const days = new Date(cursor.y, cursor.m + 1, 0).getDate();

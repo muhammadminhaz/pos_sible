@@ -10,7 +10,13 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "e2e": "node e2e/smoke.mjs",
-    "e2e:onboarding": "node e2e/onboarding.mjs"
+    "e2e:onboarding": "node e2e/onboarding.mjs",
+    "db:migrate": "tsx scripts/db.ts migrate",
+    "db:seed": "tsx scripts/db.ts seed",
+    "db:create-business": "tsx scripts/db.ts create-business",
+    "dev:api": "NEXT_PUBLIC_DATA_MODE=api next dev",
+    "build:api": "NEXT_PUBLIC_DATA_MODE=api next build",
+    "e2e:api": "node e2e/api.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -51,6 +57,7 @@
     "eslint-config-next": "16.3.6",
     "playwright-core": "^1.63.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^5.0.2"

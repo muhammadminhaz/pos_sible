@@ -1,7 +1,6 @@
 import { beforeEach, describe, it } from "vitest";
 import { useSession } from "@/lib/auth/session";
 import { createSeed } from "@/lib/data/seed";
-import { LOC_RANGO } from "@/lib/data/seed/mk";
 import { commit, resetDB } from "@/lib/data/store/db";
 import { registersService } from "@/lib/data/services/registers";
 import { fuzz } from "./fuzzCore";

@@ -13,6 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { signOutOnServer } from "@/lib/auth/authStore";
+import { API_MODE } from "@/lib/data/api/mode";
 import { useSession } from "@/lib/auth/session";
 import { useCurrentUser } from "@/lib/auth/useCan";
 
@@ -53,8 +55,9 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"
-          onSelect={() => {
-            logout();
+          onSelect={async () => {
+            if (API_MODE) await signOutOnServer();
+            else logout();
             router.replace("/login");
           }}
         >

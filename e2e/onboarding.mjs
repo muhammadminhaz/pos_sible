@@ -8,13 +8,26 @@ const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 const check = (ok, what) => { if (!ok) { console.error("FAIL:", what); process.exitCode = 1; } else console.log("ok  :", what); };
 
-await page.goto(`${BASE}/login`);
-await page.getByLabel("Username").fill("admin");
-await page.locator('input[type="password"]').fill("112233");
-await page.getByRole("button", { name: "Sign in" }).click();
-await page.waitForURL(/\/home/);
+if (process.env.E2E_API === "1") {
+  // Against a server: open a brand-new business through the sign-up page, as a customer would.
+  const user = `shop${Date.now().toString(36)}`;
+  await page.goto(`${BASE}/signup`);
+  await page.getByLabel("Business name").fill("Lotus Mart");
+  await page.getByLabel("Your name").fill("Lila");
+  await page.getByLabel("Username").fill(user);
+  await page.locator('input[type="password"]').fill("a long password");
+  await page.getByRole("button", { name: "Create your shop" }).click();
+  await page.waitForURL(/\/home/);
+} else {
+  await page.goto(`${BASE}/login`);
+  await page.getByLabel("Username").fill("admin");
+  await page.locator('input[type="password"]').fill("112233");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL(/\/home/);
+}
 
-check(await page.getByText("Welcome to pos_sible").isVisible(), "wizard opens on first run");
+await page.getByText("Welcome to pos_sible").waitFor({ timeout: 10000 });
+check(true, "wizard opens on first run");
 await page.getByRole("button", { name: /Start my own shop/ }).click();
 check(await page.getByText(/sample data will be replaced/i).isVisible(), "fresh start warns about replacing the demo");
 await page.getByRole("button", { name: "Next" }).click();
