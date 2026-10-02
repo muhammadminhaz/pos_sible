@@ -45,10 +45,10 @@ export default function LoginPage() {
     if (userId) router.replace("/home");
   }, [userId, router]);
 
-  const onSubmit = form.handleSubmit(async ({ username, password }) => {
+  const onSubmit = form.handleSubmit(async ({ username, password, remember }) => {
     setFailed(false);
     await new Promise((r) => setTimeout(r, 250));
-    if (!login(username, password)) {
+    if (!login(username, password, remember)) {
       setFailed(true);
       form.setFocus("password");
     }
@@ -106,7 +106,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  aria-label={t("auth.password")}
+                  aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                   className="absolute inset-y-0 right-0 grid w-9 place-items-center text-muted-foreground hover:text-foreground"
                 >
                   {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
