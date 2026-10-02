@@ -70,3 +70,34 @@ export class BelowMinPriceError extends AppError {
     super(`${productName} can't be sold below its minimum price.`, "below_min_price");
   }
 }
+
+// ---- Crossing the network: errors travel as plain objects and come back as the same classes -----------------------
+
+export type WireError = {
+  name: string; code: string; message: string;
+  fields?: Record<string, string>; permission?: string; productName?: string; available?: number; count?: number;
+};
+
+export function serializeError(e: unknown): WireError {
+  if (e instanceof AppError) {
+    const o = e as AppError & Partial<WireError>;
+    return { name: e.name, code: e.code, message: e.message, fields: o.fields, permission: o.permission, productName: o.productName, available: o.available, count: o.count };
+  }
+  return { name: "Error", code: "internal", message: "Something went wrong on the server." };
+}
+
+export function deserializeError(w: WireError): Error {
+  switch (w.name) {
+    case "ForbiddenError": return new ForbiddenError(w.permission ?? "");
+    case "ValidationError": return new ValidationError(w.fields ?? {}, w.message);
+    case "InsufficientStockError": return new InsufficientStockError(w.productName ?? "", w.available ?? 0);
+    case "CreditLimitError": return new CreditLimitError(w.message);
+    case "EditWindowExpiredError": return new EditWindowExpiredError(w.message);
+    case "NotFoundError": return Object.assign(new NotFoundError(), { message: w.message });
+    case "SerialsRequiredError": return new SerialsRequiredError(w.productName ?? "", w.count ?? 0);
+    case "ProductUnavailableError": return new ProductUnavailableError(w.productName ?? "");
+    case "BelowMinPriceError": return new BelowMinPriceError(w.productName ?? "");
+    case "AppError": return new AppError(w.message, w.code);
+    default: return new Error(w.message);
+  }
+}

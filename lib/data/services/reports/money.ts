@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { format, parseISO, subDays } from "date-fns";
 import type { DB, Transaction } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
@@ -141,9 +142,9 @@ export function taxSummary(d: DB, f: ReportFilter): TaxSummary {
   return { output, input, expense, payable: roundMoney(output - input - expense) };
 }
 
-export const moneyReports = {
+export const moneyReports = service("moneyReports", {
   async profitLoss(f: ReportFilter = {}) { await delay(); return profitLoss(getDB(), f); },
   async profitBreakdown(dim: ProfitDimension, f: ReportFilter = {}) { await delay(); return profitBreakdown(getDB(), dim, f); },
   async purchaseSale(f: ReportFilter = {}) { await delay(); return purchaseSale(getDB(), f); },
   async tax(kind: TaxKind, f: ReportFilter = {}) { await delay(); return { ...taxRows(getDB(), kind, f), summary: taxSummary(getDB(), f) }; },
-};
+});

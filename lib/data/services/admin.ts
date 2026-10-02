@@ -1,7 +1,9 @@
+import { service } from "@/lib/data/api/facade";
 import { commit, getDB, resetDB } from "@/lib/data/store/db";
 import { AppError, ValidationError } from "@/lib/data/errors";
 import { assertCan } from "@/lib/auth/assertCan";
-import { useSession } from "@/lib/auth/session";
+import { passwordHasher } from "@/lib/auth/password";
+import { activeUserId } from "@/lib/auth/session";
 import type { Backup, DB, User } from "@/lib/data/schemas";
 import { SEED_VERSION } from "@/lib/data/seed";
 import { delay, nowISO, uid } from "./_util";
@@ -27,7 +29,7 @@ function parse(json: string): DB {
   return db;
 }
 
-export const backupsService = {
+export const backupsService = service("backupsService", {
   async list(): Promise<Backup[]> {
     await delay();
     return [...getDB().backups].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -39,7 +41,7 @@ export const backupsService = {
     const { backups: _omit, ...rest } = getDB();
     void _omit;
     const data = JSON.stringify({ ...rest, backups: [] });
-    const row = { id: uid("bak"), createdAt: nowISO(), createdBy: useSession.getState().userId, name: name?.trim() || `backup-${nowISO().slice(0, 10)}`, size: data.length, payload: data } as Backup;
+    const row = { id: uid("bak"), createdAt: nowISO(), createdBy: activeUserId(), name: name?.trim() || `backup-${nowISO().slice(0, 10)}`, size: data.length, payload: data } as Backup;
     commit((d) => void d.backups.push(row));
     return row;
   },
@@ -61,22 +63,23 @@ export const backupsService = {
     if (!row) throw new AppError("Backup not found.", "not_found");
     return this.restore(row.payload);
   },
-};
+});
 
-export const accountService = {
+export const accountService = service("accountService", {
   /** Changing a password needs the current one. */
   async changePassword(current: string, next: string): Promise<void> {
     await delay();
-    const id = useSession.getState().userId;
+    const id = activeUserId();
     const me = getDB().users.find((u) => u.id === id);
     if (!me) throw new AppError("Not signed in.", "forbidden");
-    if (me.password !== current) throw new ValidationError({ current: "wrong" });
+    if (!passwordHasher.verify(current, me.password)) throw new ValidationError({ current: "wrong" });
     if (next.length < 6) throw new ValidationError({ next: "too_short" });
-    commit((d) => void (d.users.find((u) => u.id === id)!.password = next));
+    const hashed = passwordHasher.hash(next);
+    commit((d) => void (d.users.find((u) => u.id === id)!.password = hashed));
   },
   async updateProfile(patch: Partial<User>): Promise<void> {
     await delay();
-    const id = useSession.getState().userId;
+    const id = activeUserId();
     commit((d) => {
       const u = d.users.find((x) => x.id === id);
       if (!u) throw new AppError("Not signed in.", "forbidden");
@@ -86,4 +89,4 @@ export const accountService = {
       Object.assign(u, safe);
     });
   },
-};
+});

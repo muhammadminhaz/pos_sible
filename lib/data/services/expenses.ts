@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { addDays, addMonths, addYears, format, getDaysInMonth, parseISO, setDate } from "date-fns";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
@@ -126,7 +127,7 @@ function find(d: DB, id: string): Transaction {
   return t;
 }
 
-export const expensesService = {
+export const expensesService = service("expensesService", {
   async list(f: ExpenseFilters = {}): Promise<ListResult<ExpenseRow> & { totals: { tax: number; total: number; paid: number; due: number } }> {
     await delay();
     const d = getDB();
@@ -264,4 +265,4 @@ export const expensesService = {
     });
     return getDB().transactions.find((t) => t.id === id)!;
   },
-};
+});

@@ -1,3 +1,4 @@
+import { dataContext } from "@/lib/data/store/db";
 import { nextRef } from "@/lib/domain/refs";
 import { EditWindowExpiredError } from "@/lib/data/errors";
 import type { DB } from "@/lib/data/schemas";
@@ -47,6 +48,15 @@ export function uid(prefix: string): string {
 export const nowISO = () => {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
+  // On the server the clock is the business's, not the machine's.
+  const tz = dataContext.current()?.db.settings.business.timeZone;
+  if (tz) {
+    const w = Object.fromEntries(
+      new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+        .formatToParts(d).map((x) => [x.type, x.value]),
+    );
+    return `${w.year}-${w.month}-${w.day}T${w.hour}:${w.minute}:${w.second}`;
+  }
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 };
 

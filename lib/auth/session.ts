@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { getDB } from "@/lib/data/store/db";
+import { dataContext, getDB } from "@/lib/data/store/db";
 import { chooseSessionStore, sessionStorageChoice } from "@/lib/data/store/storage";
 import type { Role, User } from "@/lib/data/schemas";
 
@@ -29,8 +29,14 @@ export const useSession = create<SessionState>()(
   ),
 );
 
+/** Who is acting: the request's user on the server, the signed-in user in the browser. */
+export function activeUserId(): string | null {
+  const ctx = dataContext.current();
+  return ctx ? ctx.userId : useSession.getState().userId;
+}
+
 export function currentUser(): { user: User; role: Role } | null {
-  const id = useSession.getState().userId;
+  const id = activeUserId();
   if (!id) return null;
   const db = getDB();
   const user = db.users.find((u) => u.id === id);

@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import type { DB } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
@@ -57,7 +58,7 @@ export function customerGroupsReport(d: DB, f: ReportFilter): ReportResult<Group
   return withTotals(rows, ["customers", "sales", "sellReturn", "net"]);
 }
 
-export const contactReports = {
+export const contactReports = service("contactReports", {
   async contacts(f: ContactReportFilter = {}) { await delay(); return contactsReport(getDB(), f); },
   async customerGroups(f: ReportFilter = {}) { await delay(); return customerGroupsReport(getDB(), f); },
-};
+});

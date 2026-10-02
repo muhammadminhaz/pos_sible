@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -23,7 +24,7 @@ export type OrderInput = {
   lines: { productId: string; variationId: string; unitId: string; qty: number; unitPrice: number }[];
 };
 
-export const ordersService = {
+export const ordersService = service("ordersService", {
   async list(f: OrderFilters = {}): Promise<ListResult<OrderRow>> {
     await delay();
     const d = getDB();
@@ -112,4 +113,4 @@ export const ordersService = {
     const { rows } = await ordersService.list({ contactId, pageSize: -1 });
     return rows.filter((r) => r.status !== "completed" && r.remainingQty > 0);
   },
-};
+});

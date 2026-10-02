@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -73,7 +74,7 @@ function validateInput(d: DB, input: AccountInput) {
   if (!(input.openingBalance >= 0)) throw new ValidationError({ openingBalance: "negative" });
 }
 
-export const accountsService = {
+export const accountsService = service("accountsService", {
   /** Account types and sub-types: plain CRUD with the rules in `catalog.ts`. */
   types: crud("accountTypes"),
 
@@ -248,4 +249,4 @@ export const accountsService = {
       pushAccountTxn(d, { accountId, kind: paymentKind(t, p), subType: "payment", amount: p.amount, date: p.paidOn, transactionId, paymentId });
     });
   },
-};
+});

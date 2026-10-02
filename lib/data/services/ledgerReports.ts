@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { getDB } from "@/lib/data/store/db";
 import { balanceSheet, buildJournal, cashFlow, trialBalance, type BalanceSheet, type CashFlow, type CashFlowFilter, type FlowRow, type ReportFilter, type TrialRow } from "@/lib/domain/ledger";
 import { delay } from "./_util";
@@ -11,7 +12,7 @@ export type CashFlowReport = Omit<CashFlow, "rows"> & { rows: CashFlowRow[] };
 const names = () => Object.fromEntries(getDB().accounts.map((a) => [a.id, a.name]));
 
 /** Reports over the journal derived from the books; nothing here writes. */
-export const ledgerReportsService = {
+export const ledgerReportsService = service("ledgerReportsService", {
   async trialBalance(f: ReportFilter = {}): Promise<TrialBalanceReport> {
     await delay();
     const n = names();
@@ -41,4 +42,4 @@ export const ledgerReportsService = {
       }),
     };
   },
-};
+});

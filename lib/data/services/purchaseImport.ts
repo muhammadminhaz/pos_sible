@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { getDB } from "@/lib/data/store/db";
 import { parseCSV } from "@/lib/csv";
@@ -19,7 +20,7 @@ const decimal = (s: string) => (/^\d+(\.\d+)?$/.test(s.trim()) ? Number(s) : Num
  * Reads a spreadsheet of products to receive: `sku` and `qty` are required, `unit_cost` defaults to the product's
  * current purchase price. Rows for the same SKU are merged. Nothing is applied here; the form shows the result first.
  */
-export const purchaseImportService = {
+export const purchaseImportService = service("purchaseImportService", {
   async parse(csv: string): Promise<PurchaseImportParse> {
     await delay();
     assertCan("purchase.create");
@@ -57,4 +58,4 @@ export const purchaseImportService = {
     });
     return { rows: [...rows.values()], errors };
   },
-};
+});

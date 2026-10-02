@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { addDays, format, parseISO } from "date-fns";
 import type { DB } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
@@ -77,6 +78,6 @@ export function dashboardExtras(d: DB, f: ReportFilter & { today?: string }): Da
   };
 }
 
-export const dashboardReports = {
+export const dashboardReports = service("dashboardReports", {
   async extras(f: ReportFilter & { today?: string } = {}) { await delay(); return dashboardExtras(getDB(), f); },
-};
+});

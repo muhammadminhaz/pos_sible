@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
@@ -101,7 +102,7 @@ export function adjustmentReport(d: DB, f: ReportFilter): ReportResult<Adjustmen
   return { ...withTotals(rows, ["total", "recovered"]), summary: { normal: of("normal"), abnormal: of("abnormal"), total, recovered, netLoss: roundMoney(total - recovered) } };
 }
 
-export const stockReports = {
+export const stockReports = service("stockReports", {
   async stock(f: StockFilter = {}) { await delay(); return stockReport(getDB(), f); },
   async expiry(f: ExpiryFilter = {}) { await delay(); return stockExpiry(getDB(), f); },
   async adjustments(f: ReportFilter = {}) { await delay(); return adjustmentReport(getDB(), f); },
@@ -141,4 +142,4 @@ export const stockReports = {
     });
     return { refNo };
   },
-};
+});

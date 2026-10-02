@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { NotFoundError } from "@/lib/data/errors";
@@ -19,7 +20,7 @@ export type ImportParse = { rows: ImportRow[]; errors: { row: number; message: s
 
 const num = (s: string) => (s.trim() === "" ? NaN : Number(s));
 
-export const salesImportService = {
+export const salesImportService = service("salesImportService", {
   async parse(csv: string): Promise<ImportParse> {
     await delay();
     assertCan("sell.import");
@@ -121,4 +122,4 @@ export const salesImportService = {
       d.importBatches = d.importBatches.filter((x) => x.id !== batchId);
     });
   },
-};
+});

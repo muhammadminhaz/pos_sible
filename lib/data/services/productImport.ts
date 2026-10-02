@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { importBatch, type DB, type ImportBatch } from "@/lib/data/schemas";
@@ -34,7 +35,7 @@ function record(d: DB, kind: ImportBatch["kind"], fileName: string, rows: number
   return id;
 }
 
-export const productImportService = {
+export const productImportService = service("productImportService", {
   async parseProducts(csv: string): Promise<ProductParse> {
     await delay();
     assertCan("product.create");
@@ -156,4 +157,4 @@ export const productImportService = {
     await delay();
     return getDB().importBatches.filter((b) => b.kind === kind).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
-};
+});

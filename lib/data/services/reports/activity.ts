@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import type { DB, PaymentMethod, Transaction } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
 import { commission } from "@/lib/domain/commission";
@@ -176,7 +177,7 @@ export function tableReport(d: DB, f: ReportFilter): ReportResult<TableRow> {
   return withTotals(rows, ["invoices", "total"]);
 }
 
-export const activityReports = {
+export const activityReports = service("activityReports", {
   async purchasePayments(f: PaymentReportFilter = {}) { await delay(); const r = purchasePayments(getDB(), f); return { ...r, byMethod: byMethod(r.rows) }; },
   async sellPayments(f: PaymentReportFilter = {}) { await delay(); const r = sellPayments(getDB(), f); return { ...r, byMethod: byMethod(r.rows) }; },
   async expense(f: ExpenseReportFilter = {}) { await delay(); return expenseReport(getDB(), f); },
@@ -186,4 +187,4 @@ export const activityReports = {
   async salesAdded(userId: string, f: ReportFilter = {}) { await delay(); return salesAddedBy(getDB(), userId, f); },
   async repExpenses(userId: string, f: ReportFilter = {}) { await delay(); return repExpenses(getDB(), userId, f); },
   async table(f: ReportFilter = {}) { await delay(); return tableReport(getDB(), f); },
-};
+});

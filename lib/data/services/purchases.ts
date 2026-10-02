@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -157,7 +158,7 @@ function writePurchase(d: DB, input: PurchaseInput): { id: string; refNo: string
   return { id: tid, refNo };
 }
 
-export const purchasesService = {
+export const purchasesService = service("purchasesService", {
   async list(f: PurchaseFilters = {}): Promise<ListResult<PurchaseRow> & { totals: { total: number; paid: number; due: number } }> {
     await delay();
     const d = getDB();
@@ -278,4 +279,4 @@ export const purchasesService = {
       d.transactions = d.transactions.filter((x) => x.id !== id);
     });
   },
-};
+});

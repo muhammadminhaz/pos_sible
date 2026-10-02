@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import type { DB, Product } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
 import { todayISO } from "@/lib/dates";
@@ -117,7 +118,7 @@ function rank(p: PosProduct, v: PosVariation, term: string): number {
   return -1;
 }
 
-export const posService = {
+export const posService = service("posService", {
   async products(q: PosCatalogQuery): Promise<ListResult<PosProduct>> {
     await delay();
     const db = getDB();
@@ -145,4 +146,4 @@ export const posService = {
       .map(({ product, variation, r }) => ({ product, variation, exact: r === 0 }));
   },
 
-};
+});

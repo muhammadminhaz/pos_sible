@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import {
@@ -257,7 +258,7 @@ export function revertSale(d: DB, t: Transaction) {
   syncOrders(d, t.salesOrderIds);
 }
 
-export const salesService = {
+export const salesService = service("salesService", {
   async checkout(input: CheckoutInput): Promise<CheckoutResult> {
     await delay();
     assertCan("sell.create");
@@ -527,4 +528,4 @@ export const salesService = {
       d.transactions.splice(i, 1);
     });
   },
-};
+});

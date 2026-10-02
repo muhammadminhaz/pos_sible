@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -55,7 +56,7 @@ function recompute(t: Transaction) {
   for (const l of t.lines) l.subtotal = roundMoney(l.unitPrice * l.qty);
 }
 
-export const transfersService = {
+export const transfersService = service("transfersService", {
   async list(f: TransferFilters = {}): Promise<ListResult<TransferRow>> {
     await delay();
     const d = getDB();
@@ -157,7 +158,7 @@ export const transfersService = {
       d.transactions = d.transactions.filter((x) => x.id !== id);
     });
   },
-};
+});
 
 function advance(d: DB, t: Transaction, status: TransferStatus) {
   const from = ORDER.indexOf(t.status as TransferStatus);

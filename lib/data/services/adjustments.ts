@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -18,7 +19,7 @@ export type AdjustmentRow = {
 };
 export type AdjustmentDetail = AdjustmentRow & { lines: { id: string; name: string; sku: string; unitName: string; qty: number; unitCost: number; subtotal: number }[] };
 
-export const adjustmentsService = {
+export const adjustmentsService = service("adjustmentsService", {
   async list(f: AdjustmentFilters = {}): Promise<ListResult<AdjustmentRow> & { totals: { total: number; recovered: number } }> {
     await delay();
     const d = getDB();
@@ -107,4 +108,4 @@ export const adjustmentsService = {
       d.transactions = d.transactions.filter((x) => x.id !== id);
     });
   },
-};
+});

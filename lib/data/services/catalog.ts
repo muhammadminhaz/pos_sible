@@ -1,8 +1,10 @@
+import { service } from "@/lib/data/api/facade";
 import { commit, getDB } from "@/lib/data/store/db";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
 import type { DB, Row, TableName } from "@/lib/data/schemas";
 import { assertCan } from "@/lib/auth/assertCan";
-import { useSession } from "@/lib/auth/session";
+import { passwordHasher } from "@/lib/auth/password";
+import { activeUserId } from "@/lib/auth/session";
 import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult } from "./_util";
 
 export type CrudService<T extends { id: string }> = {
@@ -23,6 +25,8 @@ type Rules = {
   inUse?: (db: DB, id: string) => string | null;
   /** Runs inside the update's commit, after the row is replaced, to keep dependent rows consistent. */
   onUpdate?: (db: DB, before: Record<string, unknown>, after: Record<string, unknown>) => void;
+  /** Shapes incoming data before it is stored (e.g. hashing a password). */
+  prepare?: (row: Record<string, unknown>) => Record<string, unknown>;
 };
 
 /** Is there an active user with a full-access role other than the given user (or in a role other than the given one)? */
@@ -190,13 +194,14 @@ const RULES: Partial<Record<TableName, Rules>> = {
   },
   users: {
     permission: "user.create",
+    prepare: (row) => (typeof row.password === "string" && row.password ? { ...row, password: passwordHasher.hash(row.password) } : row),
     check: (db, row, id) => {
       const name = (row.username as string)?.trim();
       if (!name) throw new ValidationError({ username: "required" });
       if (db.users.some((u) => u.id !== id && u.username.toLowerCase() === name.toLowerCase())) throw new ValidationError({ username: "duplicate" });
       if (id) {
         const active = row.isActive !== false;
-        if (!active && id === useSession.getState().userId) throw new ValidationError({ isActive: "self" });
+        if (!active && id === activeUserId()) throw new ValidationError({ isActive: "self" });
         const before = db.users.find((u) => u.id === id);
         const wasAdmin = before?.isActive && db.roles.find((r) => r.id === before.roleId)?.permissions.includes("*");
         const stillAdmin = active && db.roles.find((r) => r.id === row.roleId)?.permissions.includes("*");
@@ -204,7 +209,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
       }
     },
     inUse: (db, id) => {
-      if (id === useSession.getState().userId) return "user_self";
+      if (id === activeUserId()) return "user_self";
       const u = db.users.find((x) => x.id === id);
       const admin = u?.isActive && db.roles.find((r) => r.id === u.roleId)?.permissions.includes("*");
       if (admin && !hasAnotherAdmin(db, { userId: id })) return "last_admin";
@@ -214,7 +219,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
 };
 
 /** Generic CRUD over one table. Search looks at `name`, `code`, and `shortName` when present. */
-export function crud<N extends TableName, T extends Row<N> & { id: string } = Row<N>>(table: N): CrudService<T> {
+function crudLocal<N extends TableName, T extends Row<N> & { id: string } = Row<N>>(table: N): CrudService<T> {
   const rules: Rules = RULES[table] ?? {};
   const guard = () => rules.permission && assertCan(rules.permission);
   const rows = () => getDB()[table] as unknown as T[];
@@ -240,18 +245,20 @@ export function crud<N extends TableName, T extends Row<N> & { id: string } = Ro
       await delay();
       return find(id);
     },
-    async create(data) {
+    async create(input) {
       await delay();
       guard();
-      rules.check?.(getDB(), data as Record<string, unknown>);
-      const row = { ...data, id: uid(table.slice(0, 3)), createdAt: nowISO(), createdBy: useSession.getState().userId } as unknown as T;
+      rules.check?.(getDB(), input as Record<string, unknown>);
+      const data = (rules.prepare ? rules.prepare(input as Record<string, unknown>) : input) as typeof input;
+      const row = { ...data, id: uid(table.slice(0, 3)), createdAt: nowISO(), createdBy: activeUserId() } as unknown as T;
       commit((d) => void (d[table] as unknown as T[]).push(row));
       return row;
     },
-    async update(id, patch) {
+    async update(id, incoming) {
       await delay();
       guard();
-      rules.check?.(getDB(), { ...find(id), ...patch }, id);
+      rules.check?.(getDB(), { ...find(id), ...incoming }, id);
+      const patch = (rules.prepare ? rules.prepare(incoming as Record<string, unknown>) : incoming) as typeof incoming;
       let next!: T;
       commit((d) => {
         const list = d[table] as unknown as T[];
@@ -276,3 +283,11 @@ export function crud<N extends TableName, T extends Row<N> & { id: string } = Ro
     },
   };
 }
+
+/** CRUD over one table: the real service on the server, a proxy to it in the browser's API mode. */
+export function crud<N extends TableName, T extends Row<N> & { id: string } = Row<N>>(table: N): CrudService<T> {
+  return service(`crud:${table}`, crudLocal<N, T>(table));
+}
+
+/** Server: the CRUD service for `table`, bypassing the registry (which only knows tables used since start-up). */
+export const serverCrud = crudLocal;

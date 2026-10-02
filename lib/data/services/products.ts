@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -193,7 +194,7 @@ export function pushOpeningStock(d: DB, productId: string, rows: OpeningStockRow
   });
 }
 
-export const productsService = {
+export const productsService = service("productsService", {
   async list(f: ProductFilters = {}): Promise<ListResult<ProductRow>> {
     await delay();
     const term = f.search?.trim().toLowerCase();
@@ -362,4 +363,4 @@ export const productsService = {
       }
     });
   },
-};
+});

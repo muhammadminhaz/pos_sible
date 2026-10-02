@@ -6,6 +6,13 @@ import { dbStorage } from "./storage";
 
 type DBState = { db: DB | null; hydrated: boolean };
 
+/**
+ * On the server every request works on its own copy of the business database. `lib/server/context.ts` points
+ * `dataContext.current` at that request's context; in the browser it stays empty and the local store below is used.
+ */
+export type DataContext = { db: DB; userId: string | null; dirty: boolean };
+export const dataContext: { current: () => DataContext | undefined } = { current: () => undefined };
+
 export const useDB = create<DBState>()(
   persist((): DBState => ({ db: null, hydrated: false }), {
     name: "posible:v1:db",
@@ -19,6 +26,8 @@ export const useDB = create<DBState>()(
 );
 
 export function getDB(): DB {
+  const ctx = dataContext.current();
+  if (ctx) return ctx.db;
   const { db } = useDB.getState();
   if (db) return db;
   const seeded = createSeed();
@@ -30,11 +39,20 @@ export function getDB(): DB {
 export function commit(mutator: (draft: DB) => void): void {
   const draft = structuredClone(getDB());
   mutator(draft);
-  useDB.setState({ db: draft });
+  const ctx = dataContext.current();
+  if (ctx) {
+    ctx.db = draft;
+    ctx.dirty = true;
+  } else useDB.setState({ db: draft });
 }
 
 export function resetDB(db?: DB): void {
-  useDB.setState({ db: db ?? createSeed() });
+  const next = db ?? createSeed();
+  const ctx = dataContext.current();
+  if (ctx) {
+    ctx.db = next;
+    ctx.dirty = true;
+  } else useDB.setState({ db: next });
 }
 
 /** Rehydrate from storage and seed on first run. Resolves once `hydrated` is true. */

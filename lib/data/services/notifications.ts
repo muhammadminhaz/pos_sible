@@ -1,8 +1,9 @@
+import { service } from "@/lib/data/api/facade";
 import type { Notification } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { delay, nowISO } from "./_util";
 
-export const notificationsService = {
+export const notificationsService = service("notificationsService", {
   async recent(limit = 20): Promise<{ items: Notification[]; unread: number }> {
     await delay();
     const all = [...getDB().notifications].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -22,4 +23,4 @@ export const notificationsService = {
       if (n) n.readAt ??= nowISO();
     });
   },
-};
+});

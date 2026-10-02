@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -17,7 +18,7 @@ export type PurchaseReturnRow = {
 export type PurchaseReturnableLine = { lineId: string; name: string; boughtQty: number; returnedQty: number; unitPrice: number; inStock: number | null };
 export type PurchaseReturnInput = { parentId: string; lines: { lineId: string; qty: number }[]; note?: string; refundMethod?: PaymentMethod };
 
-export const purchaseReturnsService = {
+export const purchaseReturnsService = service("purchaseReturnsService", {
   async list(f: PurchaseReturnFilters = {}): Promise<ListResult<PurchaseReturnRow>> {
     await delay();
     const d = getDB();
@@ -126,4 +127,4 @@ export const purchaseReturnsService = {
       d.transactions = d.transactions.filter((x) => x.id !== id);
     });
   },
-};
+});

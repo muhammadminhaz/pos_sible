@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import type { Transaction } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
 import { expenseSign } from "@/lib/domain/ledger";
@@ -23,7 +24,7 @@ const inRange = (t: Transaction, f: KpiFilters) => {
   return d >= f.from && d <= f.to && (!f.locationId || f.locationId === "all" || t.locationId === f.locationId);
 };
 
-export const dashboardService = {
+export const dashboardService = service("dashboardService", {
   async kpis(f: KpiFilters): Promise<Kpis> {
     await delay();
     const k = { totalSales: 0, invoiceDue: 0, sellReturn: 0, totalPurchase: 0, purchaseDue: 0, purchaseReturn: 0, expense: 0 };
@@ -43,14 +44,14 @@ export const dashboardService = {
     const r = Object.fromEntries(Object.entries(k).map(([key, v]) => [key, roundMoney(v)])) as typeof k;
     return { ...r, net: roundMoney(r.totalSales - r.sellReturn - r.expense) };
   },
-};
+});
 
 export type ProfitSummary = { sales: number; cost: number; expense: number; grossProfit: number; netProfit: number };
 
 const lineCost = (l: Transaction["lines"][number]) =>
   l.allocations.length ? l.allocations.reduce((s, a) => s + a.qty * a.unitCost, 0) : l.qty * l.unitCost;
 
-export const profitService = {
+export const profitService = service("profitService", {
   /** Sales, cost of goods sold and profit for a period — powers the header "Today's profit" popover. */
   async summary(f: KpiFilters): Promise<ProfitSummary> {
     await delay();
@@ -76,4 +77,4 @@ export const profitService = {
       netProfit: roundMoney(grossProfit - expense),
     };
   },
-};
+});

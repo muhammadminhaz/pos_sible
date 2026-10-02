@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import type { DB, Transaction } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
@@ -155,10 +156,10 @@ export function itemsReport(d: DB, f: ItemFilter): ReportResult<ItemRow> {
   return withTotals(rows, ["qty", "profit"]);
 }
 
-export const productReports = {
+export const productReports = service("productReports", {
   async trending(f: ProductFilter = {}, limit = 10) { await delay(); return trendingProducts(getDB(), f, limit); },
   async productPurchase(f: ProductFilter = {}) { await delay(); return productPurchase(getDB(), f); },
   async productSellDetailed(f: ProductFilter = {}, byLot = false) { await delay(); return productSellDetailed(getDB(), f, byLot); },
   async productSellGrouped(by: GroupBy, f: ProductFilter = {}) { await delay(); return productSellGrouped(getDB(), by, f); },
   async items(f: ItemFilter = {}) { await delay(); return itemsReport(getDB(), f); },
-};
+});

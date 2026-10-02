@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -17,7 +18,7 @@ export type ReturnRow = {
 export type ReturnableLine = { lineId: string; name: string; soldQty: number; returnedQty: number; unitPrice: number };
 export type ReturnInput = { parentId: string; lines: { lineId: string; qty: number }[]; discount?: DiscountInput | null; note?: string; refundMethod?: PaymentMethod };
 
-export const returnsService = {
+export const returnsService = service("returnsService", {
   async list(f: ReturnFilters = {}): Promise<ListResult<ReturnRow>> {
     await delay();
     const d = getDB();
@@ -142,4 +143,4 @@ export const returnsService = {
       d.transactions = d.transactions.filter((x) => x.id !== id);
     });
   },
-};
+});

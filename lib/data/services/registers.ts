@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError } from "@/lib/data/errors";
@@ -36,7 +37,7 @@ const me = () => {
   return id;
 };
 
-export const registersService = {
+export const registersService = service("registersService", {
   async current(locationId: string): Promise<CashRegister | null> {
     await delay();
     const userId = currentUser()?.user.id;
@@ -142,4 +143,4 @@ export const registersService = {
     });
     return closed;
   },
-};
+});

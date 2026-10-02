@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -9,7 +10,7 @@ export type DiscountFilters = ListQuery & { active?: boolean; locationId?: strin
 export type DiscountInputData = Omit<Discount, "id" | "createdAt" | "createdBy"> & { id?: string };
 export type DiscountRow = Discount & { locationName: string; scope: string };
 
-export const discountsService = {
+export const discountsService = service("discountsService", {
   async list(f: DiscountFilters = {}): Promise<ListResult<DiscountRow>> {
     await delay();
     const d = getDB();
@@ -65,4 +66,4 @@ export const discountsService = {
       d.discounts = d.discounts.filter((x) => !ids.includes(x.id));
     });
   },
-};
+});

@@ -1,4 +1,6 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
+import { activeUserId } from "@/lib/auth/session";
 import type { DB, Onboarding, Settings } from "@/lib/data/schemas";
 import { createEmptySeed } from "@/lib/data/seed/empty";
 import { commit, getDB, resetDB } from "@/lib/data/store/db";
@@ -32,14 +34,22 @@ export function checklistStatus(db: DB): Record<ChecklistStep, boolean> {
   };
 }
 
-export const onboardingService = {
+export const onboardingService = service("onboardingService", {
   /** Applies the wizard: optionally swaps in an empty shop, then the business profile. One step, all or nothing. */
   async complete(input: OnboardingInput): Promise<void> {
     await delay();
     assertCan("settings.business");
     const name = input.businessName.trim();
     if (!name) throw new Error("business name required");
-    const base = input.mode === "fresh" ? createEmptySeed({ today: todayISO() }) : structuredClone(getDB());
+    const current = getDB();
+    const base = input.mode === "fresh" ? createEmptySeed({ today: todayISO() }) : structuredClone(current);
+    if (input.mode === "fresh") {
+      // Whoever is signed in keeps their account, password and role; the sample staff and roles come from the empty seed.
+      const keep = new Set([activeUserId()].filter(Boolean));
+      const mine = current.users.filter((u) => keep.has(u.id) || u.id === "user_admin");
+      base.roles = current.roles;
+      base.users = mine.map((u) => ({ ...u, locationIds: u.locationIds.filter((l) => base.locations.some((x) => x.id === l)) }));
+    }
     const apply = (d: DB) => {
       d.settings.business.name = name;
       d.settings.business.currencySymbol = input.currencySymbol.trim() || d.settings.business.currencySymbol;
@@ -79,4 +89,4 @@ export const onboardingService = {
   async restart(): Promise<void> {
     commit((d) => void (d.meta.onboarding = { done: false }));
   },
-};
+});

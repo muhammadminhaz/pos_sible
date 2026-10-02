@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import type { DB } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
 import { delay } from "./_util";
@@ -9,7 +10,7 @@ export type Lookups = Pick<
 >;
 
 /** Small reference tables every form needs. Cached long by the hook. */
-export const lookupsService = {
+export const lookupsService = service("lookupsService", {
   async all(): Promise<Lookups> {
     await delay();
     const db = getDB();
@@ -20,4 +21,4 @@ export const lookupsService = {
       technicians: db.technicians, invoiceSchemes: db.invoiceSchemes, invoiceLayouts: db.invoiceLayouts,
     };
   },
-};
+});

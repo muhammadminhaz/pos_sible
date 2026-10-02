@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { contact, importBatch } from "@/lib/data/schemas";
@@ -13,7 +14,7 @@ export type ContactParse = { rows: ContactImportRow[]; errors: { row: number; me
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 const num = (s: string): number | null => (s.trim() === "" ? null : /^-?\d+(\.\d+)?$/.test(s.trim()) ? Number(s) : Number.NaN);
 
-export const contactImportService = {
+export const contactImportService = service("contactImportService", {
   async parse(csv: string): Promise<ContactParse> {
     await delay();
     assertCan("contacts.import");
@@ -71,4 +72,4 @@ export const contactImportService = {
     });
     return { created: rows.length };
   },
-};
+});

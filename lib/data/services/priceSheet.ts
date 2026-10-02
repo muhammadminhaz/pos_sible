@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { importBatch } from "@/lib/data/schemas";
@@ -20,7 +21,7 @@ type Fixed = "sku" | "name" | "purchase_exc" | "sell_exc" | "sell_inc";
 /** Blank → "leave as is" (null); anything that isn't a number ≥ 0 → NaN so the caller can flag it. */
 const num = (s: string): number | null => (s.trim() === "" ? null : /^\d+(\.\d+)?$/.test(s.trim()) ? Number(s) : Number.NaN);
 
-export const priceSheetService = {
+export const priceSheetService = service("priceSheetService", {
   /** One record per variation: sku, name, the three prices, then one column per price group. */
   async exportRows(): Promise<Record<string, string | number>[]> {
     await delay();
@@ -96,4 +97,4 @@ export const priceSheetService = {
     });
     return { updated: rows.length };
   },
-};
+});

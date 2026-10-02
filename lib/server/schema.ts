@@ -1,0 +1,81 @@
+import { sqlName, TABLE_NAMES } from "./tables";
+
+/**
+ * Database migrations, applied in order and recorded in `schema_migrations`. Never edit one that has shipped: add a new one.
+ *
+ * Each business-owned collection is a table of (business_id, id, data jsonb): relational where the app queries
+ * (tenant, key, insertion order, a few hot columns on transactions) and JSONB for the document itself.
+ */
+const entityTables = TABLE_NAMES.map((t) => {
+  const n = sqlName(t);
+  const extra =
+    t === "transactions"
+      ? `,
+  type text GENERATED ALWAYS AS (data->>'type') STORED,
+  status text GENERATED ALWAYS AS (data->>'status') STORED,
+  txn_date text GENERATED ALWAYS AS (data->>'date') STORED,
+  location_id text GENERATED ALWAYS AS (data->>'locationId') STORED,
+  contact_id text GENERATED ALWAYS AS (data->>'contactId') STORED`
+      : "";
+  const idx =
+    t === "transactions"
+      ? `\nCREATE INDEX IF NOT EXISTS ${n}_lookup ON ${n} (business_id, type, status, txn_date);\nCREATE INDEX IF NOT EXISTS ${n}_contact ON ${n} (business_id, contact_id);`
+      : "";
+  return `CREATE TABLE IF NOT EXISTS ${n} (
+  seq bigserial,
+  business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  id text NOT NULL,
+  data jsonb NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()${extra},
+  PRIMARY KEY (business_id, id)
+);
+CREATE INDEX IF NOT EXISTS ${n}_order ON ${n} (business_id, seq);${idx}`;
+}).join("\n\n");
+
+export const MIGRATIONS: { id: number; name: string; sql: string }[] = [
+  {
+    id: 1,
+    name: "initial schema",
+    sql: `
+CREATE TABLE IF NOT EXISTS businesses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  settings jsonb NOT NULL,
+  meta jsonb NOT NULL,
+  version bigint NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+${entityTables}
+
+-- Global sign-in index: one username belongs to exactly one business.
+CREATE TABLE IF NOT EXISTS logins (
+  username text PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  user_id text NOT NULL
+);
+CREATE INDEX IF NOT EXISTS logins_user ON logins (business_id, user_id);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash text PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  user_id text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS sessions_expiry ON sessions (expires_at);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id bigserial PRIMARY KEY,
+  business_id uuid,
+  user_id text,
+  service text NOT NULL,
+  method text NOT NULL,
+  changed_rows integer NOT NULL DEFAULT 0,
+  duration_ms integer NOT NULL DEFAULT 0,
+  at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS audit_business_time ON audit_log (business_id, at DESC);
+`,
+  },
+];

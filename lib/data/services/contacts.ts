@@ -1,3 +1,4 @@
+import { service } from "@/lib/data/api/facade";
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
@@ -118,7 +119,7 @@ function checkContact(d: DB, input: ContactInput) {
   if (Object.keys(fields).length) throw new ValidationError(fields);
 }
 
-export const contactsService = {
+export const contactsService = service("contactsService", {
   async list(f: ContactFilters = {}): Promise<ListResult<ContactRow>> {
     await delay();
     const today = f.today ?? nowISO().slice(0, 10);
@@ -297,4 +298,4 @@ export const contactsService = {
     });
     return { allocated };
   },
-};
+});
