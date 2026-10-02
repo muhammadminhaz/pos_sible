@@ -18,6 +18,16 @@ export type JournalEntry = { date: string; memo: string; lines: JournalLine[] };
 const dr = (account: LedgerAccount, amount: number, locationId: string | null, accountId?: string): JournalLine => ({ account, accountId, debit: roundMoney(amount), credit: 0, locationId });
 const cr = (account: LedgerAccount, amount: number, locationId: string | null, accountId?: string): JournalLine => ({ account, accountId, debit: 0, credit: roundMoney(amount), locationId });
 
+/** Which way a payment moves an account: `credit` = money in. Change handed back on a sale counts as money out. */
+export function paymentKind(t: Pick<Transaction, "type" | "isRefund">, p: Pick<Payment, "isReturn">): "credit" | "debit" {
+  switch (t.type) {
+    case "sell": return p.isReturn ? "debit" : "credit";
+    case "purchase_return": return "credit";
+    case "expense": return t.isRefund ? "credit" : "debit";
+    default: return "debit"; // purchase, sell_return
+  }
+}
+
 /** What stock cost, from the lines' allocated unit cost. */
 const lineCost = (lines: TxnLine[]) => roundMoney(lines.reduce((s, l) => s + l.qty * l.unitCost, 0));
 

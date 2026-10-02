@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { accountsService } from "@/lib/data/services/accounts";
+import { accountsService, type PaymentReportFilters } from "@/lib/data/services/accounts";
 import { expensesService, type ExpenseFilters } from "@/lib/data/services/expenses";
 import { ledgerReportsService } from "@/lib/data/services/ledgerReports";
 import type { CashFlowFilter, ReportFilter } from "@/lib/domain/ledger";
@@ -47,15 +47,20 @@ export function useAccountBook(id: string | undefined, range: { from?: string; t
   return useQuery({ queryKey: ["accountTxns", "book", id, range], queryFn: () => accountsService.book(id!, range), enabled: !!id, placeholderData: keepPreviousData });
 }
 
+export function usePaymentReport(f: PaymentReportFilters) {
+  return useQuery({ queryKey: ["accountTxns", "payment-report", f], queryFn: () => accountsService.paymentReport(f), placeholderData: keepPreviousData });
+}
+
 export function useAccountMutations() {
   const qc = useQueryClient();
-  const done = () => Promise.all(["accounts", "accountTxns", "lookups", "reports"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+  const done = () => Promise.all(["accounts", "accountTxns", "transactions", "lookups", "reports"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
   return {
     save: useMutation({ mutationFn: accountsService.save, onSuccess: done }),
     close: useMutation({ mutationFn: (id: string) => accountsService.close(id), onSuccess: done }),
     reopen: useMutation({ mutationFn: (id: string) => accountsService.reopen(id), onSuccess: done }),
     transfer: useMutation({ mutationFn: accountsService.transfer, onSuccess: done }),
     deposit: useMutation({ mutationFn: accountsService.deposit, onSuccess: done }),
+    linkAccount: useMutation({ mutationFn: (a: { transactionId: string; paymentId: string; accountId: string }) => accountsService.linkAccount(a.transactionId, a.paymentId, a.accountId), onSuccess: done }),
   };
 }
 

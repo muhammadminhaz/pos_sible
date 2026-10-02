@@ -135,4 +135,62 @@ describe("accountsService", () => {
       expect(await code(types.remove(sub.id))).toBe("account_type_in_use");
     });
   });
+
+  describe("payment account report", () => {
+    const unlinked = async () => {
+      // A cash expense paid with no account linked (e.g. a method the location has no account for).
+      const { expensesService } = await import("./expenses");
+      const { id } = await expensesService.save({ locationId: "loc_rango", categoryId: "exp_rent", date: "2026-09-20T10:00:00", note: "", isRefund: false, amount: 90, payments: [{ method: "other", amount: 90 }] });
+      const t = getDB().transactions.find((x) => x.id === id)!;
+      return { t, p: t.payments[0] };
+    };
+
+    it("lists payments with their account, and the unlinked ones on their own", async () => {
+      const { p } = await unlinked();
+      const all = await accountsService.paymentReport({ pageSize: -1 });
+      expect(all.total).toBeGreaterThan(100);
+      const row = all.rows.find((r) => r.paymentId === p.id)!;
+      expect(row).toMatchObject({ amount: 90, type: "expense", accountId: null, accountName: "" });
+      const only = await accountsService.paymentReport({ linked: "unlinked", pageSize: -1 });
+      expect(only.rows.some((r) => r.paymentId === p.id)).toBe(true);
+      expect(only.rows.every((r) => !r.accountId)).toBe(true);
+      const cash = await accountsService.paymentReport({ accountId: ACC.cash, pageSize: -1 });
+      expect(cash.rows.every((r) => r.accountId === ACC.cash)).toBe(true);
+    });
+
+    it("linking an account posts the matching entry in the right direction, once", async () => {
+      const { t, p } = await unlinked();
+      const before = await balanceOf(ACC.bank);
+      await accountsService.linkAccount(t.id, p.id, ACC.bank);
+      expect(await balanceOf(ACC.bank)).toBe(before - 90);
+      expect(getDB().accountTxns.filter((a) => a.paymentId === p.id)).toMatchObject([{ accountId: ACC.bank, kind: "debit", amount: 90, transactionId: t.id }]);
+      expect(getDB().transactions.find((x) => x.id === t.id)!.payments[0].accountId).toBe(ACC.bank);
+      await accountsService.linkAccount(t.id, p.id, ACC.cash); // moving it must not leave a second entry
+      expect(getDB().accountTxns.filter((a) => a.paymentId === p.id)).toHaveLength(1);
+      expect(await balanceOf(ACC.bank)).toBe(before);
+    });
+
+    it("money received credits the account (a sale payment, a refund expense)", async () => {
+      const sale = getDB().transactions.find((x) => x.type === "sell" && x.payments.some((p) => !p.isReturn))!;
+      const pay = sale.payments.find((p) => !p.isReturn)!;
+      await accountsService.linkAccount(sale.id, pay.id, ACC.nagad);
+      expect(getDB().accountTxns.find((a) => a.paymentId === pay.id)).toMatchObject({ kind: "credit", accountId: ACC.nagad });
+      const { expensesService } = await import("./expenses");
+      const { id } = await expensesService.save({ locationId: "loc_rango", categoryId: "exp_rent", date: "2026-09-20T10:00:00", note: "", isRefund: true, amount: 40, payments: [{ method: "other", amount: 40 }] });
+      const rp = getDB().transactions.find((x) => x.id === id)!.payments[0];
+      await accountsService.linkAccount(id, rp.id, ACC.cash);
+      expect(getDB().accountTxns.find((a) => a.paymentId === rp.id)).toMatchObject({ kind: "credit", accountId: ACC.cash });
+    });
+
+    it("refuses closed accounts, unknown payments, and needs account.manage", async () => {
+      const { t, p } = await unlinked();
+      const { id } = await accountsService.save({ ...base });
+      await accountsService.close(id);
+      expect(await field(accountsService.linkAccount(t.id, p.id, id))).toEqual({ accountId: "closed" });
+      await expect(accountsService.linkAccount(t.id, "nope", ACC.cash)).rejects.toBeInstanceOf(NotFoundError);
+      await expect(accountsService.linkAccount("nope", p.id, ACC.cash)).rejects.toBeInstanceOf(NotFoundError);
+      useSession.setState({ userId: "user_cashier" });
+      await expect(accountsService.linkAccount(t.id, p.id, ACC.cash)).rejects.toBeInstanceOf(ForbiddenError);
+    });
+  });
 });

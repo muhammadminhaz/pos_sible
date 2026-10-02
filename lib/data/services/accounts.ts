@@ -3,10 +3,11 @@ import { currentUser } from "@/lib/auth/session";
 import { NotFoundError, ValidationError } from "@/lib/data/errors";
 import { account, type Account, type AccountTxn, type DB } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
+import { paymentKind } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { accountBalance, assertPostable, pushAccountTxn } from "./_ledger";
 import { crud } from "./catalog";
-import { delay, matches, nowISO, uid } from "./_util";
+import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult } from "./_util";
 
 export type AccountInput = Pick<Account, "name" | "typeId" | "number" | "note" | "details" | "openingBalance" | "allowOverdraft"> & { id?: string };
 export type AccountRow = {
@@ -20,6 +21,16 @@ export type BookRow = {
 export type AccountBook = { account: Account; opening: number; rows: BookRow[]; closing: number };
 export type TransferInput = { from: string; to: string; amount: number; note: string; date?: string };
 export type DepositInput = { accountId: string; fromAccountId?: string | null; amount: number; note: string; date?: string };
+
+export type PaymentReportFilters = ListQuery & {
+  accountId?: string; linked?: "linked" | "unlinked"; type?: string; locationId?: string; from?: string; to?: string;
+};
+export type PaymentReportRow = {
+  paymentId: string; transactionId: string; date: string; paymentRef: string; refNo: string; amount: number; type: string; method: string;
+  accountId: string | null; accountName: string; description: string; locationName: string; kind: "credit" | "debit";
+};
+
+const PAYING_TYPES = ["sell", "sell_return", "purchase", "purchase_return", "expense"];
 
 const userName = (d: DB, id: string | null) => {
   const u = d.users.find((x) => x.id === id);
@@ -196,6 +207,45 @@ export const accountsService = {
       const pair = uid("tp");
       pushAccountTxn(d, { ...shared, accountId: input.fromAccountId, kind: "debit", transferPairId: pair });
       pushAccountTxn(d, { ...shared, accountId: input.accountId, kind: "credit", transferPairId: pair });
+    });
+  },
+
+  /** Every payment on every document, with the account it went through (if any). */
+  async paymentReport(f: PaymentReportFilters = {}): Promise<ListResult<PaymentReportRow>> {
+    await delay();
+    const d = getDB();
+    const names = new Map(d.accounts.map((a) => [a.id, a.name]));
+    const rows: PaymentReportRow[] = [];
+    for (const t of d.transactions) {
+      if (!PAYING_TYPES.includes(t.type) || (f.type && t.type !== f.type) || (f.locationId && t.locationId !== f.locationId)) continue;
+      for (const p of t.payments) {
+        const day = p.paidOn.slice(0, 10);
+        if ((f.from && day < f.from) || (f.to && day > f.to)) continue;
+        if (f.accountId && p.accountId !== f.accountId) continue;
+        if (f.linked === "linked" && !p.accountId) continue;
+        if (f.linked === "unlinked" && p.accountId) continue;
+        if (!matches(f.search, p.refNo, t.refNo, p.note, names.get(p.accountId ?? ""))) continue;
+        rows.push({
+          paymentId: p.id, transactionId: t.id, date: p.paidOn, paymentRef: p.refNo, refNo: t.refNo, amount: p.amount, type: t.type, method: p.method, accountId: p.accountId,
+          accountName: names.get(p.accountId ?? "") ?? "", description: p.note, locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "", kind: paymentKind(t, p),
+        });
+      }
+    }
+    return paginate(rows.sort((a, b) => b.date.localeCompare(a.date)), f);
+  },
+
+  /** Points a payment at an account (moving it if it already had one) and re-posts its ledger entry. */
+  async linkAccount(transactionId: string, paymentId: string, accountId: string): Promise<void> {
+    await delay();
+    assertCan("account.manage");
+    commit((d) => {
+      const t = d.transactions.find((x) => x.id === transactionId && PAYING_TYPES.includes(x.type));
+      const p = t?.payments.find((x) => x.id === paymentId);
+      if (!t || !p) throw new NotFoundError("Payment");
+      assertPostable(d, accountId);
+      p.accountId = accountId;
+      d.accountTxns = d.accountTxns.filter((a) => a.paymentId !== paymentId);
+      pushAccountTxn(d, { accountId, kind: paymentKind(t, p), subType: "payment", amount: p.amount, date: p.paidOn, transactionId, paymentId });
     });
   },
 };
