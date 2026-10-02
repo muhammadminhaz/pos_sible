@@ -1,6 +1,6 @@
 import { currentUser } from "@/lib/auth/session";
 import { NotFoundError, ValidationError } from "@/lib/data/errors";
-import { accountTxn, type AccountTxn, type DB } from "@/lib/data/schemas";
+import { accountTxn, type AccountTxn, type DB, type PaymentMethod } from "@/lib/data/schemas";
 import { roundMoney } from "@/lib/domain/money";
 import { nowISO, uid } from "./_util";
 
@@ -29,4 +29,13 @@ export function pushAccountTxn(d: DB, x: NewAccountTxn): AccountTxn {
   const row = accountTxn.parse({ id: uid("at"), createdAt: nowISO(), createdBy: currentUser()?.user.id ?? null, ...x });
   d.accountTxns.push(row);
   return row;
+}
+
+/**
+ * The account a location routes a payment method to, or null when none is set or it has been closed.
+ * A null payment still saves; it can be linked later from the payment account report.
+ */
+export function defaultAccountId(d: DB, locationId: string, method: PaymentMethod): string | null {
+  const id = d.locations.find((l) => l.id === locationId)?.defaultAccounts[method] ?? null;
+  return id && d.accounts.some((a) => a.id === id && a.status === "active") ? id : null;
 }

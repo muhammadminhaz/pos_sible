@@ -117,9 +117,12 @@ describe("expensesService.save / edit / remove", () => {
     await expect(expensesService.save({ ...base, amount: 10, refNo })).rejects.toMatchObject({ code: "duplicate_ref" });
   });
 
-  it("refuses to post to a closed account", async () => {
+  it("refuses to post to a closed account, and leaves a closed default account's payment unlinked", async () => {
     getDB().accounts.find((a) => a.id === CASH())!.status = "closed";
-    await expect(expensesService.save({ ...base, amount: 10, payments: [{ method: "cash", amount: 10 }] })).rejects.toBeInstanceOf(ValidationError);
+    await expect(expensesService.save({ ...base, amount: 10, payments: [{ method: "cash", amount: 10, accountId: CASH() }] })).rejects.toBeInstanceOf(ValidationError);
+    const { id } = await expensesService.save({ ...base, amount: 10, payments: [{ method: "cash", amount: 10 }] });
+    expect(getDB().transactions.find((x) => x.id === id)!.payments[0].accountId).toBeNull();
+    expect(getDB().accountTxns.some((a) => a.transactionId === id)).toBe(false);
   });
 
   it("add/removePayment keeps status and ledger in step; remove deletes the ledger rows", async () => {
@@ -140,6 +143,18 @@ describe("expensesService.save / edit / remove", () => {
   it("requires permission", async () => {
     useSession.setState({ userId: "user_cashier" });
     await expect(expensesService.save({ ...base, amount: 10 })).rejects.toBeInstanceOf(ForbiddenError);
+  });
+});
+
+describe("expensesService.create (POS)", () => {
+  beforeEach(() => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+  });
+
+  it("files a sub-category pick under its parent so list filters find it", async () => {
+    const t = await expensesService.create({ locationId: LOC_RANGO, categoryId: "exp_water", amount: 80, method: "cash" });
+    expect(t).toMatchObject({ expenseCategoryId: "exp_utility", expenseSubCategoryId: "exp_water" });
   });
 });
 

@@ -6,6 +6,7 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary } from "@/lib/domain/payments";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { defaultAccountId } from "./_ledger";
 
 export type ContactRow = Contact & {
   groupName?: string;
@@ -272,8 +273,7 @@ export const contactsService = {
         if (left <= 0) break;
         const take = Math.min(left, paymentSummary(t.totals.total, t.payments).due);
         const pid = uid("pay");
-        const loc = d.locations.find((l) => l.id === t.locationId);
-        const accountId = p.accountId ?? loc?.defaultAccounts[p.method] ?? null;
+        const accountId = p.accountId ?? defaultAccountId(d, t.locationId, p.method);
         const prefix = t.type === "sell" ? d.settings.prefixes.sellPayment : d.settings.prefixes.purchasePayment;
         t.payments.push({ id: pid, refNo: takeRef(d, prefix, at), amount: roundMoney(take), method: p.method, accountId, paidOn: at, note: p.note ?? "", isReturn: false, details: {}, createdBy: by });
         if (accountId) {

@@ -7,7 +7,7 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
-import { assertPostable, pushAccountTxn } from "./_ledger";
+import { assertPostable, defaultAccountId, pushAccountTxn } from "./_ledger";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
 
 export type NewExpense = { locationId: string; categoryId: string; amount: number; method: PaymentMethod; note?: string };
@@ -59,7 +59,7 @@ function newPayment(d: DB, t: Pick<Transaction, "locationId" | "date">, p: Expen
   const amount = roundMoney(p.amount);
   if (!(amount > 0)) throw new ValidationError({ amount: "invalid" });
   const paidOn = p.paidOn ?? nowISO();
-  const accountId = p.accountId !== undefined ? p.accountId : (d.locations.find((l) => l.id === t.locationId)?.defaultAccounts[p.method] ?? null);
+  const accountId = p.accountId !== undefined ? p.accountId : defaultAccountId(d, t.locationId, p.method);
   if (accountId) assertPostable(d, accountId);
   return {
     id: uid("pay"), refNo: takeRef(d, d.settings.prefixes.expensePayment, paidOn), amount, method: p.method, accountId, paidOn,
@@ -255,8 +255,10 @@ export const expensesService = {
   /** Minimal paid expense for the POS "Add expense" dialog. */
   async create(input: NewExpense): Promise<Transaction> {
     const at = nowISO();
+    // The POS picker lists every category; a sub-category pick is filed under its parent.
+    const picked = getDB().expenseCategories.find((c) => c.id === input.categoryId);
     const { id } = await expensesService.save({
-      locationId: input.locationId, categoryId: input.categoryId, amount: input.amount, date: at, note: input.note ?? "", isRefund: false,
+      locationId: input.locationId, categoryId: picked?.parentId ?? input.categoryId, subCategoryId: picked?.parentId ? picked.id : null, amount: input.amount, date: at, note: input.note ?? "", isRefund: false,
       payments: [{ method: input.method, amount: input.amount, paidOn: at }],
     });
     return getDB().transactions.find((t) => t.id === id)!;
