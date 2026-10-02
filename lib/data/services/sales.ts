@@ -8,7 +8,7 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
 import { nextInvoiceNo } from "@/lib/domain/refs";
-import { maxRedeemable, pointsEarned } from "@/lib/domain/rewards";
+import { isValidRedeem, maxRedeemable, pointsEarned } from "@/lib/domain/rewards";
 import { allocate, available } from "@/lib/domain/stock";
 import { emptyCart, WALK_IN_ID, type Cart, type CartLine } from "@/lib/pos/cart";
 import { cartTotals, paymentState } from "@/lib/pos/selectors";
@@ -142,7 +142,7 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
 
   if (cart.pointsRedeemed > 0) {
     const cap = isWalkIn ? 0 : maxRedeemable({ total: totals.total + totals.redeemed, balance: contact.points, s: s.rewards });
-    if (cart.pointsRedeemed > cap) throw new ValidationError({ pointsRedeemed: "invalid" });
+    if (!isValidRedeem(cart.pointsRedeemed, cap, s.rewards)) throw new ValidationError({ pointsRedeemed: "invalid" });
   }
 
   const payments: Payment[] = [];

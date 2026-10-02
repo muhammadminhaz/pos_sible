@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { BackupPage } from "@/features/settings/BackupPage";
 
 export default function Page() {
-  return <RoutePlaceholder route="/settings/backup" />;
+  return (
+    <RequirePermission permission="backup">
+      <BackupPage />
+    </RequirePermission>
+  );
 }

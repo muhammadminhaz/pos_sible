@@ -19,6 +19,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCan } from "@/lib/auth/useCan";
 import { useUI } from "@/lib/data/store/ui";
+import { useSettings } from "@/lib/data/hooks/settings";
+import { isPathEnabled } from "@/lib/modules";
 import { findNavTrail, NAV, type NavGroup } from "@/lib/nav";
 import { LocationSwitcher } from "./LocationSwitcher";
 import { LogoMark } from "./LogoMark";
@@ -26,10 +28,11 @@ import { LogoMark } from "./LogoMark";
 /** NAV filtered by permission; groups with no visible items disappear. */
 export function useVisibleNav(): NavGroup[] {
   const can = useCan();
+  const modules = useSettings().data?.modules;
   return NAV.flatMap((g) => {
     if (!can(g.permission)) return [];
     if (!g.items) return [g];
-    const items = g.items.filter((i) => can(i.permission));
+    const items = g.items.filter((i) => can(i.permission) && isPathEnabled(modules, i.href));
     return items.length ? [{ ...g, items }] : [];
   });
 }

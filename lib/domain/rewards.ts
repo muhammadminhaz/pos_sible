@@ -26,3 +26,8 @@ export function maxRedeemable(args: { total: number; balance: number; s: RewardS
 export function redeemValue(points: number, s: RewardSettings): number {
   return roundMoney(points * s.redeemAmountPerPoint);
 }
+
+/** Redeeming zero is fine; anything else must reach the minimum and stay under the cap. */
+export function isValidRedeem(points: number, max: number, s: RewardSettings): boolean {
+  return points === 0 || (Number.isInteger(points) && points >= s.minRedeemPoint && points <= max);
+}

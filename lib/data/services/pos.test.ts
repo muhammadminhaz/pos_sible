@@ -42,8 +42,7 @@ describe("posService", () => {
     const hits = await posService.search({ locationId: LOC_RANGO, term: sku.toLowerCase() });
     expect(hits[0]).toMatchObject({ exact: true });
     expect(hits[0].variation.sku).toBe(sku);
-    expect(await posService.bySku({ locationId: LOC_RANGO, sku })).not.toBeNull();
-    expect(await posService.bySku({ locationId: LOC_RANGO, sku: "NOPE-000" })).toBeNull();
+    expect((await posService.search({ locationId: LOC_RANGO, term: "NOPE-000" })).some((h) => h.exact)).toBe(false);
   });
 
   it("toCartItem maps price, tax and stock limit", async () => {

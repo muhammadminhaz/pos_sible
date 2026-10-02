@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { pointsEarned, maxRedeemable, redeemValue, type RewardSettings } from "./rewards";
+import { pointsEarned, maxRedeemable, redeemValue, isValidRedeem, type RewardSettings } from "./rewards";
 
 const s: RewardSettings = {
   enabled: true, amountForUnitPoint: 100, minOrderTotalToEarn: 200, maxPointsPerOrder: 20,
@@ -13,4 +13,11 @@ it("rewards", () => {
   expect(maxRedeemable({ total: 500, balance: 80, s })).toBe(50);
   expect(maxRedeemable({ total: 500, balance: 5, s })).toBe(0);
   expect(redeemValue(30, s)).toBe(30);
+});
+
+it("a redemption below the minimum is rejected, zero is always fine", () => {
+  expect(isValidRedeem(0, 50, s)).toBe(true);
+  expect(isValidRedeem(5, 50, s)).toBe(false);
+  expect(isValidRedeem(10, 50, s)).toBe(true);
+  expect(isValidRedeem(51, 50, s)).toBe(false);
 });

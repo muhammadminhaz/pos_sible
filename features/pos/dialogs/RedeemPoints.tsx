@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useContact } from "@/lib/data/hooks/contacts";
 import { useSettings } from "@/lib/data/hooks/settings";
-import { maxRedeemable, redeemValue } from "@/lib/domain/rewards";
+import { isValidRedeem, maxRedeemable, redeemValue } from "@/lib/domain/rewards";
 import { useFormat } from "@/lib/i18n/format";
 import { patchCart } from "@/lib/pos/cart";
 import { useCart } from "@/lib/pos/store";
@@ -30,7 +30,7 @@ function RedeemForm({ locationId }: { locationId: string }) {
   const balance = contact?.points ?? 0;
   const max = maxRedeemable({ total: totals.total + totals.redeemed, balance, s: settings.rewards });
   const n = Math.floor(Number(points) || 0);
-  const valid = n >= 0 && n <= max;
+  const valid = isValidRedeem(n, max, settings.rewards);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();

@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { RolesPage } from "@/features/settings/RolesPage";
 
 export default function Page() {
-  return <RoutePlaceholder route="/settings/roles" />;
+  return (
+    <RequirePermission permission="role.view">
+      <RolesPage />
+    </RequirePermission>
+  );
 }

@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { PrintersPage } from "@/features/settings/configs";
 
 export default function Page() {
-  return <RoutePlaceholder route="/settings/printers" />;
+  return (
+    <RequirePermission permission="settings.printer">
+      <PrintersPage />
+    </RequirePermission>
+  );
 }
