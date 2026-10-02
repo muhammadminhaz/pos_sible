@@ -974,6 +974,8 @@
       "warranty_in_use": "Products use this warranty",
       "price_group_in_use": "Prices, customer groups or discounts use this price group",
       "variation_in_use": "Products use this variation",
+      "expense_category_in_use": "Expenses use this category",
+      "parentId_in_use": "Expenses use this as a sub-category, so it must keep its parent",
       "tax_in_use": "Products or tax groups use this tax rate",
       "name_required": "Enter a product name",
       "sku_duplicate": "That SKU is already used by another product or variation",
@@ -1194,6 +1196,14 @@
       "scope_required": "Pick a brand, category or product",
       "lines_required": "Add at least one product"
     }
+  },
+  "finance": {
+    "categoriesDescription": "Group expenses by category, with one level of sub-categories.",
+    "addCategory": "Add expense category",
+    "editCategory": "Edit expense category",
+    "noCategories": "No expense categories yet",
+    "categoryCode": "Category code",
+    "parentCategory": "Parent category"
   },
   "errors": {
     "generic": "Something went wrong",

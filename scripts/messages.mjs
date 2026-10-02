@@ -964,6 +964,8 @@ const M = {
       warranty_in_use: ["Products use this warranty", "পণ্যে এই ওয়ারেন্টি ব্যবহৃত হচ্ছে"],
       price_group_in_use: ["Prices, customer groups or discounts use this price group", "মূল্য, গ্রাহক গ্রুপ বা ডিসকাউন্টে এই প্রাইস গ্রুপ ব্যবহৃত হচ্ছে"],
       variation_in_use: ["Products use this variation", "পণ্যে এই ভ্যারিয়েশন ব্যবহৃত হচ্ছে"],
+      expense_category_in_use: ["Expenses use this category", "খরচে এই ক্যাটাগরি ব্যবহৃত হচ্ছে"],
+      parentId_in_use: ["Expenses use this as a sub-category, so it must keep its parent", "খরচে এটি সাব-ক্যাটাগরি হিসেবে ব্যবহৃত হচ্ছে, তাই এর প্যারেন্ট থাকতে হবে"],
       tax_in_use: ["Products or tax groups use this tax rate", "পণ্য বা কর গ্রুপে এই করের হার ব্যবহৃত হচ্ছে"],
       name_required: ["Enter a product name", "পণ্যের নাম লিখুন"],
       sku_duplicate: ["That SKU is already used by another product or variation", "এই SKU অন্য পণ্য বা ভ্যারিয়েশনে ব্যবহৃত হচ্ছে"],
@@ -1192,6 +1194,14 @@ const M = {
       scope_required: ["Pick a brand, category or product", "ব্র্যান্ড, ক্যাটাগরি বা পণ্য বাছুন"],
       lines_required: ["Add at least one product", "অন্তত একটি পণ্য যোগ করুন"],
     },
+  },
+  finance: {
+    categoriesDescription: ["Group expenses by category, with one level of sub-categories.", "খরচকে ক্যাটাগরি ও সাব-ক্যাটাগরি অনুযায়ী সাজান।"],
+    addCategory: ["Add expense category", "খরচের ক্যাটাগরি যোগ করুন"],
+    editCategory: ["Edit expense category", "খরচের ক্যাটাগরি সম্পাদনা"],
+    noCategories: ["No expense categories yet", "এখনো কোনো খরচের ক্যাটাগরি নেই"],
+    categoryCode: ["Category code", "ক্যাটাগরি কোড"],
+    parentCategory: ["Parent category", "প্যারেন্ট ক্যাটাগরি"],
   },
   errors: {
     generic: ["Something went wrong", "কিছু একটা ভুল হয়েছে"],
