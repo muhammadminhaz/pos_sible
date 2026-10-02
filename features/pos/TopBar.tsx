@@ -41,6 +41,7 @@ function Clock() {
 function IconAction({ label, onClick, disabled, badge, children }: {
   label: string; onClick?: () => void; disabled?: boolean; badge?: number; children: ReactNode;
 }) {
+  const f = useFormat();
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -48,7 +49,7 @@ function IconAction({ label, onClick, disabled, badge, children }: {
           {children}
           {!!badge && (
             <span className="absolute -top-0.5 -right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground tabular-nums">
-              {badge}
+              {f.number(badge)}
             </span>
           )}
         </Button>

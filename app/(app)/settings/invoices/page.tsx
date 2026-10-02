@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { InvoicesPage } from "@/features/settings/configs";
 
 export default function Page() {
-  return <RoutePlaceholder route="/settings/invoices" />;
+  return (
+    <RequirePermission permission="settings.invoice">
+      <InvoicesPage />
+    </RequirePermission>
+  );
 }

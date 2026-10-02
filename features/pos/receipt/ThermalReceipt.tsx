@@ -9,6 +9,9 @@ import { methodLabel } from "@/lib/pos/methods";
 import { Barcode } from "./Barcode";
 
 /** 80mm roll: 72mm printable. Plain black-on-white, so it prints the same in dark mode. */
+/** Hides sub-cent noise so a receipt never prints a phantom "0.00" discount or round-off row. */
+const shown = (n: number) => Math.abs(n) >= 0.005;
+
 export function ThermalReceipt({ data }: { data: ReceiptData }) {
   const t = useTranslations();
   const f = useFormat();
@@ -55,8 +58,8 @@ export function ThermalReceipt({ data }: { data: ReceiptData }) {
               <td className="py-0.5">
                 <div>{l.name}</div>
                 {layout.showSku && <div className="text-[10px]">{l.sku}</div>}
-                <div>{`${f.qty(l.qty)} ${l.unitName} × ${f.amount(l.unitPrice)}`}</div>
-                {l.discount > 0 && <div className="text-[10px]">{`− ${f.amount(l.discount)}`}</div>}
+                <div>{`${f.qty(l.qty)} ${f.unit(l.unitName)} × ${f.amount(l.unitPrice)}`}</div>
+                {shown(l.discount) && <div className="text-[10px]">{`− ${f.amount(l.discount)}`}</div>}
                 {l.serials.length > 0 && <div className="text-[10px]">{l.serials.join(", ")}</div>}
               </td>
               <td className="py-0.5 text-right tabular-nums">{f.amount(l.subtotal)}</td>
@@ -66,11 +69,11 @@ export function ThermalReceipt({ data }: { data: ReceiptData }) {
       </table>
       <div className="border-t border-dashed border-black pt-1">
         {line(t("pos.totals.subtotal"), f.amount(tt.linesTotal))}
-        {tt.discount > 0 && line(`(−) ${t("pos.totals.discount")}`, f.amount(tt.discount))}
+        {shown(tt.discount) && line(`(−) ${t("pos.totals.discount")}`, f.amount(tt.discount))}
         {tt.orderTax > 0 && line(`(+) ${t("pos.totals.orderTax")}`, f.amount(tt.orderTax))}
         {tt.shipping > 0 && line(`(+) ${t("pos.totals.shipping")}`, f.amount(tt.shipping))}
         {tt.redeemed > 0 && line(`(−) ${t("pos.totals.redeemed")}`, f.amount(tt.redeemed))}
-        {tt.roundOff !== 0 && line(t("pos.totals.roundOff"), f.amount(tt.roundOff))}
+        {shown(tt.roundOff) && line(t("pos.totals.roundOff"), f.amount(tt.roundOff))}
         {line(t("pos.receipt.total"), f.money(tt.total), true)}
       </div>
       {layout.showPaymentInfo && (

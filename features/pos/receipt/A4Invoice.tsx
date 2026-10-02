@@ -7,6 +7,9 @@ import { useFormat } from "@/lib/i18n/format";
 import { methodLabel } from "@/lib/pos/methods";
 import { Barcode } from "./Barcode";
 
+/** Hides sub-cent noise so a receipt never prints a phantom "0.00" discount or round-off row. */
+const shown = (n: number) => Math.abs(n) >= 0.005;
+
 export function A4Invoice({ data }: { data: ReceiptData }) {
   const t = useTranslations();
   const f = useFormat();
@@ -70,7 +73,7 @@ export function A4Invoice({ data }: { data: ReceiptData }) {
                 {l.serials.length > 0 && <div className="text-[10px] text-neutral-500">{l.serials.join(", ")}</div>}
               </td>
               {layout.showSku && <td className="py-2">{l.sku}</td>}
-              <td className="py-2 text-right tabular-nums">{`${f.qty(l.qty)} ${l.unitName}`}</td>
+              <td className="py-2 text-right tabular-nums">{`${f.qty(l.qty)} ${f.unit(l.unitName)}`}</td>
               <td className="py-2 text-right tabular-nums">{f.amount(l.unitPrice)}</td>
               <td className="py-2 text-right tabular-nums">{f.amount(l.discount)}</td>
               <td className="py-2 pr-2 text-right tabular-nums">{f.amount(l.subtotal)}</td>
@@ -95,11 +98,11 @@ export function A4Invoice({ data }: { data: ReceiptData }) {
         <table className="text-sm">
           <tbody>
             {sumRow(t("pos.totals.subtotal"), f.amount(tt.linesTotal))}
-            {tt.discount > 0 && sumRow(`(−) ${t("pos.totals.discount")}`, f.amount(tt.discount))}
+            {shown(tt.discount) && sumRow(`(−) ${t("pos.totals.discount")}`, f.amount(tt.discount))}
             {tt.orderTax > 0 && sumRow(`(+) ${t("pos.totals.orderTax")}`, f.amount(tt.orderTax))}
             {tt.shipping > 0 && sumRow(`(+) ${t("pos.totals.shipping")}`, f.amount(tt.shipping))}
             {tt.redeemed > 0 && sumRow(`(−) ${t("pos.totals.redeemed")}`, f.amount(tt.redeemed))}
-            {tt.roundOff !== 0 && sumRow(t("pos.totals.roundOff"), f.amount(tt.roundOff))}
+            {shown(tt.roundOff) && sumRow(t("pos.totals.roundOff"), f.amount(tt.roundOff))}
             {sumRow(t("pos.receipt.total"), f.money(tt.total), true)}
             {sumRow(t("pos.receipt.paid"), f.amount(data.paid))}
             {data.change > 0 && sumRow(t("pos.receipt.change"), f.amount(data.change))}

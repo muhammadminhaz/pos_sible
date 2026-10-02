@@ -142,8 +142,4 @@ export const posService = {
       .map(({ product, variation, r }) => ({ product, variation, exact: r === 0 }));
   },
 
-  async bySku(q: { locationId: string; contactId?: string; sku: string }): Promise<PosSearchHit | null> {
-    const hits = await posService.search({ ...q, term: q.sku, limit: 1 });
-    return hits[0]?.exact ? hits[0] : null;
-  },
 };

@@ -28,3 +28,16 @@ describe("createFormatter", () => {
     expect(en.percent(12.345)).toBe("12.35%");
   });
 });
+
+describe("Bangla display details", () => {
+  const bn = createFormatter("bn");
+  it("uses Bangla for AM/PM", () => {
+    expect(bn.time("2026-09-27T08:05:00Z")).toMatch(/অপরাহ্ণ$/);
+    expect(bn.time("2026-09-27T01:05:00Z")).toMatch(/পূর্বাহ্ণ$/);
+  });
+  it("translates common units and leaves others alone", () => {
+    expect(bn.unit("Pc(s)")).toBe("পিস");
+    expect(bn.unit("Roll")).toBe("Roll");
+    expect(createFormatter("en").unit("Pc(s)")).toBe("Pc(s)");
+  });
+});

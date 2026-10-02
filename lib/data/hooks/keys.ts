@@ -19,6 +19,7 @@ export const keys = {
   }),
   lookups: ["lookups"] as const,
   settings: ["settings"] as const,
+  backups: ["backups"] as const,
   dashboard: (f: object) => ["transactions", "dashboard", f] as const,
   pos: {
     products: (q: object) => ["products", "pos", q] as const,

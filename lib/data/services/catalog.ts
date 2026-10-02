@@ -25,6 +25,13 @@ type Rules = {
   onUpdate?: (db: DB, before: Record<string, unknown>, after: Record<string, unknown>) => void;
 };
 
+/** Is there an active user with a full-access role other than the given user (or in a role other than the given one)? */
+function hasAnotherAdmin(db: DB, except: { userId?: string; roleId?: string }): boolean {
+  return db.users.some(
+    (u) => u.isActive && u.id !== except.userId && u.roleId !== except.roleId && db.roles.find((r) => r.id === u.roleId)?.permissions.includes("*"),
+  );
+}
+
 const used = (code: string, hit: boolean) => (hit ? code : null);
 
 const RULES: Partial<Record<TableName, Rules>> = {
@@ -139,6 +146,70 @@ const RULES: Partial<Record<TableName, Rules>> = {
   taxRates: {
     permission: "settings.tax",
     inUse: (db, id) => used("tax_in_use", db.products.some((p) => p.taxId === id) || db.taxRates.some((t) => t.subTaxIds.includes(id))),
+  },
+  barcodeSettings: { permission: "settings.barcode" },
+  printers: {
+    permission: "settings.printer",
+    // Receipt printers aren't referenced by other rows in this mock.
+  },
+  invoiceSchemes: {
+    permission: "settings.invoice",
+    inUse: (db, id) => used("scheme_in_use", db.locations.some((l) => l.invoiceSchemeId === id)),
+    // Editing a scheme must never renumber existing invoices, so the counter only moves forward.
+    onUpdate: (db, before, after) => {
+      const row = db.invoiceSchemes.find((x) => x.id === after.id);
+      if (row) row.count = Math.max(before.count as number, after.count as number);
+      if (after.isDefault) for (const x of db.invoiceSchemes) if (x.id !== after.id) x.isDefault = false;
+    },
+  },
+  invoiceLayouts: {
+    permission: "settings.invoice",
+    inUse: (db, id) => used("layout_in_use", db.locations.some((l) => l.posLayoutId === id || l.saleLayoutId === id)),
+    onUpdate: (db, _before, after) => {
+      if (after.isDefault) for (const x of db.invoiceLayouts) if (x.id !== after.id) x.isDefault = false;
+    },
+  },
+  locations: {
+    permission: "settings.location",
+    check: (db, row, id) => {
+      if (!(row.name as string)?.trim()) throw new ValidationError({ name: "required" });
+      if (row.active === false && !db.locations.some((l) => l.id !== id && l.active)) throw new ValidationError({ active: "last_location" });
+    },
+    inUse: (db, id) => used("location_in_use", db.transactions.some((t) => t.locationId === id)),
+  },
+  roles: {
+    permission: "role.create",
+    check: (db, row, id) => {
+      const name = (row.name as string)?.trim();
+      if (!name) throw new ValidationError({ name: "required" });
+      if (db.roles.some((r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase())) throw new ValidationError({ name: "duplicate" });
+      const perms = row.permissions as string[];
+      if (id && !perms.includes("*") && !hasAnotherAdmin(db, { roleId: id })) throw new ValidationError({ permissions: "last_admin" });
+    },
+    inUse: (db, id) => used("role_in_use", db.users.some((u) => u.roleId === id)),
+  },
+  users: {
+    permission: "user.create",
+    check: (db, row, id) => {
+      const name = (row.username as string)?.trim();
+      if (!name) throw new ValidationError({ username: "required" });
+      if (db.users.some((u) => u.id !== id && u.username.toLowerCase() === name.toLowerCase())) throw new ValidationError({ username: "duplicate" });
+      if (id) {
+        const active = row.isActive !== false;
+        if (!active && id === useSession.getState().userId) throw new ValidationError({ isActive: "self" });
+        const before = db.users.find((u) => u.id === id);
+        const wasAdmin = before?.isActive && db.roles.find((r) => r.id === before.roleId)?.permissions.includes("*");
+        const stillAdmin = active && db.roles.find((r) => r.id === row.roleId)?.permissions.includes("*");
+        if (wasAdmin && !stillAdmin && !hasAnotherAdmin(db, { userId: id })) throw new ValidationError({ roleId: "last_admin" });
+      }
+    },
+    inUse: (db, id) => {
+      if (id === useSession.getState().userId) return "user_self";
+      const u = db.users.find((x) => x.id === id);
+      const admin = u?.isActive && db.roles.find((r) => r.id === u.roleId)?.permissions.includes("*");
+      if (admin && !hasAnotherAdmin(db, { userId: id })) return "last_admin";
+      return used("user_in_use", db.transactions.some((t) => t.createdBy === id));
+    },
   },
 };
 

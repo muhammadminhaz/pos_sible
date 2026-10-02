@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { UsersPage } from "@/features/settings/configs";
 
 export default function Page() {
-  return <RoutePlaceholder route="/settings/users" />;
+  return (
+    <RequirePermission permission="user.view">
+      <UsersPage />
+    </RequirePermission>
+  );
 }

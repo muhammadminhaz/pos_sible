@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { ModulesPage } from "@/features/settings/ModulesPage";
 
 export default function Page() {
-  return <RoutePlaceholder route="/settings/modules" />;
+  return (
+    <RequirePermission permission="modules">
+      <ModulesPage />
+    </RequirePermission>
+  );
 }

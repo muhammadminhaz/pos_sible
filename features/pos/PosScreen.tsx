@@ -29,26 +29,28 @@ import { SuspendedSheet } from "./dialogs/Suspended";
 import { ProductGrid } from "./grid/ProductGrid";
 import { Narrow } from "./Narrow";
 import { TopBar } from "./TopBar";
+import { registerGate } from "@/lib/pos/gate";
 import { usePosLocation } from "./usePos";
 
 export function PosScreen() {
   const t = useTranslations("pos");
   const { location, allowed } = usePosLocation();
   const register = useCurrentRegister(location?.id ?? "");
-  const ready = !!location && !!register.data;
+  const gate = registerGate(location, register);
+  const ready = gate === "ready";
 
   return (
     <>
       <Narrow />
       <div className="hidden h-dvh flex-col overflow-hidden bg-muted/30 lg:flex" data-print-hide>
         <TopBar location={location} allowed={allowed} register={register.data ?? null} />
-        {!location || register.isPending ? (
+        {gate === "loading" ? (
           <div className="flex flex-1 gap-4 p-4">
             <Skeleton className="w-[44%]" />
             <Skeleton className="flex-1" />
           </div>
-        ) : !register.data ? (
-          <RegisterGate location={location} />
+        ) : gate === "locked" ? (
+          <RegisterGate location={location!} />
         ) : (
           <>
             <div className="flex min-h-0 flex-1">

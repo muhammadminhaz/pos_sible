@@ -8,7 +8,7 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
 import { nextInvoiceNo } from "@/lib/domain/refs";
-import { maxRedeemable, pointsEarned } from "@/lib/domain/rewards";
+import { isValidRedeem, maxRedeemable, pointsEarned, reservedPoints } from "@/lib/domain/rewards";
 import { allocate, available } from "@/lib/domain/stock";
 import { emptyCart, WALK_IN_ID, type Cart, type CartLine } from "@/lib/pos/cart";
 import { cartTotals, paymentState } from "@/lib/pos/selectors";
@@ -141,8 +141,9 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
   const lines = linkLines(d, input.salesOrderIds ?? [], built);
 
   if (cart.pointsRedeemed > 0) {
-    const cap = isWalkIn ? 0 : maxRedeemable({ total: totals.total + totals.redeemed, balance: contact.points, s: s.rewards });
-    if (cart.pointsRedeemed > cap) throw new ValidationError({ pointsRedeemed: "invalid" });
+    const balance = contact.points - reservedPoints(d.transactions, contact.id, tid);
+    const cap = isWalkIn ? 0 : maxRedeemable({ total: totals.total + totals.redeemed, balance, s: s.rewards });
+    if (!isValidRedeem(cart.pointsRedeemed, cap, s.rewards)) throw new ValidationError({ pointsRedeemed: "invalid" });
   }
 
   const payments: Payment[] = [];
@@ -262,12 +263,12 @@ export const salesService = {
     return txnToCart(d, t);
   },
 
-  async list(q: { locationId: string; status: SaleStatus; limit?: number }): Promise<SaleRow[]> {
+  async list(q: { locationId: string; status: SaleStatus; limit?: number; channel?: "pos" | "web" }): Promise<SaleRow[]> {
     await delay();
     const d = getDB();
     const names = new Map(d.contacts.map((c) => [c.id, c.name]));
     return d.transactions
-      .filter((t) => t.type === "sell" && t.locationId === q.locationId && t.status === q.status)
+      .filter((t) => t.type === "sell" && t.locationId === q.locationId && t.status === q.status && (!q.channel || t.channel === q.channel))
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, q.limit ?? 10)
       .map((t) => ({

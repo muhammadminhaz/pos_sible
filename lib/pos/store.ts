@@ -21,7 +21,18 @@ export const useCartStore = create<CartState>()(
       replace: (loc, cart) => set((s) => ({ carts: { ...s.carts, [loc]: cart } })),
       reset: (loc) => set((s) => ({ carts: { ...s.carts, [loc]: emptyCart() } })),
     }),
-    { name: "posible:v1:pos-cart", storage: safeStorage() },
+    {
+      name: "posible:v1:pos-cart",
+      version: 1,
+      storage: safeStorage(),
+      // Stored carts from an older shape are dropped rather than crashing the register.
+      migrate: () => ({ carts: {} }),
+      merge: (persisted, current) => {
+        const carts = (persisted as { carts?: unknown } | null)?.carts;
+        const ok = carts && typeof carts === "object" && Object.values(carts).every((c) => c && Array.isArray((c as Cart).lines));
+        return { ...current, carts: ok ? (carts as Record<string, Cart>) : {} };
+      },
+    },
   ),
 );
 

@@ -86,15 +86,15 @@
   --secondary: oklch(0.967 0.001 286.375); /* zinc-100 */
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938); /* zinc-500 */
+  --muted-foreground: oklch(0.47 0.016 285.938); /* between zinc-500 and zinc-600: AA on muted backgrounds */
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.586 0.253 17.585); /* rose-600 */
+  --destructive: oklch(0.514 0.222 16.935); /* rose-700: AA as text on its own tint */
   --border: oklch(0.92 0.004 286.32); /* zinc-200 */
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.55 0.2 275 / 55%);
 
-  --success: oklch(0.596 0.145 163.225); /* emerald-600 */
+  --success: oklch(0.508 0.118 165.612); /* emerald-700: AA as text */
   --success-foreground: oklch(0.432 0.095 166.913); /* emerald-800 */
   --success-soft: oklch(0.979 0.021 166.113); /* emerald-50 */
   --warning: oklch(0.666 0.179 58.318); /* amber-600 */

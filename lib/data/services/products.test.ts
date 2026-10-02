@@ -239,7 +239,8 @@ describe("catalog to POS", () => {
     const loc = form.locationIds[0];
     await productsService.addOpeningStock(id, [{ variationId: form.variations[0].id!, locationId: loc, qty: 5, unitCost: 80 }]);
 
-    const hit = (await posService.bySku({ locationId: loc, sku: "FRESH-1" }))!;
+    const hit = (await posService.search({ locationId: loc, term: "FRESH-1", limit: 1 }))[0]!;
+    expect(hit.exact).toBe(true);
     expect(hit.variation.stock).toBe(5);
     const cart = addItem(emptyCart(), toCartItem(hit.product, hit.variation, 2), "new_row");
     await salesService.checkout({ cart, locationId: loc, status: "final", payments: [{ method: "cash", amount: 240 }] });

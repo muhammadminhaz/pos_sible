@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +28,7 @@ export type Option = { value: string; label: string };
 export type FieldDef = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "number" | "select" | "switch" | "list";
+  type: "text" | "textarea" | "number" | "select" | "switch" | "list" | "multi" | "password";
   required?: boolean;
   /** Select/number: an empty choice saves `null`. */
   nullable?: boolean;
@@ -60,6 +61,12 @@ export type CrudConfig<N extends TableName> = {
   fields: FieldDef[];
   /** Permission for the add / edit / delete controls. */
   permission?: string;
+  /** Merged under the form values when creating (fields the form doesn't show). */
+  defaults?: Values;
+  /** Rows the user may not delete (e.g. the default scheme). */
+  canDelete?: (row: Row<N> & { id: string }) => boolean;
+  /** Extra panel beside the form fields (live preview). */
+  preview?: (values: Values) => ReactNode;
   /** Inside another page (e.g. a tab): no page header, just the add button above the table. */
   embedded?: boolean;
 };
@@ -68,7 +75,7 @@ const NONE = "__none__";
 
 function startValues(fields: FieldDef[], row: Values | null): Values {
   return Object.fromEntries(
-    fields.map((f) => [f.key, row ? row[f.key] : (f.initial ?? (f.type === "switch" ? false : f.type === "list" ? [] : f.type === "text" || f.type === "textarea" ? "" : null))]),
+    fields.map((f) => [f.key, f.type === "password" ? "" : row ? row[f.key] : (f.initial ?? (f.type === "switch" ? false : f.type === "list" ? [] : f.type === "text" || f.type === "textarea" ? "" : null))]),
   );
 }
 
@@ -143,6 +150,21 @@ function FieldInput({ f, values, id, set }: { f: FieldDef; values: Values; id?: 
     }
     case "switch":
       return <Switch id={dom} checked={!!v} onCheckedChange={set} />;
+    case "multi": {
+      const sel = (v as string[]) ?? [];
+      return (
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {(f.options?.({ id, values }) ?? []).map((o) => (
+            <Label key={o.value} className="gap-2 font-normal">
+              <Checkbox checked={sel.includes(o.value)} onCheckedChange={(c) => set(c ? [...sel, o.value] : sel.filter((x) => x !== o.value))} />
+              {o.label}
+            </Label>
+          ))}
+        </div>
+      );
+    }
+    case "password":
+      return <Input id={dom} type="password" autoComplete="new-password" required={f.required} value={(v as string) ?? ""} onChange={(e) => set(e.target.value)} />;
     case "list":
       return <ListField label={f.label} value={(v as string[]) ?? []} onChange={set} />;
     default:
@@ -159,13 +181,14 @@ function EditDialog<N extends TableName>({ cfg, row, onClose }: { cfg: CrudConfi
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const data = Object.fromEntries(
-      cfg.fields.filter((f) => !f.show || f.show(values)).map((f) => [f.key, f.type === "text" ? (values[f.key] as string).trim() : values[f.key]]),
+      // Leaving a password blank on edit keeps the current one.
+      cfg.fields.filter((f) => (!f.show || f.show(values)) && !(f.type === "password" && row && !values[f.key])).map((f) => [f.key, f.type === "text" ? (values[f.key] as string).trim() : values[f.key]]),
     );
     // A hidden field must not keep a stale value (e.g. a multiplier after the base unit is cleared).
     for (const f of cfg.fields) if (f.show && !f.show(values)) data[f.key] = f.type === "number" || f.type === "select" ? (f.type === "number" ? (f.initial ?? null) : null) : values[f.key];
     try {
       if (row) await update.mutateAsync({ id: row.id, patch: data as never });
-      else await create.mutateAsync(data as never);
+      else await create.mutateAsync({ ...cfg.defaults, ...data } as never);
       toast.success(t("common.saved"));
       onClose();
     } catch (err) {
@@ -194,6 +217,7 @@ function EditDialog<N extends TableName>({ cfg, row, onClose }: { cfg: CrudConfi
           </div>
         ))}
       </div>
+      {cfg.preview?.(values)}
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
         <Button type="submit" disabled={pending}>{t("common.save")}</Button>
@@ -226,7 +250,7 @@ export function CrudPage<N extends TableName>({ cfg }: { cfg: CrudConfig<N> }) {
       cell: ({ row }) => (
         <RowActions items={[
           { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(row.original), hidden: !write },
-          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !write },
+          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !write || cfg.canDelete?.(row.original) === false },
         ]} />
       ),
     },

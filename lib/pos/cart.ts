@@ -82,7 +82,7 @@ const mapLine = (c: Cart, key: string, fn: (l: CartLine) => CartLine): Cart => (
 export function addItem(c: Cart, item: AddItemInput, mode: "increase_qty" | "new_row" = "increase_qty"): Cart {
   const qty = item.qty ?? 1;
   const existing = mode === "increase_qty" ? c.lines.find((l) => l.variationId === item.variationId) : undefined;
-  if (existing) return mapLine(c, existing.key, (l) => ({ ...l, qty: normQty(l, l.qty + qty) }));
+  if (existing) return mapLine(c, existing.key, (l) => ({ ...l, maxQty: item.maxQty, qty: normQty(l, l.qty + qty) }));
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { qty: _ignored, ...rest } = item;
   const line: CartLine = { ...rest, key: newKey(), qty: normQty(item, qty), note: "", serials: [], serviceStaffId: null };

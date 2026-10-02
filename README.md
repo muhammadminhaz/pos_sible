@@ -6,7 +6,7 @@ It is **frontend only**. All data is mock data generated in the browser and save
 
 ## Status
 
-**Overall: 7 of 8 sub-projects done.** 75 of 87 route pages are live; the other 12 render a "Coming soon" placeholder.
+**Overall: 8 of 8 sub-projects done.** All 87 route pages are live.
 
 | # | Sub-project | Status | Plan |
 |---|---|---|---|
@@ -17,7 +17,7 @@ It is **frontend only**. All data is mock data generated in the browser and save
 | 5 | ✅ Contacts, Purchases, Stock | Done | [plan](docs/superpowers/plans/2026-10-03-possible-contacts-purchases-stock.md) |
 | 6 | ✅ Expenses and Accounts | ✅ Done | [plan](docs/superpowers/plans/2026-10-04-possible-expenses-accounts.md) |
 | 7 | ✅ Reports and Dashboard | ✅ Done | [plan](docs/superpowers/plans/2026-10-05-possible-reports-dashboard.md) |
-| 8 | ⬜ Settings and Admin, plus POS follow-ups | Planned | [plan](docs/superpowers/plans/2026-10-06-possible-settings-admin.md) |
+| 8 | ✅ Settings and Admin, plus POS follow-ups | ✅ Done | [plan](docs/superpowers/plans/2026-10-06-possible-settings-admin.md) |
 
 ### What works today
 - Sign in (demo `admin` / `112233`), app shell, collapsible sidebar, command palette (⌘K), notifications, location switcher, one-click light/dark theme, EN/BN toggle.
@@ -26,8 +26,10 @@ It is **frontend only**. All data is mock data generated in the browser and save
 - Full POS at `/pos`: register open/close, barcode/SKU scanning, grid, variations, serials, line discounts, order discount/tax/shipping, reward points, split payments (cash, card, bKash, Nagad and more), suspend/resume, draft, quotation, credit sale, recent transactions, thermal and A4 receipts with Code 128, keyboard shortcuts, weighing-scale barcodes.
 - Sales: all sales, drafts and quotations lists, add/edit sale (shipping, additional expenses, payments, subscriptions, linked orders), sale detail, payments, convert to invoice, sell returns, sales orders, shipments, discounts and CSV import with revert.
 
-### Still to build (roughly)
-Every other route in the sidebar: product create/edit/detail and the reference lists; customers, suppliers, purchases, transfers, adjustments; all settings, users and roles, backup, profile and calendar. Each has a task list in its plan.
+- Settings and admin: business settings (16 tabs, driven by the settings schema, with a shortcut recorder and mocked test email/SMS), locations, invoice schemes and layouts (with a live preview), barcode sheets, printers, tax rates and groups, users and roles (permission matrix), backup and restore, module switches (hide menu items and routes), profile and calendar.
+
+### Known gaps
+Most field labels inside the Business Settings tabs are generated from the setting names and are English-only in Bangla mode. The invoice layout preview is a sample receipt that follows the toggles, not the real receipt components. The native print dialog was checked only up to `window.print()` (the right thermal or A4 layout is rendered and the call is made); the browser's own dialog can't be driven headlessly.
 
 ## Tech stack
 Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand (persisted), next-intl, next-themes, zod, recharts, sonner, lucide-react, vitest. Fonts: Inter and Anek Bangla.
@@ -40,10 +42,11 @@ npm run dev        # http://localhost:3000
 Sign in with `admin` / `112233` (also `cashier`, `rafiq`, `nazmul`, all with `112233`). Data is seeded on first load (about six months of history). Clear site storage to reset it.
 
 ```bash
-npm test           # vitest, 272 tests
+npm test           # vitest, 394 tests
 npx tsc --noEmit   # typecheck
 npm run lint
 npm run build
+npm run e2e        # browser smoke + accessibility (axe) over every route, EN/light and BN/dark; needs a running build
 ```
 
 ## How the code is organised
@@ -67,7 +70,7 @@ docs/           design specs and implementation plans
 - **Text:** all UI strings live in `scripts/messages.mjs` as English/Bangla pairs. Run `node scripts/messages.mjs messages` to regenerate `messages/*.json`; never edit those by hand. A test checks both languages have the same keys.
 - **Money** always goes through `roundMoney` and the `useFormat` hook (Bangla digits in Bangla mode).
 - **Permissions** gate routes (`RequirePermission`), buttons (`useCan`) and services (`assertCan`).
-- **Tests:** domain maths and every service have unit tests; screens are checked in the browser in both languages and themes.
+- **Tests:** domain maths and every service have unit tests; `npm run e2e` loads every route in both languages and themes and runs axe accessibility checks.
 
 ## Documentation
 Design specs are in `docs/superpowers/specs/` and step-by-step plans in `docs/superpowers/plans/`. Each sub-project gets a spec, then a plan, then a build on its own branch merged into `main`.

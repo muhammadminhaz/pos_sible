@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { BusinessSettings } from "@/features/settings/BusinessSettings";
 
 export default function Page() {
-  return <RoutePlaceholder route="/settings/business" />;
+  return (
+    <RequirePermission permission="settings.business">
+      <BusinessSettings />
+    </RequirePermission>
+  );
 }

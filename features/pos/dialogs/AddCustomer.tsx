@@ -59,12 +59,12 @@ function AddCustomerForm({ locationId }: { locationId: string }) {
       <div className="grid gap-2">
         <Label htmlFor="nc-mobile">{t("pos.customer.mobile")}</Label>
         <Input id="nc-mobile" inputMode="tel" value={form.mobile} onChange={(e) => set("mobile")(e.target.value)} aria-invalid={!!errors.mobile} />
-        {errors.mobile && <p className="text-xs text-destructive">{t("errors.required")}</p>}
+        {errors.mobile && <p className="text-xs text-destructive">{errors.mobile === "duplicate" ? t("pos.customer.mobileDuplicate") : t("errors.required")}</p>}
       </div>
       <div className="grid gap-2">
-        <Label>{t("pos.customer.group")}</Label>
+        <Label htmlFor="nc-group">{t("pos.customer.group")}</Label>
         <Select value={form.customerGroupId} onValueChange={set("customerGroupId")}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger id="nc-group" className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

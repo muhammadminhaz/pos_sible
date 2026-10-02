@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { CalendarPage } from "@/features/settings/CalendarPage";
 
 export default function Page() {
-  return <RoutePlaceholder route="/calendar" />;
+  return (
+    <RequirePermission permission="calendar.view">
+      <CalendarPage />
+    </RequirePermission>
+  );
 }

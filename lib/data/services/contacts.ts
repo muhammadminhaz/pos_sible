@@ -160,6 +160,7 @@ export const contactsService = {
     const fields: Record<string, string> = {};
     if (!name) fields.name = "required";
     if (!mobile) fields.mobile = "required";
+    else if (getDB().contacts.some((c) => c.mobile.trim() === mobile)) fields.mobile = "duplicate";
     if (Object.keys(fields).length) throw new ValidationError(fields);
     let created!: Contact;
     commit((d) => {

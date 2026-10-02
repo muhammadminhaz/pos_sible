@@ -1,5 +1,5 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { ProfilePage } from "@/features/settings/ProfilePage";
 
 export default function Page() {
-  return <RoutePlaceholder route="/profile" />;
+  return <ProfilePage />;
 }
