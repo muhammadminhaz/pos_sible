@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { ImportContacts } from "@/features/operations/ImportContacts";
 
 export default function Page() {
-  return <RoutePlaceholder route="/contacts/import" />;
+  return (
+    <RequirePermission permission="contacts.import">
+      <ImportContacts />
+    </RequirePermission>
+  );
 }

@@ -152,7 +152,7 @@ export const productImportService = {
     return { batchId, created: rows.length };
   },
 
-  async history(kind: "products" | "opening_stock" | "prices"): Promise<ImportBatch[]> {
+  async history(kind: "products" | "opening_stock" | "prices" | "contacts"): Promise<ImportBatch[]> {
     await delay();
     return getDB().importBatches.filter((b) => b.kind === kind).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },

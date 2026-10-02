@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { TransferForm } from "@/features/operations/Transfers";
 
 export default function Page() {
-  return <RoutePlaceholder route="/stock/transfers/new" />;
+  return (
+    <RequirePermission permission="stock_transfer.create">
+      <TransferForm />
+    </RequirePermission>
+  );
 }

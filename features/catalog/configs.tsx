@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheckIcon, LayersIcon, RulerIcon, ShieldCheckIcon, TagIcon, TagsIcon } from "lucide-react";
+import { BadgeCheckIcon, LayersIcon, RulerIcon, ShieldCheckIcon, TagIcon, TagsIcon, UsersIcon, WrenchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { useLookups } from "@/lib/data/hooks/lookups";
@@ -137,6 +137,47 @@ export function VariationsPage() {
       { key: "values", label: t("catalog.values"), render: (v) => v.values.join(", ") || "—", csv: (v) => v.values.join("|") },
     ],
     fields: [text(t, "name", { required: true }), { key: "values", type: "list", label: t("catalog.values") }],
+  };
+  return <CrudPage cfg={cfg} />;
+}
+
+export function CustomerGroupsPage() {
+  const t = useTranslations();
+  const { data: lookups } = useLookups();
+  const cfg: CrudConfig<"customerGroups"> = {
+    table: "customerGroups", title: t("nav.customerGroups"), description: t("ops.groupsDescription"), icon: UsersIcon, permission: "contacts.customer",
+    addLabel: t("ops.addGroup"), editLabel: t("ops.editGroup"), emptyTitle: t("ops.noGroups"),
+    columns: [
+      { key: "name", label: t("catalog.name") },
+      {
+        key: "calcType", label: t("ops.calcType"),
+        render: (g) => (g.calcType === "percentage" ? `${g.amount}%` : lookups?.priceGroups.find((p) => p.id === g.priceGroupId)?.name ?? "—"),
+        csv: (g) => (g.calcType === "percentage" ? `${g.amount}%` : (lookups?.priceGroups.find((p) => p.id === g.priceGroupId)?.name ?? "")),
+      },
+    ],
+    fields: [
+      text(t, "name", { required: true }),
+      {
+        key: "calcType", type: "select", label: t("ops.calcType"), initial: "percentage",
+        options: () => [{ value: "percentage", label: t("ops.percentage") }, { value: "selling_price_group", label: t("ops.priceGroup") }],
+      },
+      { key: "amount", type: "number", label: t("ops.percentageAmount"), initial: 0, show: (v) => v.calcType === "percentage" },
+      {
+        key: "priceGroupId", type: "select", label: t("ops.priceGroup"), show: (v) => v.calcType === "selling_price_group",
+        options: () => (lookups?.priceGroups ?? []).map((p) => ({ value: p.id, label: p.name })),
+      },
+    ],
+  };
+  return <CrudPage cfg={cfg} />;
+}
+
+export function TechniciansPage() {
+  const t = useTranslations();
+  const cfg: CrudConfig<"technicians"> = {
+    table: "technicians", title: t("nav.technicians"), description: t("ops.techniciansDescription"), icon: WrenchIcon, permission: "contacts.customer",
+    addLabel: t("ops.addTechnician"), editLabel: t("ops.editTechnician"), emptyTitle: t("ops.noTechnicians"),
+    columns: [{ key: "name", label: t("catalog.name") }],
+    fields: [text(t, "name", { required: true })],
   };
   return <CrudPage cfg={cfg} />;
 }

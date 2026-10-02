@@ -1,5 +1,10 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { RequirePermission } from "@/components/shared/Can";
+import { CustomerGroupsPage } from "@/features/catalog/configs";
 
 export default function Page() {
-  return <RoutePlaceholder route="/contacts/customer-groups" />;
+  return (
+    <RequirePermission permission="customer_group.view">
+      <CustomerGroupsPage />
+    </RequirePermission>
+  );
 }

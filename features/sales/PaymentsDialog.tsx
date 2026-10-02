@@ -13,22 +13,33 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Money } from "@/components/shared/Money";
 import { useCan } from "@/lib/auth/useCan";
 import { useLookups } from "@/lib/data/hooks/lookups";
+import { usePurchase, usePurchaseMutations } from "@/lib/data/hooks/operations";
 import { useSale, useSaleMutations } from "@/lib/data/hooks/sales";
 import { useSettings } from "@/lib/data/hooks/settings";
 import type { PaymentMethod } from "@/lib/data/schemas";
 import { paymentSummary } from "@/lib/domain/payments";
 import { useFormat } from "@/lib/i18n/format";
 import { methodLabel, tillMethods } from "@/lib/pos/methods";
+import { opsErrorMessage } from "@/features/operations/opsError";
 import { saleErrorMessage } from "./saleError";
 
-function Body({ saleId, mode, onClose }: { saleId: string; mode: "add" | "view"; onClose: () => void }) {
+export type PaymentsKind = "sell" | "purchase";
+
+function Body({ saleId, mode, kind, onClose }: { saleId: string; mode: "add" | "view"; kind: PaymentsKind; onClose: () => void }) {
   const t = useTranslations();
   const f = useFormat();
   const can = useCan();
-  const { data: sale } = useSale(saleId);
+  const isSale = kind === "sell";
+  const saleQ = useSale(isSale ? saleId : undefined);
+  const purchaseQ = usePurchase(isSale ? undefined : saleId);
+  const sale = isSale ? saleQ.data : purchaseQ.data;
+  const errorMessage = isSale ? saleErrorMessage : opsErrorMessage;
   const { data: lookups } = useLookups();
   const { data: settings } = useSettings();
-  const { addPayment, removePayment } = useSaleMutations();
+  const sm = useSaleMutations();
+  const pm = usePurchaseMutations();
+  const addPayment = isSale ? sm.addPayment : pm.addPayment;
+  const removePayment = isSale ? sm.removePayment : pm.removePayment;
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -39,7 +50,7 @@ function Body({ saleId, mode, onClose }: { saleId: string; mode: "add" | "view";
   const methods = tillMethods(location?.paymentMethods ?? ["cash"], labels);
   const { due } = paymentSummary(sale.totals.total, sale.payments);
   const payments = sale.payments.filter((p) => !p.isReturn);
-  const canAdd = can("sell.payments") && due > 0;
+  const canAdd = can(isSale ? "sell.payments" : "purchase.payments") && due > 0;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -50,7 +61,7 @@ function Body({ saleId, mode, onClose }: { saleId: string; mode: "add" | "view";
       setNote("");
       if (mode === "add") onClose();
     } catch (err) {
-      toast.error(saleErrorMessage(err, t));
+      toast.error(errorMessage(err, t));
     }
   };
   const remove = async (paymentId: string) => {
@@ -58,7 +69,7 @@ function Body({ saleId, mode, onClose }: { saleId: string; mode: "add" | "view";
       await removePayment.mutateAsync({ id: sale.id, paymentId });
       toast.success(t("sales.paymentRemoved"));
     } catch (err) {
-      toast.error(saleErrorMessage(err, t));
+      toast.error(errorMessage(err, t));
     }
   };
 
@@ -92,7 +103,7 @@ function Body({ saleId, mode, onClose }: { saleId: string; mode: "add" | "view";
                 <TableCell>{methodLabel(p.method, t, labels)}</TableCell>
                 <TableCell className="text-right"><Money value={p.amount} /></TableCell>
                 <TableCell>
-                  {can("sell.payments") && (
+                  {can(isSale ? "sell.payments" : "purchase.payments") && (
                     <Button variant="ghost" size="icon-sm" aria-label={t("sales.removePayment")} onClick={() => remove(p.id)} disabled={removePayment.isPending}>
                       <Trash2Icon />
                     </Button>
@@ -139,10 +150,10 @@ function Body({ saleId, mode, onClose }: { saleId: string; mode: "add" | "view";
   );
 }
 
-export function PaymentsDialog({ saleId, mode, onClose }: { saleId: string | null; mode: "add" | "view"; onClose: () => void }) {
+export function PaymentsDialog({ saleId, mode, kind = "sell", onClose }: { saleId: string | null; mode: "add" | "view"; kind?: PaymentsKind; onClose: () => void }) {
   return (
     <Dialog open={saleId !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-xl">{saleId && <Body saleId={saleId} mode={mode} onClose={onClose} />}</DialogContent>
+      <DialogContent className="sm:max-w-xl">{saleId && <Body saleId={saleId} mode={mode} kind={kind} onClose={onClose} />}</DialogContent>
     </Dialog>
   );
 }

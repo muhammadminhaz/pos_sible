@@ -29,7 +29,7 @@ export function useProductStock(id: string | undefined) {
   return useQuery({ queryKey: [...keys.products.detail(id ?? ""), "stock"], queryFn: () => productsService.stockByLocation(id!), enabled: !!id });
 }
 
-export function useCatalogImports(kind: "products" | "opening_stock" | "prices") {
+export function useCatalogImports(kind: "products" | "opening_stock" | "prices" | "contacts") {
   return useQuery({ queryKey: ["importBatches", "catalog", kind], queryFn: () => productImportService.history(kind) });
 }
 
