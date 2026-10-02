@@ -14,6 +14,7 @@ type T = ReturnType<typeof useTranslations>;
 
 const f = (t: T, key: string, type: FieldDef["type"], extra: Partial<FieldDef> = {}): FieldDef => ({ key, type, label: t(`settings.f.${key}`), ...extra });
 const activeBadge = (t: T, on: boolean) => <Badge variant={on ? "secondary" : "outline"}>{on ? t("common.active") : t("common.inactive")}</Badge>;
+const cap = (v: string) => v[0].toUpperCase() + v.slice(1);
 const yes = (t: T, v: boolean) => (v ? t("common.yes") : "");
 
 export function TaxRatesPage() {
@@ -46,14 +47,14 @@ export function PrintersPage() {
     addLabel: t("settings.addPrinter"), editLabel: t("settings.editPrinter"), emptyTitle: t("settings.noPrinters"),
     columns: [
       { key: "name", label: t("settings.f.name") },
-      { key: "connectionType", label: t("settings.f.connectionType") },
+      { key: "connectionType", label: t("settings.f.connectionType"), render: (r) => cap(r.connectionType), csv: (r) => r.connectionType },
       { key: "capabilityProfile", label: t("settings.f.capabilityProfile") },
       { key: "charPerLine", label: t("settings.f.charPerLine"), align: "right" },
     ],
     fields: [
       f(t, "name", "text", { required: true }),
-      f(t, "connectionType", "select", { initial: "network", half: true, options: () => (["network", "windows", "linux"] as const).map((v) => ({ value: v, label: v })) }),
-      f(t, "capabilityProfile", "select", { initial: "default", half: true, options: () => (["default", "simple", "SP2000", "TEP-200M", "P822D"] as const).map((v) => ({ value: v, label: v })) }),
+      f(t, "connectionType", "select", { initial: "network", half: true, options: () => (["network", "windows", "linux"] as const).map((v) => ({ value: v, label: cap(v) })) }),
+      f(t, "capabilityProfile", "select", { initial: "default", half: true, options: () => (["default", "simple", "SP2000", "TEP-200M", "P822D"] as const).map((v) => ({ value: v, label: cap(v) })) }),
       f(t, "charPerLine", "number", { initial: 42, min: 10, half: true }),
       f(t, "ip", "text", { half: true, show: (v) => v.connectionType === "network" }),
       f(t, "port", "text", { initial: "9100", half: true, show: (v) => v.connectionType === "network" }),
@@ -98,14 +99,14 @@ function SchemesTable() {
     columns: [
       { key: "name", label: t("settings.f.name"), render: (r) => <span className="font-medium">{r.name}{r.isDefault && <Badge className="ms-2" variant="secondary">{t("settings.default")}</Badge>}</span>, csv: (r) => r.name },
       { key: "prefix", label: t("settings.f.prefix") },
-      { key: "numberingType", label: t("settings.f.numberingType") },
+      { key: "numberingType", label: t("settings.f.numberingType"), render: (r) => cap(r.numberingType), csv: (r) => r.numberingType },
       { key: "digits", label: t("settings.f.digits"), align: "right" },
       { key: "count", label: t("settings.f.count"), align: "right" },
     ],
     fields: [
       f(t, "name", "text", { required: true }),
       f(t, "prefix", "text", { half: true }),
-      f(t, "numberingType", "select", { initial: "sequential", half: true, options: () => (["sequential", "random"] as const).map((v) => ({ value: v, label: v })) }),
+      f(t, "numberingType", "select", { initial: "sequential", half: true, options: () => (["sequential", "random"] as const).map((v) => ({ value: v, label: cap(v) })) }),
       f(t, "startFrom", "number", { initial: 1, min: 0, half: true }),
       f(t, "digits", "number", { initial: 4, min: 1, half: true }),
       f(t, "isDefault", "switch"),
@@ -128,13 +129,13 @@ function LayoutsTable() {
     addLabel: t("settings.addLayout"), editLabel: t("settings.editLayout"), emptyTitle: t("settings.noLayouts"),
     columns: [
       { key: "name", label: t("settings.f.name"), render: (r) => <span className="font-medium">{r.name}{r.isDefault && <Badge className="ms-2" variant="secondary">{t("settings.default")}</Badge>}</span>, csv: (r) => r.name },
-      { key: "design", label: t("settings.f.design") },
+      { key: "design", label: t("settings.f.design"), render: (r) => cap(r.design), csv: (r) => r.design },
       { key: "paper", label: t("settings.f.paper") },
     ],
     fields: [
       f(t, "name", "text", { required: true }),
-      f(t, "design", "select", { initial: "classic", half: true, options: () => (["classic", "elegant", "detailed", "columnize", "slim", "a4"] as const).map((v) => ({ value: v, label: v })) }),
-      f(t, "paper", "select", { initial: "80mm", half: true, options: () => (["80mm", "58mm", "a4", "a5"] as const).map((v) => ({ value: v, label: v })) }),
+      f(t, "design", "select", { initial: "classic", half: true, options: () => (["classic", "elegant", "detailed", "columnize", "slim", "a4"] as const).map((v) => ({ value: v, label: cap(v) })) }),
+      f(t, "paper", "select", { initial: "80mm", half: true, options: () => (["80mm", "58mm", "a4", "a5"] as const).map((v) => ({ value: v, label: cap(v) })) }),
       f(t, "headerText", "textarea"),
       f(t, "footerText", "textarea"),
       ...FLAGS.map((k) => ({ ...f(t, k, "switch"), half: true, initial: ["showLogo", "showBusinessName", "showLocationName", "showMobile", "showAddress", "showCustomer", "showPaymentInfo", "showSku"].includes(k) })),

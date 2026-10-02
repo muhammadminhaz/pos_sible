@@ -5,6 +5,7 @@ import { MailIcon, MessageSquareIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import type { Settings } from "@/lib/data/schemas";
@@ -39,22 +40,19 @@ function TestSend({ kind, ready }: { kind: "email" | "sms"; ready: boolean }) {
 
 export function BusinessSettings() {
   const t = useTranslations("settings");
+  const tn = useTranslations("nav");
   const [tab, setTab] = useState<(typeof TABS)[number]>("business");
   const lookups = useLookups();
   const taxOptions = (lookups.data?.taxRates ?? []).map((x) => ({ value: x.id, label: x.name }));
   const unitOptions = (lookups.data?.units ?? []).map((x) => ({ value: x.id, label: x.name }));
   return (
     <>
-      <PageHeader title={t("businessSettingsTitle")} description={t("businessSettingsDescription")} />
-      <div className="grid gap-6 lg:grid-cols-[14rem_1fr]">
-        <nav aria-label={t("sections")} className="flex gap-1 overflow-x-auto lg:flex-col">
-          {TABS.map((k) => (
-            <Button key={k} variant={tab === k ? "secondary" : "ghost"} className="justify-start whitespace-nowrap" aria-current={tab === k ? "page" : undefined} onClick={() => setTab(k)}>
-              {t(`tabs.${k}`)}
-            </Button>
-          ))}
-        </nav>
-        <section className="rounded-xl border bg-card p-5" aria-label={t(`tabs.${tab}`)}>
+      <PageHeader title={tn("businessSettings")} description={t("businessSettingsDescription")} />
+      <Tabs value={tab} onValueChange={(v) => setTab(v as (typeof TABS)[number])} orientation="vertical" className="gap-6 lg:flex-row">
+        <TabsList aria-label={t("sections")} className="h-fit w-full shrink-0 flex-row flex-wrap justify-start lg:w-52 lg:flex-col">
+          {TABS.map((k) => <TabsTrigger key={k} value={k}>{t(`tabs.${k}`)}</TabsTrigger>)}
+        </TabsList>
+        <section className="min-w-0 flex-1 rounded-xl border bg-card p-5" aria-label={t(`tabs.${tab}`)}>
           <h2 className="mb-4 text-lg font-semibold">{t(`tabs.${tab}`)}</h2>
           <SectionForm
             key={tab}
@@ -71,7 +69,7 @@ export function BusinessSettings() {
             }
           />
         </section>
-      </div>
+      </Tabs>
     </>
   );
 }

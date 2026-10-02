@@ -1641,6 +1641,7 @@
     "addRole": "ভূমিকা যোগ করুন",
     "editRole": "ভূমিকা সম্পাদনা",
     "noRoles": "এখনও কোনো ভূমিকা নেই",
+    "permissions": "অনুমতি",
     "fullAccess": "পূর্ণ অ্যাক্সেস",
     "permissionCount": "{count}টি অনুমতি",
     "backupDescription": "সব ডেটার কপি সংরক্ষণ করুন, অথবা কপি থেকে ফিরিয়ে আনুন।",

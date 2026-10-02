@@ -10,9 +10,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { ColumnDef } from "@tanstack/react-table";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { DataTable, RowActions, useTableQuery } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { clientPage } from "./clientTable";
 import { catalogErrorMessage } from "@/features/catalog/catalogError";
 import { useCan } from "@/lib/auth/useCan";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -26,7 +29,7 @@ export const PERMISSION_GROUPS: Record<string, string[]> = PERMISSIONS.reduce<Re
   return acc;
 }, {});
 
-const humanize = (p: string) => p.replace(/[._]/g, " ").replace(/^./, (c) => c.toUpperCase());
+const humanize = (p: string) => p.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 function RoleForm({ row, onClose }: { row: (Role & { id: string }) | null; onClose: () => void }) {
   const t = useTranslations();
@@ -96,33 +99,34 @@ export function RolesPage() {
   const t = useTranslations();
   const can = useCan();
   const { list, remove } = useCrud("roles");
+  const [query, setQuery] = useTableQuery("settings-roles");
   const [edit, setEdit] = useState<(Role & { id: string }) | "new" | null>(null);
   const [del, setDel] = useState<(Role & { id: string }) | null>(null);
   const write = can("role.create");
-  const rows = (list.data?.rows ?? []) as (Role & { id: string })[];
+  const page = clientPage((list.data?.rows ?? []) as (Role & { id: string })[], query, (r) => [r.name]);
+  const count = (r: Role) => (r.permissions.includes("*") ? t("settings.fullAccess") : t("settings.permissionCount", { count: r.permissions.length }));
+
+  const columns: ColumnDef<Role & { id: string }>[] = [
+    { id: "name", accessorKey: "name", header: t("settings.f.name"), meta: { label: t("settings.f.name") }, cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
+    { id: "permissions", header: t("settings.permissions"), enableSorting: false, meta: { label: t("settings.permissions"), csv: count }, cell: ({ row }) => <Badge variant="secondary">{count(row.original)}</Badge> },
+    {
+      id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined },
+      cell: ({ row }) => (
+        <RowActions items={[
+          { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(row.original), hidden: !write },
+          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !write },
+        ]} />
+      ),
+    },
+  ];
+
   return (
     <>
       <PageHeader title={t("nav.roles")} description={t("settings.rolesDescription")} actions={write && <Button onClick={() => setEdit("new")}><PlusIcon />{t("settings.addRole")}</Button>} />
-      {rows.length === 0 ? (
-        <EmptyState icon={ShieldIcon} title={t("settings.noRoles")} />
-      ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map((r) => (
-            <li key={r.id} className="flex flex-col gap-2 rounded-xl border bg-card p-4">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-semibold">{r.name}</h2>
-                <Badge variant="secondary">{r.permissions.includes("*") ? t("settings.fullAccess") : t("settings.permissionCount", { count: r.permissions.length })}</Badge>
-              </div>
-              {write && (
-                <div className="mt-auto flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setEdit(r)}><PencilIcon />{t("common.edit")}</Button>
-                  <Button size="sm" variant="outline" onClick={() => setDel(r)}><Trash2Icon />{t("common.delete")}</Button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      <DataTable
+        tableId="settings-roles" columns={columns} data={page.rows} total={page.total} loading={list.isFetching} query={query} onQueryChange={setQuery} exportName="roles"
+        empty={<EmptyState icon={ShieldIcon} title={t("settings.noRoles")} />}
+      />
       <Dialog open={edit !== null} onOpenChange={(o) => !o && setEdit(null)}>
         <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
           {edit !== null && <RoleForm row={edit === "new" ? null : edit} onClose={() => setEdit(null)} />}

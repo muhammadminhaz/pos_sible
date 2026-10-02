@@ -17,7 +17,12 @@ import { ShortcutEditor, shortcutConflicts } from "./ShortcutEditor";
 
 type Path = (string | number)[];
 
-const humanize = (k: string) => k.replace(/([A-Z0-9])/g, " $1").replace(/^./, (c) => c.toUpperCase()).trim();
+const ACRONYMS: Record<string, string> = { fy: "FY", pos: "POS", sku: "SKU", id: "ID", sms: "SMS", smtp: "SMTP", url: "URL", ip: "IP", bin: "BIN", fifo: "FIFO", lifo: "LIFO", cmsn: "Commission" };
+const title = (w: string) => ACRONYMS[w.toLowerCase()] ?? w[0].toUpperCase() + w.slice(1);
+/** "stockExpiryAlertDays" → "Stock Expiry Alert Days" (Title Case, like the rest of the app). */
+const humanize = (k: string) => k.replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/(\d)([A-Za-z])/g, "$1 $2").replace(/_/g, " ").split(" ").filter(Boolean).map(title).join(" ");
+/** Enum values: formats and acronyms read naturally ("dd-mm-yyyy" → "DD-MM-YYYY", "12" → "12 hour"). */
+const optionLabel = (v: string) => (/^[dmy]{2}[-/][dmy]{2}[-/][dmy]{4}$/.test(v) ? v.toUpperCase() : /^\d+$/.test(v) ? `${v} hour` : /^[\d.]+$/.test(v) ? v : humanize(v));
 const secret = /password|secret|token/i;
 
 /** Strips Default / Nullable / Optional wrappers; reports whether null is allowed. */
@@ -108,7 +113,7 @@ function Field({ schema, path, ctx }: { schema: z.ZodTypeAny; path: Path; ctx: C
     );
   }
   if (tn === "ZodEnum" || tn === "ZodLiteral") {
-    const opts = ctx.options?.[key] ?? (tn === "ZodEnum" ? (inner._def.values as string[]) : [String(inner._def.value)]).map((v) => ({ value: v, label: humanize(v.replace(/_/g, " ")) }));
+    const opts = ctx.options?.[key] ?? (tn === "ZodEnum" ? (inner._def.values as string[]) : [String(inner._def.value)]).map((v) => ({ value: v, label: optionLabel(v) }));
     return (
       <div className="grid content-start gap-2">
         <Label htmlFor={id}>{label}</Label>

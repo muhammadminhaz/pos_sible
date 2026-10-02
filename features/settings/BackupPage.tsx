@@ -5,7 +5,9 @@ import { DatabaseBackupIcon, DownloadIcon, PlusIcon, RotateCcwIcon, Trash2Icon, 
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable, RowActions, useTableQuery } from "@/components/shared/DataTable";
+import { clientPage } from "./clientTable";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -40,6 +42,24 @@ export function BackupPage() {
     }
   };
 
+  const [query, setQuery] = useTableQuery("settings-backups");
+  const page = clientPage(data ?? [], query, (b) => [b.name]);
+  const columns: ColumnDef<Backup>[] = [
+    { id: "name", accessorKey: "name", header: t("settings.f.name"), meta: { label: t("settings.f.name") }, cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
+    { id: "createdAt", accessorKey: "createdAt", header: t("settings.created"), meta: { label: t("settings.created"), csv: (b) => b.createdAt }, cell: ({ row }) => f.dateTime(row.original.createdAt) },
+    { id: "size", accessorKey: "size", header: t("settings.size"), meta: { label: t("settings.size"), align: "right", csv: (b) => b.size }, cell: ({ row }) => <span className="tabular-nums">{kb(row.original.size)}</span> },
+    {
+      id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined },
+      cell: ({ row }) => (
+        <RowActions items={[
+          { label: t("common.download"), icon: DownloadIcon, onClick: () => save(row.original.name, row.original.payload) },
+          { label: t("settings.restore"), icon: RotateCcwIcon, onClick: () => setRestore({ kind: "saved", id: row.original.id }) },
+          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original) },
+        ]} />
+      ),
+    },
+  ];
+
   return (
     <>
       <PageHeader
@@ -64,38 +84,10 @@ export function BackupPage() {
           if (picked) setRestore({ kind: "file", json: await picked.text() });
         }}
       />
-      {!data?.length ? (
-        <EmptyState icon={DatabaseBackupIcon} title={t("settings.noBackups")} description={t("settings.noBackupsBody")} />
-      ) : (
-        <div className="rounded-xl border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("settings.f.name")}</TableHead>
-                <TableHead>{t("settings.created")}</TableHead>
-                <TableHead className="text-end">{t("settings.size")}</TableHead>
-                <TableHead className="w-0"><span className="sr-only">{t("common.actions")}</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((b) => (
-                <TableRow key={b.id}>
-                  <TableCell className="font-medium">{b.name}</TableCell>
-                  <TableCell>{f.dateTime(b.createdAt)}</TableCell>
-                  <TableCell className="text-end tabular-nums">{kb(b.size)}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-1">
-                      <Button size="icon-sm" variant="ghost" aria-label={t("common.download")} onClick={() => save(b.name, b.payload)}><DownloadIcon /></Button>
-                      <Button size="icon-sm" variant="ghost" aria-label={t("settings.restore")} onClick={() => setRestore({ kind: "saved", id: b.id })}><RotateCcwIcon /></Button>
-                      <Button size="icon-sm" variant="ghost" aria-label={t("common.delete")} onClick={() => setDel(b)}><Trash2Icon /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <DataTable
+        tableId="settings-backups" columns={columns} data={page.rows} total={page.total} query={query} onQueryChange={setQuery} exportName="backups"
+        empty={<EmptyState icon={DatabaseBackupIcon} title={t("settings.noBackups")} description={t("settings.noBackupsBody")} />}
+      />
       <ConfirmDialog
         open={restore !== null} onOpenChange={(o) => !o && setRestore(null)} destructive title={t("settings.restoreTitle")} description={t("settings.restoreBody")} confirmLabel={t("settings.restore")}
         onConfirm={() => restore && run(restore.kind === "saved" ? act.restoreSaved.mutateAsync(restore.id) : act.restoreFile.mutateAsync(restore.json), t("settings.restored"))}
