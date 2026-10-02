@@ -42,3 +42,7 @@ next-env.d.ts
 
 # playwright crawl artifacts
 .playwright-mcp/
+
+# local tooling
+.serena/
+.claude/

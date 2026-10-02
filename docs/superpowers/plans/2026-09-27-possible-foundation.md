@@ -27,7 +27,7 @@
 - Every user-visible string comes from `messages/{en,bn}.json`.
 - Accent colour `oklch(0.55 0.2 275)`, base font 14px, radius 8px for controls and 12px for cards.
 - Pin `@tanstack/react-table@^8`.
-- Commit after each task. Messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commit after each task.
 
 ---
 

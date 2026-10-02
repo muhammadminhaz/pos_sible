@@ -28,7 +28,7 @@
 - The class-name helper is `import { cn } from "cn"`.
 - Walk-in customer id: `"walk-in"`. bKash = `custom_pay_1`, Nagad = `custom_pay_2`. Labels come from `settings.customLabels.payments[i]`.
 - Minimum POS width is 1024px. Below that, show a notice.
-- Commit after every task. The message ends with a blank line then `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Commit after each task.
 - Run the dev server on port 3100 (`npx next dev -p 3100`). Stop it with `pkill -f "next dev"` and delete `.playwright-mcp/` after browser checks.
 - Verification commands: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`.
 
@@ -69,7 +69,7 @@ app/globals.css                       + print rules
 ### Task 0: Groundwork — messages generator, `pos` messages, shipping settings
 
 **Files:**
-- Create: `scripts/messages.mjs` (copied from `/private/tmp/claude-501/-Users-minhaz-Projects-Frontend-pos-sible/3bed0aa0-2d8c-467e-9450-95dfb4153502/scratchpad/messages.mjs`)
+- Create: `scripts/messages.mjs` (the message source; extend it, then regenerate `messages/*.json`)
 - Modify: `lib/data/schemas/settings.ts` (inside `pos: z.object({ … })`)
 - Modify: `lib/data/seed/settings.ts` (inside `pos: { … }`)
 - Modify: `lib/data/seed/index.ts:9`
@@ -82,7 +82,6 @@ app/globals.css                       + print rules
 
 ```bash
 mkdir -p scripts
-cp /private/tmp/claude-501/-Users-minhaz-Projects-Frontend-pos-sible/3bed0aa0-2d8c-467e-9450-95dfb4153502/scratchpad/messages.mjs scripts/messages.mjs
 node scripts/messages.mjs messages && git diff --stat messages
 ```
 Expected: no diff in `messages/` (the generator reproduces the current files).
@@ -380,8 +379,6 @@ Expected: all tests pass (including `messages.test.ts` parity) and typecheck is 
 ```bash
 git add scripts/messages.mjs messages lib/data/schemas/settings.ts lib/data/seed/settings.ts lib/data/seed/index.ts
 git commit -m "chore(pos): messages generator in repo, pos messages, shipping charges setting
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -636,8 +633,6 @@ Expected: PASS (9 tests).
 ```bash
 git add lib/pos/cart.ts lib/pos/cart.test.ts
 git commit -m "feat(pos): cart model and pure operations
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1004,8 +999,6 @@ Expected: PASS (cart 9, selectors 6, scale 4, hotkeys 3, barcode 2).
 ```bash
 git add lib/pos
 git commit -m "feat(pos): totals and payment selectors, scale parser, hotkeys, code128, method labels
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1277,8 +1270,6 @@ Expected: PASS (5 tests).
 ```bash
 git add lib/data/services/pos.ts lib/data/services/pos.test.ts
 git commit -m "feat(pos): catalog service for grid and scanner search
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1494,8 +1485,6 @@ Expected: PASS (all services tests, including the new ones).
 ```bash
 git add lib/data/errors.ts lib/data/services/contacts.ts lib/data/services/contacts.test.ts lib/data/services/expenses.ts lib/data/services/expenses.test.ts
 git commit -m "feat(pos): quick-add customer, POS expense, serial/availability errors
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2004,8 +1993,6 @@ If `customer()` returns a contact with a `payTerm` whose due date has passed, `p
 ```bash
 git add lib/data/services/sales.ts lib/data/services/sales.test.ts
 git commit -m "feat(pos): sales checkout, resume, receipt, recent lists
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2248,8 +2235,6 @@ If the first test finds no qualifying register, the seed produced no cashier POS
 ```bash
 git add lib/data/services/registers.ts lib/data/services/registers.test.ts
 git commit -m "feat(pos): cash register open/summary/close
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2566,8 +2551,6 @@ Expected: both clean.
 ```bash
 git add lib/data/hooks/keys.ts lib/data/hooks/pos.ts lib/pos/store.ts features/pos/dialogStore.ts features/pos/usePosAction.ts features/pos/focus.ts
 git commit -m "feat(pos): query hooks, persisted cart store, dialog store, checkout action
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -3020,8 +3003,6 @@ Log in as admin/112233 and open `/pos` at 1280px. Expected:
 ```bash
 git add features/pos/usePos.ts features/pos/PosScreen.tsx features/pos/TopBar.tsx features/pos/Narrow.tsx features/pos/dialogs/RegisterGate.tsx "app/(pos)/pos/page.tsx"
 git commit -m "feat(pos): screen shell, top bar, register gate
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -3894,8 +3875,6 @@ Run: `npm run typecheck && npm run lint`, then check in the browser at `/pos`:
 ```bash
 git add features/pos app/globals.css
 git commit -m "feat(pos): cart pane — customer picker, scanner search, cart rows, totals
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -4120,8 +4099,6 @@ Run `npm run typecheck && npm run lint`, then check in the browser:
 ```bash
 git add features/pos
 git commit -m "feat(pos): product grid with filters, variations, stock badges
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -4596,8 +4573,6 @@ Run `npm run typecheck && npm run lint`, then check in the browser:
 ```bash
 git add features/pos
 git commit -m "feat(pos): action bar, split payment dialog with denominations
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -4990,8 +4965,6 @@ Run `npm run typecheck && npm run lint`. In the browser, check:
 ```bash
 git add features/pos
 git commit -m "feat(pos): discount, order tax, shipping, points, cancel dialogs
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -5273,8 +5246,6 @@ Run `npm run typecheck && npm run lint`, then check in the browser:
 ```bash
 git add features/pos
 git commit -m "feat(pos): suspend, suspended sales and recent transactions
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -5589,8 +5560,6 @@ Run `npm run typecheck && npm run lint`, then check in the browser:
 ```bash
 git add features/pos
 git commit -m "feat(pos): register details/close and add expense
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -5999,8 +5968,6 @@ Run `npm run typecheck && npm run lint`, then check in the browser:
 ```bash
 git add features/pos app/globals.css
 git commit -m "feat(pos): receipt modal with thermal and A4 layouts, Code128, print CSS
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -6225,8 +6192,6 @@ Run `npm run typecheck && npm run lint`, then check in the browser:
 ```bash
 git add features/pos
 git commit -m "feat(pos): keyboard shortcuts, weighing-scale entry, shortcuts cheat sheet
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -6272,8 +6237,6 @@ Expected: only intended changes. Commit any fixes found in Steps 1–2:
 ```bash
 git add -A features lib app messages scripts
 git commit -m "fix(pos): smoke-test fixes
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 (Skip the commit when there is nothing to fix.)
