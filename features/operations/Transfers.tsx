@@ -85,8 +85,12 @@ export function TransferForm() {
   const g = useUI((s) => s.locationId);
   const { data: lookups } = useLookups();
   const { create } = useTransferMutations();
-  const [from, setFrom] = useState(g === "all" ? "" : g);
-  const [to, setTo] = useState("");
+  const [pickedFrom, setFrom] = useState(g === "all" ? "" : g);
+  const [pickedTo, setTo] = useState("");
+  // Start with sensible locations rather than two empty pickers.
+  const activeLocations = lookups?.locations.filter((l) => l.active) ?? [];
+  const from = pickedFrom || (activeLocations[0]?.id ?? "");
+  const to = pickedTo || (activeLocations.find((l) => l.id !== from)?.id ?? "");
   const [status, setStatus] = useState<TransferStatus>("pending");
   const [rows, setRows] = useState<Row[]>([]);
   const [shipping, setShipping] = useState(0);

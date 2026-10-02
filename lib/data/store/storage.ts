@@ -44,3 +44,100 @@ export const sessionStorageChoice = <S>() => {
     removeItem: (k) => pick().removeItem(k),
   }));
 };
+
+// ---- Database storage: IndexedDB, so a busy shop never hits localStorage's ~5 MB ceiling -----------------------
+
+const IDB_NAME = "posible";
+const IDB_STORE = "kv";
+
+function openIdb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbRun<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+  return openIdb().then(
+    (db) =>
+      new Promise<T>((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, mode);
+        const req = fn(tx.objectStore(IDB_STORE));
+        tx.oncomplete = () => { db.close(); resolve(req.result); };
+        tx.onerror = tx.onabort = () => { db.close(); reject(tx.error); };
+      }),
+  );
+}
+
+export type StorageHealth = { ok: boolean; reason: string | null };
+let healthListeners: ((h: StorageHealth) => void)[] = [];
+let health: StorageHealth = { ok: true, reason: null };
+export const storageHealth = {
+  get: () => health,
+  subscribe(fn: (h: StorageHealth) => void) {
+    healthListeners.push(fn);
+    return () => void (healthListeners = healthListeners.filter((x) => x !== fn));
+  },
+};
+const setHealth = (h: StorageHealth) => { health = h; healthListeners.forEach((f) => f(h)); };
+
+/**
+ * The business database. Reads fall back to the old localStorage copy once (and move it over); writes are
+ * coalesced for 250 ms and flushed when the tab is hidden, so a burst of edits is one write. If a write fails,
+ * `storageHealth` says so and the app tells the user instead of losing data silently.
+ */
+export const dbStorage = <S>() => {
+  const fallback = memory();
+  const usable = typeof window !== "undefined" && typeof indexedDB !== "undefined";
+  let pending: { name: string; value: string } | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const flush = async () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    const job = pending;
+    pending = null;
+    if (!job) return;
+    try {
+      await idbRun("readwrite", (s) => s.put(job.value, job.name));
+      if (!health.ok) setHealth({ ok: true, reason: null });
+    } catch (e) {
+      setHealth({ ok: false, reason: e instanceof Error ? e.message : "write failed" });
+    }
+  };
+  if (usable) {
+    window.addEventListener("pagehide", () => void flush());
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") void flush(); });
+  }
+
+  const state: StateStorage = usable
+    ? {
+        async getItem(name) {
+          try {
+            const v = await idbRun<string | undefined>("readonly", (s) => s.get(name));
+            if (v != null) return v;
+            // First run after the upgrade: adopt the localStorage copy.
+            const legacy = window.localStorage.getItem(name);
+            if (legacy != null) {
+              await idbRun("readwrite", (s) => s.put(legacy, name));
+              window.localStorage.removeItem(name);
+            }
+            return legacy;
+          } catch {
+            setHealth({ ok: false, reason: "IndexedDB is unavailable" });
+            return window.localStorage.getItem(name);
+          }
+        },
+        setItem(name, value) {
+          pending = { name, value };
+          if (!timer) timer = setTimeout(() => void flush(), 250);
+        },
+        async removeItem(name) {
+          pending = null;
+          try { await idbRun("readwrite", (s) => s.delete(name)); } catch { /* nothing stored */ }
+        },
+      }
+    : fallback;
+  return createJSONStorage<S>(() => state);
+};

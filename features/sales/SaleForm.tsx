@@ -49,7 +49,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
   const { save } = useSaleMutations();
   const s0 = init.sale;
 
-  const [locationId, setLocationId] = useState(s0?.locationId ?? init.locationId ?? (globalLocation !== "all" ? globalLocation : "") ?? "");
+  const [pickedLocation, setLocationId] = useState(s0?.locationId ?? init.locationId ?? (globalLocation !== "all" ? globalLocation : "") ?? "");
   const [cart, setCart] = useState<Cart>(init.cart);
   const [status, setStatus] = useState<Status>(init.status);
   const [refNo, setRefNo] = useState("");
@@ -62,6 +62,9 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
   const [pays, setPays] = useState<{ method: PaymentMethod; amount: string }[]>([]);
   const [rec, setRec] = useState(s0?.recurring ? { on: true, interval: String(s0.recurring.interval), type: s0.recurring.intervalType, reps: String(s0.recurring.repetitions ?? ""), day: String(s0.recurring.repeatOn ?? "") } : { on: false, interval: "1", type: "months" as const, reps: "", day: "" });
   const [agent, setAgent] = useState(s0?.commissionAgentId ?? "");
+
+  // Nothing chosen in the header switcher: start on the first active location instead of an empty picker.
+  const locationId = pickedLocation || (lookups?.locations.find((l) => l.active)?.id ?? lookups?.locations[0]?.id ?? "");
 
   const { data: hits = [] } = usePosSearch({ locationId, contactId: cart.contactId, term: locationId ? term : "" });
   const { data: openOrders = [] } = useOpenOrders(cart.contactId === WALK_IN_ID ? undefined : cart.contactId);

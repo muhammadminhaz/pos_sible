@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { DB } from "@/lib/data/schemas";
 import { createSeed, SEED_VERSION } from "@/lib/data/seed";
-import { safeStorage } from "./storage";
+import { dbStorage } from "./storage";
 
 type DBState = { db: DB | null; hydrated: boolean };
 
@@ -10,7 +10,7 @@ export const useDB = create<DBState>()(
   persist((): DBState => ({ db: null, hydrated: false }), {
     name: "posible:v1:db",
     version: SEED_VERSION,
-    storage: safeStorage<Pick<DBState, "db">>(),
+    storage: dbStorage<Pick<DBState, "db">>(),
     partialize: (s) => ({ db: s.db }),
     skipHydration: true,
     // A version bump drops old data; DataGate then reseeds.

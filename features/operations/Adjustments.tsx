@@ -113,7 +113,8 @@ export function AdjustmentForm() {
   const g = useUI((s) => s.locationId);
   const { data: lookups } = useLookups();
   const { create } = useAdjustmentMutations();
-  const [locationId, setLocationId] = useState(g === "all" ? "" : g);
+  const [pickedLocation, setLocationId] = useState(g === "all" ? "" : g);
+  const locationId = pickedLocation || (lookups?.locations.find((l) => l.active)?.id ?? "");
   const [type, setType] = useState<"normal" | "abnormal">("normal");
   const [recovered, setRecovered] = useState(0);
   const [reason, setReason] = useState("");

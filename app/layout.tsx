@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Anek_Bangla, Inter } from "next/font/google";
 import { getLocale, getMessages } from "next-intl/server";
 import { Providers } from "./providers";
@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   title: { default: "pos_sible", template: "%s · pos_sible" },
   description: "Point of sale, inventory and accounting for Bangladeshi retail",
 };
+
+export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: light)", color: "#4f46e5" }, { media: "(prefers-color-scheme: dark)", color: "#0a0a0b" }] };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();

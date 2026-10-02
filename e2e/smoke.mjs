@@ -11,9 +11,9 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const failures = [];
 const note = (route, mode, msg) => failures.push(`${mode} ${route}: ${msg}`);
 
-for (const [locale, theme] of [["en", "light"], ["bn", "dark"]]) {
-  const mode = `[${locale}/${theme}]`;
-  const ctx = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+for (const [locale, theme, width] of [["en", "light", 1360], ["bn", "dark", 1360], ["en", "light", 768]]) {
+  const mode = `[${locale}/${theme}/${width}px]`;
+  const ctx = await browser.newContext({ viewport: { width, height: 900 } });
   await ctx.addCookies([{ name: "NEXT_LOCALE", value: locale, url: BASE }]);
   await ctx.addInitScript((t) => { try { localStorage.setItem("theme", t); } catch {} }, theme);
   const page = await ctx.newPage();
@@ -27,7 +27,8 @@ for (const [locale, theme] of [["en", "light"], ["bn", "dark"]]) {
   await page.keyboard.press("Enter");
   await page.waitForURL(/\/home/, { timeout: 15000 });
 
-  const db = await page.evaluate(() => JSON.parse(localStorage.getItem("posible:v1:db") ?? "{}").state?.db ?? {});
+  await page.waitForTimeout(800);
+  const db = await page.evaluate(() => new Promise((res) => { const r = indexedDB.open("posible", 1); r.onsuccess = () => { const g = r.result.transaction("kv").objectStore("kv").get("posible:v1:db"); g.onsuccess = () => res(JSON.parse(g.result).state.db); }; }));
   const first = (arr, f = () => true) => arr?.find(f)?.id;
   const ids = {
     "/products/[id]": first(db.products), "/products/[id]/edit": first(db.products),
@@ -45,6 +46,7 @@ for (const [locale, theme] of [["en", "light"], ["bn", "dark"]]) {
     await page.waitForTimeout(route === "/pos" ? 2500 : 1200);
     if (await page.getByText(/coming soon/i).count()) note(route, mode, "still a placeholder");
     if (!route.startsWith("/pos") && !(await page.locator("h1").count())) note(route, mode, "no <h1>");
+    if (width < 1024 && (await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) > 0) note(route, mode, "page scrolls sideways");
     const body = await page.locator("body").innerText();
     const bad = body.match(/\bNaN\b|undefined|\[object|Infinity|\bnull\b|Invalid Date|\{[a-zA-Z]+\}/);
     if (bad) note(route, mode, `leaked "${bad[0]}" into the page`);
@@ -61,4 +63,4 @@ for (const [locale, theme] of [["en", "light"], ["bn", "dark"]]) {
 }
 await browser.close();
 if (failures.length) { console.error(`${failures.length} problem(s):\n` + failures.join("\n")); process.exit(1); }
-console.log(`OK — ${routes.length} routes × 2 modes`);
+console.log(`OK — ${routes.length} routes × 3 modes (EN/light, BN/dark, tablet)`);

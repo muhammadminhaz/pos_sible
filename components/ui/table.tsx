@@ -7,7 +7,9 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      // Keyboard users must be able to scroll a table that overflows sideways.
+      tabIndex={0}
+      className="relative w-full overflow-x-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
     >
       <table
         data-slot="table"
