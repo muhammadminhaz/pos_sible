@@ -1,6 +1,6 @@
-# pos_sible — Contacts, Purchases and Stock Implementation Plan (sub-project 5)
+# pos_sible — Contacts, Purchases and Stock Implementation Plan (sub-project 5) — DONE
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax.
 
 **Goal:** Replace every placeholder under `/contacts`, `/purchases` and `/stock`.
 **Architecture:** Extend `contactsService`; add `purchasesService`, `purchaseReturnsService`, `transfersService`, `adjustmentsService` (all writing stock through lots, FIFO/LIFO via `lib/domain/stock.ts`). Reuse `DataTable`/`FilterBar`, the Sales payment dialog pattern and the `ImportWizard` from Catalog.
@@ -21,7 +21,7 @@ Same as the Sales plan (commit-only writes, `assertCan`, messages via the genera
 ## Tasks
 ### Task 1: contactsService — full CRUD, dues, payments
 **Interfaces:** `contactsService.create/update/remove`, `.ledger(id)` (invoices, payments, returns, running balance), `.payDue(id, { amount, method, accountId, note })` (FIFO over unpaid invoices/purchases), `.customerGroups` via `crud`, `.technicians` via `crud`.
-- [ ] Tests first for each rule in Review Focus; `contacts.customer` / `contacts.supplier` permissions.
+- [x] Tests first for each rule in Review Focus; `contacts.customer` / `contacts.supplier` permissions.
 ### Task 2: Customers and Suppliers lists
 Filters: purchase due / sell due, purchase return / sell return, advance balance, opening balance, "no sell in 1/3/6/12 months", customer group, assigned to, status. Supplier and customer column sets (incl. credit limit, points, group, custom fields). Row actions: view, edit, deactivate, pay due, delete.
 ### Task 3: Contact form + detail
@@ -30,7 +30,7 @@ Type (supplier/customer/both), individual vs business, group, name, mobile, alte
 Customer groups (name, discount %, price group) and technicians as `CrudPage` configs; import via `ImportWizard`.
 ### Task 5: purchasesService — list/get/save/status/payments/delete
 **Interfaces:** `list(f)`, `get(id)`, `save(input)`, `setStatus(id, status)`, `addPayment/removePayment`, `remove(id)`; line fields: qty, unit cost, discount %, tax, lot no., mfg/exp, profit margin %, sell price inc tax (updates the variation price when enabled); footer: discount, tax, shipping, up to 4 additional expenses; currency exchange rate.
-- [ ] Tests first: received creates lots; pending/ordered don't; status → received creates lots exactly once; edit adjusts lots; delete blocked when sold; payment status transitions; new purchase sets variation price when "update price from purchase" is on.
+- [x] Tests first: received creates lots; pending/ordered don't; status → received creates lots exactly once; edit adjusts lots; delete blocked when sold; payment status transitions; new purchase sets variation price when "update price from purchase" is on.
 ### Task 6: Purchases list + Add/Edit purchase + detail
 Filters: location, supplier, purchase status, payment status, date. Columns per inventory. Update-status dialog, payment dialog (reuse Sales `PaymentsDialog` via a shared `TxnPaymentsDialog`), Print. Form with inline add-supplier.
 ### Task 7: Purchase returns
@@ -40,4 +40,4 @@ Filters: location, supplier, purchase status, payment status, date. Columns per 
 ### Task 9: adjustmentsService + Stock Adjustments UI
 `list/create/remove`; type normal/abnormal, total recovered, reason; list + create form.
 ### Task 10: Wire-up, smoke, final review
-- [ ] Purchase → stock appears in POS; transfer moves stock between locations; adjustment reduces stock; supplier due reflects payment. Full checks, whole-branch review, merge.
+- [x] Purchase → stock appears in POS; transfer moves stock between locations; adjustment reduces stock; supplier due reflects payment. Full checks, whole-branch review, merge.

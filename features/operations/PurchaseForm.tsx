@@ -95,7 +95,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
       <Section title={t("ops.purchaseDetails")}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex items-end gap-2">
-            <PickField label={t("ops.supplier")} nullable={false} value={v.contactId || null} onChange={(x) => set({ contactId: x ?? "" })} className="min-w-0 flex-1"
+            <PickField label={t("ops.supplier")} nullable={false} value={v.contactId || null} onChange={(x) => set({ contactId: x ?? "" })} className="min-w-0 flex-1 [&_button]:min-w-0 [&_[data-slot=select-value]]:truncate"
               options={(suppliers?.rows ?? []).map((c) => ({ value: c.id, label: c.businessName ? `${c.businessName} — ${c.name}` : c.name }))} />
             <Button type="button" variant="outline" size="icon" aria-label={t("ops.addSupplier")} onClick={() => setSupplierDialog(true)}><PlusIcon /></Button>
           </div>
