@@ -67,6 +67,7 @@
     "tryAgain": "আবার চেষ্টা করুন"
   },
   "nav": {
+    "breadcrumb": "ব্রেডক্রাম্ব",
     "home": "হোম",
     "calendar": "ক্যালেন্ডার",
     "profile": "প্রোফাইল",
@@ -225,6 +226,8 @@
     "compact": "সংক্ষিপ্ত",
     "showing": "{total}টির মধ্যে {from}–{to} দেখানো হচ্ছে",
     "rowsPerPage": "প্রতি পেজে সারি",
+    "firstPage": "প্রথম পেজ",
+    "lastPage": "শেষ পেজ",
     "page": "পেজ {page} / {pages}",
     "selectAll": "সব নির্বাচন",
     "selectRow": "সারি নির্বাচন",

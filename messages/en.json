@@ -67,6 +67,7 @@
     "tryAgain": "Try again"
   },
   "nav": {
+    "breadcrumb": "Breadcrumb",
     "home": "Home",
     "calendar": "Calendar",
     "profile": "Profile",
@@ -225,6 +226,8 @@
     "compact": "Compact",
     "showing": "Showing {from}–{to} of {total}",
     "rowsPerPage": "Rows per page",
+    "firstPage": "First page",
+    "lastPage": "Last page",
     "page": "Page {page} of {pages}",
     "selectAll": "Select all",
     "selectRow": "Select row",

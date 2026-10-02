@@ -21,7 +21,7 @@ export function Breadcrumbs() {
   if (!group) return null;
 
   return (
-    <Breadcrumb className="min-w-0">
+    <Breadcrumb className="min-w-0" aria-label={t("breadcrumb")}>
       <BreadcrumbList className="flex-nowrap">
         <BreadcrumbItem className="hidden sm:inline-flex">
           {item ? (

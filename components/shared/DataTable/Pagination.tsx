@@ -51,7 +51,7 @@ export function Pagination({
           {t("table.page", { page: f.number(page + 1), pages: f.number(pages) })}
         </span>
         <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon-sm" disabled={page === 0} onClick={() => onChange({ page: 0 })} aria-label="First page" className="hidden sm:inline-flex">
+          <Button variant="outline" size="icon-sm" disabled={page === 0} onClick={() => onChange({ page: 0 })} aria-label={t("table.firstPage")} className="hidden sm:inline-flex">
             <ChevronsLeftIcon />
           </Button>
           <Button variant="outline" size="icon-sm" disabled={page === 0} onClick={() => onChange({ page: page - 1 })} aria-label={t("common.previous")}>
@@ -60,7 +60,7 @@ export function Pagination({
           <Button variant="outline" size="icon-sm" disabled={page >= pages - 1} onClick={() => onChange({ page: page + 1 })} aria-label={t("common.next")}>
             <ChevronRightIcon />
           </Button>
-          <Button variant="outline" size="icon-sm" disabled={page >= pages - 1} onClick={() => onChange({ page: pages - 1 })} aria-label="Last page" className="hidden sm:inline-flex">
+          <Button variant="outline" size="icon-sm" disabled={page >= pages - 1} onClick={() => onChange({ page: pages - 1 })} aria-label={t("table.lastPage")} className="hidden sm:inline-flex">
             <ChevronsRightIcon />
           </Button>
         </div>

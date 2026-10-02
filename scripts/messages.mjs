@@ -70,6 +70,7 @@ const M = {
     tryAgain: ["Try again", "আবার চেষ্টা করুন"],
   },
   nav: {
+    breadcrumb: ["Breadcrumb", "ব্রেডক্রাম্ব"],
     home: ["Home", "হোম"],
     calendar: ["Calendar", "ক্যালেন্ডার"],
     profile: ["Profile", "প্রোফাইল"],
@@ -228,6 +229,8 @@ const M = {
     compact: ["Compact", "সংক্ষিপ্ত"],
     showing: ["Showing {from}–{to} of {total}", "{total}টির মধ্যে {from}–{to} দেখানো হচ্ছে"],
     rowsPerPage: ["Rows per page", "প্রতি পেজে সারি"],
+    firstPage: ["First page", "প্রথম পেজ"],
+    lastPage: ["Last page", "শেষ পেজ"],
     page: ["Page {page} of {pages}", "পেজ {page} / {pages}"],
     selectAll: ["Select all", "সব নির্বাচন"],
     selectRow: ["Select row", "সারি নির্বাচন"],

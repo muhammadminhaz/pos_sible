@@ -29,7 +29,9 @@ export function paymentKind(t: Pick<Transaction, "type" | "isRefund">, p: Pick<P
 }
 
 /** What stock cost, from the lines' allocated unit cost. */
-const lineCost = (lines: TxnLine[]) => roundMoney(lines.reduce((s, l) => s + l.qty * l.unitCost, 0));
+/** What the lots actually held: summed from the lot allocations when a sale has them, so the books and the stock report agree to the cent. */
+const lineCost = (lines: TxnLine[]) =>
+  roundMoney(lines.reduce((s, l) => s + (l.allocations?.length ? l.allocations.reduce((n, a) => n + a.qty * a.unitCost, 0) : l.qty * l.unitCost), 0));
 
 /** Cash entry for one payment; `incoming` = money into our accounts. */
 function paymentEntry(p: Payment, incoming: boolean, other: LedgerAccount, loc: string, memo: string): JournalEntry {
