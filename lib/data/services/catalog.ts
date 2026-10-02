@@ -87,6 +87,18 @@ const RULES: Partial<Record<TableName, Rules>> = {
       for (const t of db.transactions) if (t.expenseSubCategoryId === after.id) t.expenseCategoryId = after.parentId as string;
     },
   },
+  accountTypes: {
+    permission: "account.manage",
+    check: (db, row, id) => {
+      const parentId = row.parentId as string | null;
+      if (!parentId) return;
+      const parent = db.accountTypes.find((t) => t.id === parentId);
+      if (parentId === id || !parent || parent.parentId) throw new ValidationError({ parentId: "invalid_parent" });
+      if (id && db.accountTypes.some((t) => t.parentId === id)) throw new ValidationError({ parentId: "has_children" });
+    },
+    inUse: (db, id) =>
+      db.accountTypes.some((t) => t.parentId === id) ? "category_has_children" : used("account_type_in_use", db.accounts.some((a) => a.typeId === id)),
+  },
   brands: {
     permission: "product.update",
     inUse: (db, id) => used("brand_in_use", db.products.some((p) => p.brandId === id) || db.discounts.some((x) => x.brandId === id)),
