@@ -28,11 +28,11 @@ import { LogoMark } from "./LogoMark";
 /** NAV filtered by permission; groups with no visible items disappear. */
 export function useVisibleNav(): NavGroup[] {
   const can = useCan();
-  const modules = useSettings().data?.modules;
+  const settings = useSettings().data;
   return NAV.flatMap((g) => {
     if (!can(g.permission)) return [];
     if (!g.items) return [g];
-    const items = g.items.filter((i) => can(i.permission) && isPathEnabled(modules, i.href));
+    const items = g.items.filter((i) => can(i.permission) && isPathEnabled(settings, i.href));
     return items.length ? [{ ...g, items }] : [];
   });
 }

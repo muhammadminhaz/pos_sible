@@ -24,3 +24,15 @@ export function putBack(d: DB, allocations: Allocation[]): void {
     if (lot) lot.qtyRemaining = roundMoney(lot.qtyRemaining + al.qty, 4);
   }
 }
+
+/**
+ * With "stop selling" on, stock expiring before today + N days can't be sold. Returns that cutoff date, or
+ * undefined when expired stock may still be sold.
+ */
+export function expiryCutoff(d: DB, today: string): string | undefined {
+  const p = d.settings.product;
+  if (!p.enableExpiry || p.onExpiry !== "stop_selling") return undefined;
+  const t = new Date(`${today.slice(0, 10)}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() + Math.max(0, p.stopSellingBeforeDays));
+  return t.toISOString().slice(0, 10);
+}

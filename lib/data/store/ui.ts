@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import { safeStorage } from "./storage";
 
 export type Density = "comfortable" | "compact";
-export type TablePref = { hidden: string[]; pageSize: number };
+export type TablePref = { hidden: string[]; pageSize?: number };
 
 type UIState = {
   sidebarCollapsed: boolean;
@@ -32,7 +32,7 @@ export const useUI = create<UIState>()(
       setDensity: (density) => set({ density }),
       setLocationId: (locationId) => set({ locationId }),
       setTablePref: (table, pref) =>
-        set((s) => ({ tablePrefs: { ...s.tablePrefs, [table]: { ...(s.tablePrefs[table] ?? { hidden: [], pageSize: 25 }), ...pref } } })),
+        set((s) => ({ tablePrefs: { ...s.tablePrefs, [table]: { ...(s.tablePrefs[table] ?? { hidden: [] }), ...pref } } })),
     }),
     { name: "posible:v1:ui", storage: safeStorage() },
   ),

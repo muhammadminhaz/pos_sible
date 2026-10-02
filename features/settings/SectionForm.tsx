@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useSettings, useUpdateSettings } from "@/lib/data/hooks/settings";
 import { settings as settingsSchema, type Settings } from "@/lib/data/schemas";
+import { LogoField } from "./LogoField";
 import { ShortcutEditor, shortcutConflicts } from "./ShortcutEditor";
 
 type Path = (string | number)[];
@@ -77,6 +78,7 @@ function Field({ schema, path, ctx }: { schema: z.ZodTypeAny; path: Path; ctx: C
   const tn = inner._def.typeName as string;
   const last = String(path.at(-1));
 
+  if (key === "logo" && ctx.section === "business") return <LogoField value={value as string | null} onChange={set} />;
   if (tn === "ZodObject") {
     if (key === "shortcuts" && ctx.section === "pos") return <ShortcutEditor value={value as Record<string, string>} onChange={set} />;
     return (

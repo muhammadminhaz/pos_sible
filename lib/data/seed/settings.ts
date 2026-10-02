@@ -183,7 +183,7 @@ export function defaultSettings(startDate: string): Settings {
       serviceStaff: false,
       bookings: false,
       kitchen: false,
-      subscription: false,
+      subscription: true,
       typesOfService: false,
     },
     customLabels: {

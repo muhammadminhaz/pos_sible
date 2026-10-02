@@ -58,6 +58,10 @@ export function createFormatter(locale: string, opts: Partial<FormatOptions> = {
 
   const toDate = (d: string | Date) => (typeof d === "string" ? new Date(d) : d);
   const parts = (d: string | Date) => {
+    // A date-time without a zone ("2026-10-03T03:01:00") is already wall-clock time; reading it as-is keeps the
+    // display identical whatever time zone the browser happens to be in.
+    const naive = typeof d === "string" && /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?(?::\d{2}(?:\.\d+)?)?$/.exec(d);
+    if (naive) return { y: +naive[1], m: +naive[2], d: +naive[3], h: +(naive[4] ?? 0), min: +(naive[5] ?? 0) };
     const p = Object.fromEntries(partsFmt.formatToParts(toDate(d)).map((x) => [x.type, x.value]));
     return { y: +p.year, m: +p.month, d: +p.day, h: +p.hour, min: +p.minute };
   };
@@ -99,7 +103,13 @@ export function createFormatter(locale: string, opts: Partial<FormatOptions> = {
     dateTime: (d: string | Date) => `${date(d)} ${time(d)}`,
     /** Unit labels for display: "Pc(s)" → "পিস" in Bangla; unknown units pass through. */
     unit: (name: string) => (locale === "bn" ? (BN_UNITS[name.trim().toLowerCase()] ?? name) : name),
-    dateLong: (d: string | Date) => longFmt.format(toDate(d)),
+    dateLong: (d: string | Date) => {
+      if (typeof d === "string" && !/(Z|[+-]\d{2}:?\d{2})$/.test(d)) {
+        const w = parts(d);
+        return longFmt.format(new Date(Date.UTC(w.y, w.m - 1, w.d, 12)));
+      }
+      return longFmt.format(toDate(d));
+    },
   };
 }
 

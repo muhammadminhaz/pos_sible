@@ -106,3 +106,11 @@ export const setContact = (c: Cart, contactId: string): Cart => ({ ...c, contact
 export function exceedsStock(line: CartLine, qty: number = line.qty): boolean {
   return line.maxQty != null && qty > line.maxQty;
 }
+
+/** A fresh sale starts with the business's default discount (%) and order tax, if any are configured. */
+export function applySaleDefaults(c: Cart, d: { defaultDiscount: number; defaultTaxId: string | null }, taxRate: number | null): Cart {
+  let next = c;
+  if (!next.discount && d.defaultDiscount > 0) next = { ...next, discount: { type: "percentage", amount: d.defaultDiscount } };
+  if (!next.orderTaxId && d.defaultTaxId && taxRate != null) next = { ...next, orderTaxId: d.defaultTaxId, orderTaxRate: taxRate };
+  return next;
+}

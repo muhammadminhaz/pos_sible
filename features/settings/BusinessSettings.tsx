@@ -15,6 +15,18 @@ const TABS = [
   "business", "tax", "product", "contact", "sale", "pos", "purchase", "payment", "dashboard", "system", "prefixes", "rewards", "modules", "customLabels", "email", "sms",
 ] as const satisfies readonly (keyof Settings)[];
 
+/** Settings that exist in the data model but have no feature behind them yet; hiding them keeps every visible switch honest. */
+const HIDDEN: Partial<Record<(typeof TABS)[number], string[]>> = {
+  product: ["enablePriceTax"],
+  sale: ["enablePaymentLink", "razorpayKeyId", "razorpayKeySecret", "stripePublicKey", "stripeSecretKey"],
+  pos: ["showInvoiceScheme"],
+  purchase: ["enablePurchaseOrder", "enablePurchaseRequisition"],
+  payment: ["denominationOn"],
+  system: ["showHelpText"],
+  rewards: ["expiryPeriod", "expiryType"],
+  modules: ["kitchen", "modifiers", "typesOfService"],
+};
+
 /** A mocked send: succeeds when the form is filled in, fails otherwise, like a real provider would. */
 function TestSend({ kind, ready }: { kind: "email" | "sms"; ready: boolean }) {
   const t = useTranslations("settings");
@@ -48,8 +60,8 @@ export function BusinessSettings() {
   return (
     <>
       <PageHeader title={tn("businessSettings")} description={t("businessSettingsDescription")} />
-      <Tabs value={tab} onValueChange={(v) => setTab(v as (typeof TABS)[number])} orientation="vertical" className="gap-6 lg:flex-row">
-        <TabsList aria-label={t("sections")} className="h-fit w-full shrink-0 flex-row flex-wrap justify-start lg:w-52 lg:flex-col">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as (typeof TABS)[number])} orientation="vertical" className="gap-6 data-[orientation=vertical]:flex-col lg:data-[orientation=vertical]:flex-row">
+        <TabsList aria-label={t("sections")} className="h-fit w-full shrink-0 justify-start max-lg:flex-row! max-lg:flex-wrap lg:w-52">
           {TABS.map((k) => <TabsTrigger key={k} value={k}>{t(`tabs.${k}`)}</TabsTrigger>)}
         </TabsList>
         <section className="min-w-0 flex-1 rounded-xl border bg-card p-5" aria-label={t(`tabs.${tab}`)}>
@@ -57,7 +69,7 @@ export function BusinessSettings() {
           <SectionForm
             key={tab}
             section={tab}
-            hidden={tab === "business" ? ["logo"] : []}
+            hidden={HIDDEN[tab] ?? []}
             options={{
               defaultTaxId: taxOptions, defaultUnitId: unitOptions,
               themeColor: ["indigo", "blue", "black", "purple", "green", "red", "amber", "sky"].map((v) => ({ value: v, label: v[0].toUpperCase() + v.slice(1) })),

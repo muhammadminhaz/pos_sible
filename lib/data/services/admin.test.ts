@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { useSession } from "@/lib/auth/session";
 import { AppError, ValidationError } from "@/lib/data/errors";
 import { createSeed } from "@/lib/data/seed";
-import { getDB, resetDB } from "@/lib/data/store/db";
+import { commit, getDB, resetDB } from "@/lib/data/store/db";
 import { accountService, backupsService } from "./admin";
 import { crud } from "./catalog";
 
@@ -74,5 +74,22 @@ describe("admin services", () => {
     await backupsService.restoreFrom(b.id);
     expect(getDB().products.length).toBe(n);
     expect((await backupsService.list()).map((x) => x.id)).toContain(b.id);
+  });
+});
+
+describe("transaction edit window", () => {
+  beforeEach(() => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+  });
+
+  it("locks old final transactions once the window passes, and 0 turns the lock off", async () => {
+    const { expensesService } = await import("./expenses");
+    const old = getDB().transactions.filter((t) => t.type === "expense").sort((a, b) => a.date.localeCompare(b.date))[0];
+    const form = { id: old.id, locationId: old.locationId, categoryId: old.expenseCategoryId!, date: old.date, amount: old.totals.total, note: "", isRefund: false };
+    commit((d) => void (d.settings.business.transactionEditDays = 7));
+    await expect(expensesService.save({ ...form, id: old.id })).rejects.toMatchObject({ code: "edit_window_expired" });
+    commit((d) => void (d.settings.business.transactionEditDays = 0));
+    await expect(expensesService.save({ ...form, id: old.id })).resolves.toBeTruthy();
   });
 });

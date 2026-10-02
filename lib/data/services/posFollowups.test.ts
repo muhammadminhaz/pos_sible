@@ -68,4 +68,55 @@ describe("POS follow-ups", () => {
     expect(merged.lines).toHaveLength(1);
     expect(merged.lines[0].maxQty).toBe(9);
   });
+
+  it("minimum selling price refuses a sale below the product's price list", async () => {
+    commit((d) => void (d.settings.sale.minSellingPrice = true));
+    const cart = await cartWithItem(getDB().contacts.find((c) => c.isDefault)!.id, 0);
+    const cheap = { ...cart, lines: cart.lines.map((l) => ({ ...l, unitPrice: 1 })) };
+    await expect(salesService.checkout({ cart: cheap, locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 1 }] })).rejects.toMatchObject({ code: "below_min_price" });
+    commit((d) => void (d.settings.sale.minSellingPrice = false));
+    await expect(salesService.checkout({ cart: cheap, locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 1 }] })).resolves.toBeTruthy();
+  });
+
+  it("stop-selling blocks expired lots but not the rest", async () => {
+    const cart = await cartWithItem(getDB().contacts.find((c) => c.isDefault)!.id, 0);
+    const vid = cart.lines[0].variationId;
+    commit((d) => {
+      Object.assign(d.settings.product, { enableExpiry: true, onExpiry: "stop_selling", stopSellingBeforeDays: 0 });
+      for (const l of d.stockLots) if (l.variationId === vid && l.locationId === LOC_RANGO) l.expDate = "2020-01-01";
+    });
+    await expect(salesService.checkout({ cart, locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 99999 }] })).rejects.toMatchObject({ name: "InsufficientStockError" });
+    commit((d) => void (d.settings.product.onExpiry = "keep_selling"));
+    await expect(salesService.checkout({ cart, locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 99999 }] })).resolves.toBeTruthy();
+  });
+});
+
+describe("sales orders", () => {
+  beforeEach(async () => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+    commit((d) => {
+      for (const r of d.cashRegisters) if (r.status === "open") Object.assign(r, { status: "close", closedAt: r.openedAt });
+    });
+    await registersService.open(LOC_RANGO, 0);
+  });
+
+  it("turns an open order into a sale cart for what is still owed, and only deletes untouched orders", async () => {
+    const { ordersService } = await import("./orders");
+    const p = (await posService.products({ locationId: LOC_RANGO, pageSize: -1 })).rows.find((x) => x.manageStock && x.variations[0].stock > 10 && !x.enableSerial)!;
+    const v = p.variations[0];
+    const customer = getDB().contacts.find((c) => c.type === "customer" && !c.isDefault)!;
+    const line = { productId: p.id, variationId: v.id, unitId: p.unitId, qty: 5, unitPrice: v.unitPrice };
+    const untouched = await ordersService.create({ locationId: LOC_RANGO, contactId: customer.id, lines: [line] });
+    const used = await ordersService.create({ locationId: LOC_RANGO, contactId: customer.id, lines: [line] });
+
+    expect((await salesService.fromOrder(used.id)).cart.lines[0].qty).toBe(5);
+    const cart = (await salesService.fromOrder(used.id)).cart;
+    await salesService.save({ cart: { ...cart, lines: cart.lines.map((l) => ({ ...l, qty: 2 })) }, locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 99999 }], salesOrderIds: [used.id] });
+    expect((await salesService.fromOrder(used.id)).cart.lines[0].qty).toBe(3);
+    await expect(ordersService.remove(used.id)).rejects.toMatchObject({ code: "order_in_use" });
+
+    await expect(ordersService.remove(untouched.id)).resolves.toBeUndefined();
+    await expect(salesService.fromOrder(untouched.id)).rejects.toMatchObject({ code: "not_found" });
+  });
 });

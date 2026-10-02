@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { cn } from "cn";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSettings } from "@/lib/data/hooks/settings";
 import { useUI } from "@/lib/data/store/ui";
 import { EmptyState } from "../EmptyState";
 import { BulkBar } from "./BulkBar";
@@ -77,6 +78,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const t = useTranslations();
   const density = useUI((s) => s.density);
+  const { data: appSettings } = useSettings();
   const pref = useUI((s) => s.tablePrefs[tableId]);
   const setTablePref = useUI((s) => s.setTablePref);
   const [selection, setSelection] = useState<RowSelectionState>({});
@@ -187,7 +189,7 @@ export function DataTable<T>({
         table={table}
         search={query.search}
         onSearch={(search) => onQueryChange({ search, page: 0 })}
-        onExport={exportCsv}
+        onExport={appSettings?.business.enableExport === false ? undefined : exportCsv}
       >
         {toolbar}
       </Toolbar>
@@ -332,8 +334,12 @@ export function DataTable<T>({
 
 /** Initial query for a table, honouring the persisted page size. */
 export function useTableQuery(tableId: string, init: Partial<TableQuery> = {}) {
-  const pageSize = useUI((s) => s.tablePrefs[tableId]?.pageSize ?? 25);
-  const [query, setQuery] = useState<TableQuery>({ page: 0, pageSize, search: "", ...init });
+  const { data: appSettings } = useSettings();
+  const defaultSize = appSettings?.system.defaultPageSize ?? 25;
+  const savedSize = useUI((s) => s.tablePrefs[tableId]?.pageSize);
+  const [query, setQuery] = useState<Omit<TableQuery, "pageSize"> & { pageSize?: number }>({ page: 0, search: "", ...init });
+  // The size is resolved on every render so the business default applies as soon as settings have loaded.
+  const resolved: TableQuery = { ...query, pageSize: query.pageSize ?? savedSize ?? defaultSize };
   const update = (q: Partial<TableQuery>) => setQuery((prev) => ({ ...prev, ...q }));
-  return [query, update] as const;
+  return [resolved, update] as const;
 }

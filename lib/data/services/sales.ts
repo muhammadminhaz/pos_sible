@@ -2,6 +2,7 @@ import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
 import {
   AppError, CreditLimitError, InsufficientStockError, NotFoundError, ProductUnavailableError, SerialsRequiredError, ValidationError,
+  BelowMinPriceError,
 } from "@/lib/data/errors";
 import { accountTxn, transaction, type ShippingStatus, type DB, type InvoiceLayout, type Location, type Payment, type PaymentMethod, type Transaction } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
@@ -12,8 +13,10 @@ import { isValidRedeem, maxRedeemable, pointsEarned, reservedPoints } from "@/li
 import { allocate, available } from "@/lib/domain/stock";
 import { emptyCart, WALK_IN_ID, type Cart, type CartLine } from "@/lib/pos/cart";
 import { cartTotals, paymentState } from "@/lib/pos/selectors";
-import { linkLines, syncOrders } from "./_orders";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { fulfilledQty, linkLines, syncOrders } from "./_orders";
+import { todayISO } from "@/lib/dates";
+import { expiryCutoff } from "./_stock";
+import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type SaleStatus = "final" | "draft" | "quotation" | "suspended";
@@ -64,11 +67,12 @@ function customerDue(d: DB, contactId: string): number {
 }
 
 function lineAllocation(d: DB, line: CartLine, locationId: string, name: string) {
+  const cutoff = expiryCutoff(d, todayISO());
   const res = allocate(d.stockLots, {
     variationId: line.variationId, locationId, qty: line.qty,
-    method: d.settings.business.accountingMethod, allowOverselling: d.settings.sale.allowOverselling,
+    method: d.settings.business.accountingMethod, allowOverselling: d.settings.sale.allowOverselling, unsellableBefore: cutoff,
   });
-  if (res.shortfall > 0) throw new InsufficientStockError(name, available(d.stockLots, line.variationId, locationId));
+  if (res.shortfall > 0) throw new InsufficientStockError(name, available(d.stockLots, line.variationId, locationId, cutoff));
   for (const a of res.allocations) {
     const lot = d.stockLots.find((l) => l.id === a.lotId);
     if (lot) lot.qtyRemaining = roundMoney(lot.qtyRemaining - a.qty, 4);
@@ -126,7 +130,14 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
     const p = d.products.find((x) => x.id === l.productId);
     if (!p || !p.active || p.notForSale || !p.locationIds.includes(locationId)) throw new ProductUnavailableError(l.name);
     let allocations: { lotId: string; qty: number; unitCost: number }[] = [];
-    let unitCost = d.variations.find((v) => v.id === l.variationId)?.purchasePriceExc ?? 0;
+    const variation = d.variations.find((v) => v.id === l.variationId);
+    let unitCost = variation?.purchasePriceExc ?? 0;
+    // "Minimum selling price": never below the product's own price list (the lowest of default and group prices).
+    if (s.sale.minSellingPrice && variation && status !== "quotation") {
+      const base = l.taxType === "inclusive" ? variation.sellPriceInc : variation.sellPriceExc;
+      const floor = Math.min(base, ...Object.values(variation.groupPrices));
+      if (l.unitPrice + 0.005 < floor) throw new BelowMinPriceError(l.name);
+    }
     if (status === "final") {
       if (p.enableSerial && l.serials.length !== l.qty) throw new SerialsRequiredError(l.name, l.qty);
       if (p.manageStock) ({ allocations, unitCost } = lineAllocation(d, l, locationId, l.name));
@@ -137,6 +148,9 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
       unitCost, allocations, note: l.note, serials: l.serials, serviceStaffId: l.serviceStaffId,
     };
   });
+
+  if (status === "final" && s.modules.serviceStaff && s.pos.inlineServiceStaff && s.pos.serviceStaffRequired && built.some((l) => !l.serviceStaffId))
+    throw new ValidationError({ serviceStaff: "required" });
 
   const lines = linkLines(d, input.salesOrderIds ?? [], built);
 
@@ -263,6 +277,20 @@ export const salesService = {
     return txnToCart(d, t);
   },
 
+  /** An open sales order as a ready-to-edit sale: what is still owed, at the order's prices. */
+  async fromOrder(orderId: string): Promise<{ locationId: string; cart: Cart }> {
+    await delay();
+    assertCan("sell.create");
+    const d = getDB();
+    const o = d.transactions.find((t) => t.id === orderId && t.type === "sales_order");
+    if (!o) throw new NotFoundError("Order");
+    const lines = o.lines
+      .map((l) => ({ ...l, qty: roundMoney(l.qty - fulfilledQty(d, l.id), 4) }))
+      .filter((l) => l.qty > 0);
+    if (!lines.length) throw new AppError("This order is already complete", "order_complete");
+    return { locationId: o.locationId, cart: { ...txnToCart(d, { ...o, lines }), resumedFromId: null, note: "" } };
+  },
+
   async list(q: { locationId: string; status: SaleStatus; limit?: number; channel?: "pos" | "web" }): Promise<SaleRow[]> {
     await delay();
     const d = getDB();
@@ -356,6 +384,7 @@ export const salesService = {
       if (input.id) {
         prev = d.transactions.find((t) => t.id === input.id && t.type === "sell" && t.status !== "suspended");
         if (!prev) throw new NotFoundError("Sale");
+        if (prev.status === "final") assertEditWindow(d, prev.date);
         payments ??= prev.payments.filter((p) => !p.isReturn).map((p) => ({ method: p.method, amount: p.amount, details: p.details, note: p.note }));
         revertSale(d, prev);
       }

@@ -19,10 +19,10 @@ const qtyRound = (n: number) => roundMoney(n, 4);
 
 export function allocate(
   lots: Lot[],
-  args: { variationId: string; locationId: string; qty: number; method: "fifo" | "lifo"; allowOverselling?: boolean },
+  args: { variationId: string; locationId: string; qty: number; method: "fifo" | "lifo"; allowOverselling?: boolean; unsellableBefore?: string },
 ): AllocationResult {
   const pool = lots
-    .filter((l) => l.variationId === args.variationId && l.locationId === args.locationId && l.qtyRemaining > 0)
+    .filter((l) => l.variationId === args.variationId && l.locationId === args.locationId && l.qtyRemaining > 0 && sellable(l, args.unsellableBefore))
     .sort((a, b) => (args.method === "fifo" ? 1 : -1) * a.receivedAt.localeCompare(b.receivedAt));
 
   const allocations: Allocation[] = [];
@@ -45,10 +45,15 @@ export function allocate(
   return { allocations, shortfall, cost };
 }
 
-export function available(lots: Lot[], variationId: string, locationId?: string): number {
+/** A lot is sellable unless it expires before `cutoff` (a YYYY-MM-DD date). */
+export function sellable(lot: Pick<Lot, "expDate">, cutoff?: string): boolean {
+  return !cutoff || !lot.expDate || lot.expDate.slice(0, 10) >= cutoff;
+}
+
+export function available(lots: Lot[], variationId: string, locationId?: string, unsellableBefore?: string): number {
   return qtyRound(
     lots
-      .filter((l) => l.variationId === variationId && (!locationId || l.locationId === locationId))
+      .filter((l) => l.variationId === variationId && (!locationId || l.locationId === locationId) && sellable(l, unsellableBefore))
       .reduce((s, l) => s + l.qtyRemaining, 0),
   );
 }

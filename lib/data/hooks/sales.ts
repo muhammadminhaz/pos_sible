@@ -42,13 +42,24 @@ export function useOrders(f: OrderFilters) {
   return useQuery({ queryKey: ["transactions", "orders", f], queryFn: () => ordersService.list(f), placeholderData: keepPreviousData });
 }
 
+export function useOrder(id: string | null) {
+  return useQuery({ queryKey: ["transactions", "order", id], queryFn: () => ordersService.get(id!), enabled: !!id });
+}
+
+export function useOrderToSale(id: string | undefined) {
+  return useQuery({ queryKey: ["transactions", "order-to-sale", id], queryFn: () => salesService.fromOrder(id!), enabled: !!id, gcTime: 0 });
+}
+
 export function useOpenOrders(contactId: string | undefined) {
   return useQuery({ queryKey: ["transactions", "open-orders", contactId], queryFn: () => ordersService.openFor(contactId!), enabled: !!contactId });
 }
 
 export function useOrderMutations() {
   const done = useRefresh();
-  return { create: useMutation({ mutationFn: ordersService.create, onSuccess: done }) };
+  return {
+    create: useMutation({ mutationFn: ordersService.create, onSuccess: done }),
+    remove: useMutation({ mutationFn: (id: string) => ordersService.remove(id), onSuccess: done }),
+  };
 }
 
 export function useReturns(f: ReturnFilters) {

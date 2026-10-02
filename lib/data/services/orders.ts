@@ -1,11 +1,11 @@
 import { assertCan } from "@/lib/auth/assertCan";
 import { currentUser } from "@/lib/auth/session";
-import { NotFoundError, ValidationError } from "@/lib/data/errors";
+import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
 import { transaction, type ShippingStatus } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { orderTotals } from "@/lib/domain/totals";
 import { lineTotals } from "@/lib/domain/totals";
-import { remainingQty } from "./_orders";
+import { fulfilledQty, remainingQty } from "./_orders";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
 
 export type OrderStatus = "ordered" | "partial" | "completed";
@@ -13,6 +13,10 @@ export type OrderFilters = ListQuery & { locationId?: string; contactId?: string
 export type OrderRow = {
   id: string; date: string; refNo: string; contactName: string; mobile: string; locationName: string; status: OrderStatus;
   shippingStatus: ShippingStatus | null; remainingQty: number; total: number; addedBy: string;
+};
+export type OrderDetail = {
+  id: string; refNo: string; date: string; status: OrderStatus; total: number; notes: string; contactName: string; locationName: string;
+  lines: { name: string; qty: number; fulfilled: number; unitPrice: number; subtotal: number }[];
 };
 export type OrderInput = {
   locationId: string; contactId: string; date?: string; note?: string;
@@ -72,6 +76,35 @@ export const ordersService = {
       out = { id, refNo };
     });
     return out;
+  },
+
+  async get(id: string): Promise<OrderDetail> {
+    await delay();
+    const d = getDB();
+    const o = d.transactions.find((t) => t.id === id && t.type === "sales_order");
+    if (!o) throw new NotFoundError("Order");
+    const names = (l: { productId: string; variationId: string }) => {
+      const p = d.products.find((x) => x.id === l.productId);
+      const v = d.variations.find((x) => x.id === l.variationId);
+      return p ? (p.type === "variable" && v ? `${p.name} (${v.name})` : p.name) : l.productId;
+    };
+    return {
+      id: o.id, refNo: o.refNo, date: o.date, status: o.status as OrderStatus, total: o.totals.total, notes: o.notes,
+      contactName: d.contacts.find((c) => c.id === o.contactId)?.name ?? "", locationName: d.locations.find((l) => l.id === o.locationId)?.name ?? "",
+      lines: o.lines.map((l) => ({ name: names(l), qty: l.qty, fulfilled: fulfilledQty(d, l.id), unitPrice: l.unitPrice, subtotal: l.subtotal })),
+    };
+  },
+
+  /** Only an order nothing has been sold against can be deleted. */
+  async remove(id: string): Promise<void> {
+    await delay();
+    assertCan("sell.delete");
+    commit((d) => {
+      const o = d.transactions.find((t) => t.id === id && t.type === "sales_order");
+      if (!o) throw new NotFoundError("Order");
+      if (o.lines.some((l) => fulfilledQty(d, l.id) > 0)) throw new AppError("Sales already draw from this order", "order_in_use");
+      d.transactions = d.transactions.filter((t) => t.id !== id);
+    });
   },
 
   /** Orders a customer can still draw from when adding a sale. */

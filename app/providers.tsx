@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
+import { AccentSync } from "@/components/layout/AccentSync";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,7 +38,10 @@ export function Providers({
       <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Dhaka">
         <QueryClientProvider client={queryClient}>
           <TooltipProvider delayDuration={300}>
-            <DataGate fallback={<Splash />}>{children}</DataGate>
+            <DataGate fallback={<Splash />}>
+              <AccentSync />
+              {children}
+            </DataGate>
             <Toaster richColors position="top-right" />
           </TooltipProvider>
         </QueryClientProvider>

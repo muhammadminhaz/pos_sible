@@ -1,6 +1,8 @@
 import type { DB, Product } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
 import { todayISO } from "@/lib/dates";
+import { sellable } from "@/lib/domain/stock";
+import { expiryCutoff } from "./_stock";
 import { findDiscount } from "@/lib/domain/discounts";
 import { roundMoney } from "@/lib/domain/money";
 import { resolveUnitPrice } from "@/lib/domain/pricing";
@@ -53,8 +55,9 @@ function catalog(db: DB, locationId: string, contactId?: string): PosProduct[] {
   const taxes = new Map(db.taxRates.map((t) => [t.id, t.rate]));
   const vars = Map.groupBy(db.variations, (v) => v.productId);
   const stock = new Map<string, number>();
+  const cutoff = expiryCutoff(db, todayISO());
   for (const l of db.stockLots) {
-    if (l.locationId === locationId) stock.set(l.variationId, (stock.get(l.variationId) ?? 0) + l.qtyRemaining);
+    if (l.locationId === locationId && sellable(l, cutoff)) stock.set(l.variationId, (stock.get(l.variationId) ?? 0) + l.qtyRemaining);
   }
   const today = todayISO();
 

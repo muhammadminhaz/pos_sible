@@ -29,7 +29,7 @@ import { usePosDialogs } from "@/features/pos/dialogStore";
 import { saleErrorMessage } from "./saleError";
 
 type Status = "final" | "draft" | "quotation" | "proforma";
-export type SaleFormInit = { id?: string; cart: Cart; sale?: Transaction; status: Status };
+export type SaleFormInit = { id?: string; cart: Cart; sale?: Transaction; status: Status; locationId?: string; orderIds?: string[] };
 
 const selectOf = (opts: { value: string; label: string }[], value: string, onChange: (v: string) => void, id?: string, label?: string) => (
   <Select value={value} onValueChange={onChange}>
@@ -49,14 +49,14 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
   const { save } = useSaleMutations();
   const s0 = init.sale;
 
-  const [locationId, setLocationId] = useState(s0?.locationId ?? (globalLocation !== "all" ? globalLocation : "") ?? "");
+  const [locationId, setLocationId] = useState(s0?.locationId ?? init.locationId ?? (globalLocation !== "all" ? globalLocation : "") ?? "");
   const [cart, setCart] = useState<Cart>(init.cart);
   const [status, setStatus] = useState<Status>(init.status);
   const [refNo, setRefNo] = useState("");
   const [term, setTerm] = useState("");
   const [payTerm, setPayTerm] = useState({ number: String(s0?.payTerm?.number ?? ""), type: s0?.payTerm?.type ?? "days" });
   const [doc, setDoc] = useState(s0?.documents[0] ?? "");
-  const [orderIds, setOrderIds] = useState<string[]>(s0?.salesOrderIds ?? []);
+  const [orderIds, setOrderIds] = useState<string[]>(s0?.salesOrderIds ?? init.orderIds ?? []);
   const [ship, setShip] = useState({ status: (s0?.shipping.status ?? "") as ShippingStatus | "", deliveredTo: s0?.shipping.deliveredTo ?? "", person: s0?.shipping.deliveryPersonId ?? "", docs: s0?.shipping.documents.join(", ") ?? "" });
   const [extras, setExtras] = useState<{ name: string; amount: string }[]>((s0?.additionalExpenses ?? []).map((e) => ({ name: e.name, amount: String(e.amount) })));
   const [pays, setPays] = useState<{ method: PaymentMethod; amount: string }[]>([]);
@@ -78,6 +78,8 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
   const submit = async (e: FormEvent, print = false) => {
     e.preventDefault();
     if (!locationId) return toast.error(t("sales.chooseLocation"));
+    if (settings?.sale.payTermRequired && !Number(payTerm.number) && status !== "quotation") return toast.error(t("sales.payTermRequired"));
+    if (settings?.sale.commissionAgentRequired && settings.sale.commissionAgent !== "disabled" && !agent) return toast.error(t("sales.agentRequired"));
     const input: SaleInput = {
       id: init.id, cart: { ...cart, date: cart.date }, locationId, status, refNo: refNo || undefined,
       payments: init.id ? undefined : pays.filter((p) => Number(p.amount) > 0).map((p) => ({ method: p.method, amount: Number(p.amount) })),
@@ -237,17 +239,19 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
         </div>
       )}
 
-      <div className="grid gap-3 rounded-xl border bg-card p-4">
-        <label className="flex items-center gap-2 text-sm font-medium"><Switch checked={rec.on} onCheckedChange={(on) => setRec({ ...rec, on })} />{t("sales.subscribe")}</label>
-        {rec.on && (
-          <div className="grid gap-3 sm:grid-cols-4">
-            {field(t("sales.interval"), "rc-i", <Input id="rc-i" type="number" min={1} value={rec.interval} onChange={(e) => setRec({ ...rec, interval: e.target.value })} />)}
-            {field(t("sales.days"), "rc-t", selectOf([{ value: "days", label: t("sales.days") }, { value: "months", label: t("sales.months") }, { value: "years", label: t("sales.years") }], rec.type, (v) => setRec({ ...rec, type: v as "days" | "months" | "years" }), "rc-t"))}
-            {field(t("sales.repetitions"), "rc-r", <Input id="rc-r" type="number" min={1} value={rec.reps} onChange={(e) => setRec({ ...rec, reps: e.target.value })} />)}
-            {field(t("sales.repeatOn"), "rc-d", <Input id="rc-d" type="number" min={1} max={31} value={rec.day} onChange={(e) => setRec({ ...rec, day: e.target.value })} />)}
-          </div>
-        )}
-      </div>
+      {settings?.modules.subscription && (
+        <div className="grid gap-3 rounded-xl border bg-card p-4">
+          <label className="flex items-center gap-2 text-sm font-medium"><Switch checked={rec.on} onCheckedChange={(on) => setRec({ ...rec, on })} />{t("sales.subscribe")}</label>
+          {rec.on && (
+            <div className="grid gap-3 sm:grid-cols-4">
+              {field(t("sales.interval"), "rc-i", <Input id="rc-i" type="number" min={1} value={rec.interval} onChange={(e) => setRec({ ...rec, interval: e.target.value })} />)}
+              {field(t("sales.days"), "rc-t", selectOf([{ value: "days", label: t("sales.days") }, { value: "months", label: t("sales.months") }, { value: "years", label: t("sales.years") }], rec.type, (v) => setRec({ ...rec, type: v as "days" | "months" | "years" }), "rc-t"))}
+              {field(t("sales.repetitions"), "rc-r", <Input id="rc-r" type="number" min={1} value={rec.reps} onChange={(e) => setRec({ ...rec, reps: e.target.value })} />)}
+              {field(t("sales.repeatOn"), "rc-d", <Input id="rc-d" type="number" min={1} max={31} value={rec.day} onChange={(e) => setRec({ ...rec, day: e.target.value })} />)}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/95 px-6 py-3 backdrop-blur md:left-16">
         <span className="mr-auto text-sm text-muted-foreground">{t("common.total")}: <Money value={totals.total} className="text-lg font-semibold text-foreground" /></span>

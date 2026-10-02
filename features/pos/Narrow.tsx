@@ -6,11 +6,11 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/EmptyState";
 
-/** Below 1024px the POS layout doesn't fit; say so instead of rendering a broken screen. */
+/** Below 768px (a phone) the register doesn't fit; say so instead of rendering a broken screen. Tablets get a two-tab layout. */
 export function Narrow() {
   const t = useTranslations();
   return (
-    <div className="grid min-h-dvh place-items-center p-6 lg:hidden">
+    <div className="grid min-h-dvh place-items-center p-6 md:hidden">
       <EmptyState
         icon={MonitorIcon}
         title={t("pos.narrow")}

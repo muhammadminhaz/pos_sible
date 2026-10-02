@@ -8,7 +8,7 @@ import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
 import { assertPostable, defaultAccountId, pushAccountTxn } from "./_ledger";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
 
 export type NewExpense = { locationId: string; categoryId: string; amount: number; method: PaymentMethod; note?: string };
 export type Recurring = NonNullable<Transaction["recurring"]>;
@@ -70,6 +70,7 @@ function newPayment(d: DB, t: Pick<Transaction, "locationId" | "date">, p: Expen
 function writeExpense(d: DB, input: ExpenseInput): { id: string; refNo: string } {
   const prev = input.id ? d.transactions.find((x) => x.id === input.id && x.type === "expense") : undefined;
   if (input.id && !prev) throw new NotFoundError("Expense");
+  if (prev) assertEditWindow(d, prev.date);
   if (!d.locations.some((l) => l.id === input.locationId)) throw new NotFoundError("Location");
   const amount = roundMoney(input.amount);
   if (!(amount > 0)) throw new ValidationError({ amount: "positive" });

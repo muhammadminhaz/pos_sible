@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { cn } from "cn";
 import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentRegister } from "@/lib/data/hooks/pos";
@@ -29,6 +31,7 @@ import { SuspendedSheet } from "./dialogs/Suspended";
 import { ProductGrid } from "./grid/ProductGrid";
 import { Narrow } from "./Narrow";
 import { TopBar } from "./TopBar";
+import { PaneSwitch } from "./PaneSwitch";
 import { registerGate } from "@/lib/pos/gate";
 import { usePosLocation } from "./usePos";
 
@@ -38,11 +41,13 @@ export function PosScreen() {
   const register = useCurrentRegister(location?.id ?? "");
   const gate = registerGate(location, register);
   const ready = gate === "ready";
+  // Below 1024px the cart and the product grid share the screen as two tabs.
+  const [pane, setPane] = useState<"products" | "cart">("products");
 
   return (
     <>
       <Narrow />
-      <div className="hidden h-dvh flex-col overflow-hidden bg-muted/30 lg:flex" data-print-hide>
+      <div className="hidden h-dvh flex-col overflow-hidden bg-muted/30 md:flex" data-print-hide>
         <TopBar location={location} allowed={allowed} register={register.data ?? null} />
         {gate === "loading" ? (
           <div className="flex flex-1 gap-4 p-4">
@@ -53,8 +58,9 @@ export function PosScreen() {
           <RegisterGate location={location!} />
         ) : (
           <>
+            <PaneSwitch pane={pane} onChange={setPane} locationId={location.id} />
             <div className="flex min-h-0 flex-1">
-              <section aria-label={t("cart.caption")} className="flex w-[44%] min-w-[440px] flex-col border-r bg-card">
+              <section aria-label={t("cart.caption")} className={cn("w-full flex-col border-r bg-card lg:flex lg:w-[44%] lg:min-w-[440px]", pane === "cart" ? "flex" : "hidden")}>
                 <div className="grid gap-2 border-b p-3">
                   <CustomerPicker locationId={location.id} />
                   <ProductSearch locationId={location.id} />
@@ -64,7 +70,7 @@ export function PosScreen() {
                 <CartTotals locationId={location.id} />
                 {/* slot:cart */}
               </section>
-              <section className="flex min-w-0 flex-1 flex-col">
+              <section className={cn("min-w-0 flex-1 flex-col lg:flex", pane === "products" ? "flex" : "hidden")}>
                 <ProductGrid locationId={location.id} />
                 {/* slot:grid */}
               </section>

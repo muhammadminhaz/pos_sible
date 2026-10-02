@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PlusIcon, Trash2Icon, Undo2Icon } from "lucide-react";
+import { PlusIcon, Trash2Icon, Undo2Icon, EyeIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -54,7 +54,7 @@ export function PurchaseReturnsList() {
     { id: "total", accessorKey: "total", header: t("common.total"), meta: { label: t("common.total"), align: "right" }, cell: ({ row }) => <Money value={row.original.total} /> },
     { id: "due", accessorKey: "due", header: t("status.due"), meta: { label: t("status.due"), align: "right" }, cell: ({ row }) => <Money value={row.original.due} /> },
     { id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined }, cell: ({ row }) => (
-      <RowActions items={[{ label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !can("purchase.delete") }]} />) },
+      <RowActions items={[{ label: t("ops.viewParentPurchase"), icon: EyeIcon, href: `/purchases/${row.original.parentId}`, hidden: !row.original.parentId }, { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !can("purchase.delete") }]} />) },
   ];
   const named = (xs: { id: string; name: string }[]) => xs.map((x) => ({ value: x.id, label: x.name }));
   const defs: FilterDef[] = [

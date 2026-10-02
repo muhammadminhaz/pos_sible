@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PlusIcon, Trash2Icon, Undo2Icon } from "lucide-react";
+import { PlusIcon, Trash2Icon, Undo2Icon, EyeIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -49,7 +49,7 @@ export function ReturnsList() {
     text("contactName", t("sales.customer")), text("locationName", t("common.location")),
     { id: "paymentStatus", accessorKey: "paymentStatus", header: t("sales.paymentStatus"), meta: { label: t("sales.paymentStatus"), csv: (r) => t(`status.${r.paymentStatus}`) }, cell: ({ row }) => <StatusBadge status={row.original.paymentStatus} /> },
     money("total", t("common.total")), money("due", t("sales.sellDue")),
-    { id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined }, cell: ({ row }) => <RowActions items={[{ label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setToDelete(row.original), hidden: !can("sell.delete") }]} /> },
+    { id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined }, cell: ({ row }) => <RowActions items={[{ label: t("sales.viewParentSale"), icon: EyeIcon, href: `/sales/${row.original.parentId}`, hidden: !row.original.parentId }, { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setToDelete(row.original), hidden: !can("sell.delete") }]} /> },
   ];
   const named = (xs: { id: string; name: string }[]) => xs.map((x) => ({ value: x.id, label: x.name }));
   const defs: FilterDef[] = [

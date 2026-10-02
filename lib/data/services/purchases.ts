@@ -7,7 +7,7 @@ import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
 import { marginFromPrices } from "@/lib/domain/pricing";
 import { lineTotals, orderTotals, type DiscountInput } from "@/lib/domain/totals";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type PurchaseStatus = "received" | "pending" | "ordered";
@@ -107,6 +107,7 @@ function addPaymentTo(d: DB, t: Transaction, p: PurchasePaymentInput) {
 function writePurchase(d: DB, input: PurchaseInput): { id: string; refNo: string } {
   const prev = input.id ? d.transactions.find((x) => x.id === input.id && x.type === "purchase") : undefined;
   if (input.id && !prev) throw new NotFoundError("Purchase");
+  if (prev) assertEditWindow(d, prev.date);
   if (prev && d.transactions.some((r) => r.type === "purchase_return" && r.parentId === prev.id)) throw new AppError("This purchase has returns; delete them first", "has_returns");
   if (!d.locations.some((l) => l.id === input.locationId)) throw new NotFoundError("Location");
   const supplier = d.contacts.find((c) => c.id === input.contactId);

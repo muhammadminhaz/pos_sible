@@ -1,11 +1,12 @@
 import type { useTranslations } from "next-intl";
-import { AppError, ForbiddenError, InsufficientStockError, ValidationError } from "@/lib/data/errors";
+import { EditWindowExpiredError, AppError, ForbiddenError, InsufficientStockError, ValidationError } from "@/lib/data/errors";
 
 type T = ReturnType<typeof useTranslations>;
 
 /** One toast-ready message for any error the contacts, purchases and stock services can throw. */
 export function opsErrorMessage(e: unknown, t: T): string {
   if (e instanceof ForbiddenError) return t("errors.forbidden");
+  if (e instanceof EditWindowExpiredError) return t("errors.editWindowExpired");
   if (e instanceof InsufficientStockError) return t("errors.insufficientStock", { available: e.available, product: e.productName });
   if (e instanceof ValidationError) {
     for (const [field, code] of Object.entries(e.fields)) {

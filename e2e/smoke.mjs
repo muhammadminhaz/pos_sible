@@ -45,6 +45,9 @@ for (const [locale, theme] of [["en", "light"], ["bn", "dark"]]) {
     await page.waitForTimeout(route === "/pos" ? 2500 : 1200);
     if (await page.getByText(/coming soon/i).count()) note(route, mode, "still a placeholder");
     if (!route.startsWith("/pos") && !(await page.locator("h1").count())) note(route, mode, "no <h1>");
+    const body = await page.locator("body").innerText();
+    const bad = body.match(/\bNaN\b|undefined|\[object|Infinity|\bnull\b|Invalid Date|\{[a-zA-Z]+\}/);
+    if (bad) note(route, mode, `leaked "${bad[0]}" into the page`);
     if (errors.length) note(route, mode, `console/page errors: ${errors.slice(0, 2).join(" | ")}`);
     await page.evaluate(axeSource);
     const res = await page.evaluate(() => window.axe.run(document, { resultTypes: ["violations"] }));

@@ -346,7 +346,10 @@
     "custom_pay_7": "Custom payment 7"
   },
   "pos": {
-    "narrow": "The POS needs a screen at least 1024px wide.",
+    "panes": "Register view",
+    "paneProducts": "Products",
+    "paneCart": "Cart",
+    "narrow": "The POS needs a screen at least 768px wide. Use a tablet or computer.",
     "top": {
       "location": "Location",
       "shortcuts": "Shortcuts",
@@ -487,6 +490,8 @@
       "emptyCart": "Add at least one item",
       "notDeletable": "Final sales can't be deleted here",
       "registerOpen": "A register is already open",
+      "serviceStaffRequired": "Choose service staff for every item",
+      "belowMinPrice": "{product} can't be sold below its minimum price",
       "pointsInvalid": "Those points can't be redeemed on this sale",
       "noRegister": "Open the register first",
       "registerClosed": "This register is already closed.",
@@ -599,6 +604,7 @@
     }
   },
   "ops": {
+    "viewParentPurchase": "View original purchase",
     "code": "Code",
     "mobile": "Mobile",
     "altNumber": "Alternate number",
@@ -610,7 +616,12 @@
     "creditLimit": "Credit limit",
     "creditLimitHint": "Leave blank for no limit",
     "payTerm": "Pay term",
+    "viewParentSale": "View original sale",
+    "createSaleFromOrder": "Create sale",
+    "fulfilled": "Fulfilled",
     "payTermType": "Pay term unit",
+    "payTermRequired": "Enter a pay term for this sale",
+    "agentRequired": "Choose a commission agent",
     "crmSource": "Source",
     "crmLifeStage": "Life stage",
     "assignedTo": "Assigned to",
@@ -687,7 +698,7 @@
     "items": "Items",
     "noItems": "Search above to add products.",
     "itemsCount": "Items",
-    "itemsTotal": "{count} items",
+    "itemsTotal": "{count, plural, one {# item} other {# items}}",
     "searchProducts": "Search products by name or SKU",
     "unitCostExc": "Unit cost (exc. tax)",
     "discountPct": "Discount %",
@@ -1214,6 +1225,8 @@
       "paid": "Invalid paid amount"
     },
     "errors": {
+      "order_in_use": "Sales already draw from this order, so it can't be deleted",
+      "order_complete": "This order is already complete",
       "has_returns": "This sale has returns. Delete them first.",
       "duplicate_ref": "That invoice number is already used",
       "not_final": "Only final sales take payments",
@@ -1599,6 +1612,11 @@
     }
   },
   "settings": {
+    "logo": "Business logo",
+    "logoPreview": "Current logo",
+    "removeLogo": "Remove logo",
+    "logoHint": "PNG, JPG, SVG or WebP up to 400 KB. Printed on receipts and invoices.",
+    "logoTooBig": "That image is over 400 KB",
     "businessSettingsTitle": "Business Settings",
     "businessSettingsDescription": "Changes apply across POS, sales and receipts straight away.",
     "sections": "Settings sections",

@@ -79,7 +79,7 @@ export function TopBar({ location, allowed, register }: {
       </Button>
       <LogoMark />
       <Select value={location?.id ?? ""} onValueChange={setLocationId}>
-        <SelectTrigger className="w-52" aria-label={t("pos.top.location")}>
+        <SelectTrigger className="w-40 lg:w-52" aria-label={t("pos.top.location")}>
           <MapPinIcon className="text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
@@ -91,14 +91,14 @@ export function TopBar({ location, allowed, register }: {
           ))}
         </SelectContent>
       </Select>
-      <Clock />
-      <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => show("shortcuts")}>
+      <div className="hidden xl:block"><Clock /></div>
+      <Button variant="ghost" size="sm" className="hidden text-muted-foreground xl:inline-flex" onClick={() => show("shortcuts")}>
         <KeyboardIcon />
         {t("pos.top.shortcuts")}
         <kbd className="rounded border bg-muted px-1 text-[10px]">?</kbd>
       </Button>
 
-      <div className="ml-auto flex items-center gap-0.5">
+      <div className="ml-auto flex min-w-0 items-center gap-0.5">
         {!settings?.pos.disableSuspend && (
           <IconAction label={t("pos.top.suspended")} onClick={() => show("suspended")} disabled={locked} badge={suspended.data?.length}>
             <PauseCircleIcon />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardListIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { ClipboardListIcon, EyeIcon, PlusIcon, ReceiptTextIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DataTable, useTableQuery } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { DataTable, RowActions, useTableQuery } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, useUrlFilters, type FilterDef } from "@/components/shared/FilterBar";
 import { decodeRange } from "@/components/shared/FilterBar/useUrlFilters";
@@ -21,7 +22,7 @@ import { useCan } from "@/lib/auth/useCan";
 import { useContacts } from "@/lib/data/hooks/contacts";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import { usePosSearch } from "@/lib/data/hooks/pos";
-import { useOrderMutations, useOrders } from "@/lib/data/hooks/sales";
+import { useOrder, useOrderMutations, useOrders } from "@/lib/data/hooks/sales";
 import { SHIPPING_STATUSES } from "@/lib/data/schemas";
 import type { OrderRow, OrderStatus } from "@/lib/data/services/orders";
 import { useUI } from "@/lib/data/store/ui";
@@ -96,6 +97,35 @@ function NewOrder({ onClose }: { onClose: () => void }) {
   );
 }
 
+function OrderView({ id }: { id: string }) {
+  const t = useTranslations();
+  const f = useFormat();
+  const { data } = useOrder(id);
+  if (!data) return <div className="h-40" />;
+  return (
+    <div className="grid gap-4">
+      <DialogHeader>
+        <DialogTitle>{data.refNo}</DialogTitle>
+        <p className="text-sm text-muted-foreground">{data.contactName} · {data.locationName} · {f.dateTime(data.date)}</p>
+      </DialogHeader>
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
+            <tr><th className="px-3 py-2">{t("products.product")}</th><th className="px-3 py-2 text-right">{t("sales.qty")}</th><th className="px-3 py-2 text-right">{t("sales.fulfilled")}</th><th className="px-3 py-2 text-right">{t("common.subtotal")}</th></tr>
+          </thead>
+          <tbody>
+            {data.lines.map((l, i) => (
+              <tr key={i} className="border-t"><td className="px-3 py-2">{l.name}</td><td className="px-3 py-2 text-right tabular-nums">{f.qty(l.qty)}</td><td className="px-3 py-2 text-right tabular-nums">{f.qty(l.fulfilled)}</td><td className="px-3 py-2 text-right tabular-nums">{f.amount(l.subtotal)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-right text-sm font-semibold">{t("common.total")}: {f.money(data.total)}</p>
+      {data.notes && <p className="text-sm text-muted-foreground">{data.notes}</p>}
+    </div>
+  );
+}
+
 export function OrdersList() {
   const t = useTranslations();
   const f = useFormat();
@@ -106,6 +136,9 @@ export function OrdersList() {
   const [url, setUrl, reset] = useUrlFilters<Url>([...KEYS]);
   const [query, setQuery] = useTableQuery("sales-orders");
   const [adding, setAdding] = useState(false);
+  const [viewing, setViewing] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<OrderRow | null>(null);
+  const { remove } = useOrderMutations();
   const range = decodeRange(url.range);
   const list = useOrders({ search: query.search || undefined, page: query.page, pageSize: query.pageSize, sort: query.sort, locationId: url.location ?? (g === "all" ? undefined : g), contactId: url.customer, status: url.status as OrderStatus | undefined, shippingStatus: url.shipping as never, from: range?.from, to: range?.to });
 
@@ -118,6 +151,16 @@ export function OrdersList() {
     { id: "shippingStatus", accessorKey: "shippingStatus", header: t("sales.shippingStatus"), meta: { label: t("sales.shippingStatus"), csv: (r) => r.shippingStatus ?? "" }, cell: ({ row }) => (row.original.shippingStatus ? <StatusBadge status={ship(row.original.shippingStatus)} /> : "—") },
     { id: "remainingQty", accessorKey: "remainingQty", header: t("sales.qtyRemaining"), meta: { label: t("sales.qtyRemaining"), align: "right" }, cell: ({ row }) => <span className="tabular">{f.qty(row.original.remainingQty)}</span> },
     text("addedBy", t("sales.addedBy")),
+    {
+      id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined },
+      cell: ({ row }) => (
+        <RowActions items={[
+          { label: t("common.view"), icon: EyeIcon, onClick: () => setViewing(row.original.id) },
+          { label: t("sales.createSaleFromOrder"), icon: ReceiptTextIcon, href: `/sales/new?order=${row.original.id}`, hidden: !can("sell.create") || row.original.status === "completed" },
+          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDeleting(row.original), hidden: !can("sell.delete") },
+        ]} />
+      ),
+    },
   ];
   const named = (xs: { id: string; name: string }[]) => xs.map((x) => ({ value: x.id, label: x.name }));
   const defs: FilterDef[] = [
@@ -132,6 +175,14 @@ export function OrdersList() {
       <PageHeader title={t("nav.salesOrders")} description={t("sales.ordersDescription")} actions={can("sell.create") && <Button onClick={() => setAdding(true)}><PlusIcon />{t("sales.newOrder")}</Button>} />
       <div className="mb-4"><FilterBar defs={defs} value={url} onChange={(p) => { setUrl(p); setQuery({ page: 0 }); }} onReset={() => { reset(); setQuery({ page: 0 }); }} /></div>
       <DataTable tableId="sales-orders" columns={columns} data={list.data?.rows ?? []} total={list.data?.total ?? 0} loading={list.isFetching} query={query} onQueryChange={setQuery} exportName="sales-orders" empty={<EmptyState icon={ClipboardListIcon} title={t("sales.noOrders")} />} />
+      <Dialog open={viewing !== null} onOpenChange={(o) => !o && setViewing(null)}><DialogContent className="sm:max-w-xl">{viewing && <OrderView id={viewing} />}</DialogContent></Dialog>
+      <ConfirmDialog
+        open={deleting !== null} onOpenChange={(o) => !o && setDeleting(null)} destructive title={t("common.areYouSure")} confirmLabel={t("common.delete")}
+        onConfirm={async () => {
+          if (!deleting) return;
+          try { await remove.mutateAsync(deleting.id); toast.success(t("common.deleted")); } catch (e) { toast.error(saleErrorMessage(e, t)); }
+        }}
+      />
       <Dialog open={adding} onOpenChange={setAdding}><DialogContent className="sm:max-w-xl">{adding && <NewOrder onClose={() => setAdding(false)} />}</DialogContent></Dialog>
     </>
   );

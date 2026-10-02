@@ -19,8 +19,11 @@ export function moduleForPath(pathname: string): ModuleKey | null {
   return hit ? hit[1] : null;
 }
 
-/** Nav items and routes use the same check, so a switched-off module disappears everywhere at once. */
-export function isPathEnabled(modules: Settings["modules"] | undefined, href: string): boolean {
+/** Nav items and routes use the same check, so a switched-off feature disappears everywhere at once. */
+export function isPathEnabled(settings: Pick<Settings, "modules" | "sale"> | undefined, href: string): boolean {
+  if (!settings) return true;
+  const path = href.split("?")[0];
+  if ((path === "/sales/orders" || path.startsWith("/sales/orders/")) && !settings.sale.enableSalesOrder) return false;
   const key = moduleForPath(href);
-  return !key || !modules || modules[key];
+  return !key || settings.modules[key];
 }

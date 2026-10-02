@@ -1,4 +1,5 @@
 import { nextRef } from "@/lib/domain/refs";
+import { EditWindowExpiredError } from "@/lib/data/errors";
 import type { DB } from "@/lib/data/schemas";
 
 /** Simulated network latency (0–150ms). Instant outside the browser so tests stay fast. */
@@ -54,4 +55,17 @@ export function takeRef(draft: DB, prefix: string, date: string = nowISO()): str
   const n = (draft.meta.counters[prefix] ?? 0) + 1;
   draft.meta.counters[prefix] = n;
   return nextRef(prefix, Number(date.slice(0, 4)), n);
+}
+
+/** Whole days between an ISO date and today (local), never negative. */
+export function daysSince(date: string, now: string = nowISO()): number {
+  const a = Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10));
+  const b = Date.UTC(+now.slice(0, 4), +now.slice(5, 7) - 1, +now.slice(8, 10));
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
+/** "Transaction edit days": a final transaction older than N days is locked (0 = never locks). */
+export function assertEditWindow(d: DB, date: string): void {
+  const days = d.settings.business.transactionEditDays;
+  if (days > 0 && daysSince(date) > days) throw new EditWindowExpiredError();
 }

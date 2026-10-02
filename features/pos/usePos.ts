@@ -10,7 +10,7 @@ import { useSettings } from "@/lib/data/hooks/settings";
 import { toCartItem, type PosProduct, type PosVariation } from "@/lib/data/services/pos";
 import { useUI } from "@/lib/data/store/ui";
 import { useFormat } from "@/lib/i18n/format";
-import { addItem, exceedsStock } from "@/lib/pos/cart";
+import { addItem, applySaleDefaults, exceedsStock } from "@/lib/pos/cart";
 import { cartTotals } from "@/lib/pos/selectors";
 import { useCart } from "@/lib/pos/store";
 
@@ -50,14 +50,18 @@ export function useAddToCart(locationId: string) {
   const { data: settings } = useSettings();
   const flash = useFlash((s) => s.flash);
   const qc = useQueryClient();
+  const { data: lookups } = useLookups();
+  const taxRateOf = (id: string | null) => (id ? lookups?.taxRates.find((x) => x.id === id)?.rate ?? null : null);
 
   return (p: PosProduct, v: PosVariation, qty = 1) => {
     // Read live, not from render: ProductSearch adds after an await, by which time a checkout may have started.
     if (qc.isMutating({ mutationKey: ["checkout"] }) > 0) return false; // a new line would be wiped by the post-checkout reset
     const item = toCartItem(p, v, qty);
-    const next = addItem(cart, item, settings?.sale.itemAdditionMethod ?? "increase_qty");
+    // The first item of a new sale brings in the business's default discount and order tax.
+    const base = settings && cart.lines.length === 0 ? applySaleDefaults(cart, settings.sale, taxRateOf(settings.sale.defaultTaxId)) : cart;
+    const next = addItem(base, item, settings?.sale.itemAdditionMethod ?? "increase_qty");
     // addItem returns a new object for the touched line, so the changed line is the one not in the old cart.
-    const line = next.lines.find((l) => !cart.lines.includes(l))!;
+    const line = next.lines.find((l) => !base.lines.includes(l))!;
     if (!settings?.sale.allowOverselling && exceedsStock(line)) {
       toast.error(t("errors.insufficientStock", { available: f.qty(v.stock), product: item.name }));
       return false;

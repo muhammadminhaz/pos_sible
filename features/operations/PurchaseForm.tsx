@@ -48,6 +48,10 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
   const set = (p: Partial<PurchaseInput>) => setV((s) => ({ ...s, ...p }));
   const setRow = (i: number, p: Partial<PurchaseRowState>) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...p } : r)));
   const expiry = settings?.product.enableExpiry;
+  const showStatus = settings?.purchase.enablePurchaseStatus !== false;
+  const showLot = settings?.purchase.enableLotNumber !== false;
+  const showPriceUpdate = settings?.purchase.editProductPriceFromPurchase !== false;
+  const showTax = settings?.tax.enableInlineTax !== false;
   const taxes = lookups?.taxRates ?? [];
   const rate = (taxId: string | null) => taxes.find((x) => x.id === taxId)?.rate ?? 0;
 
@@ -102,8 +106,10 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
           <PickField label={t("common.location")} nullable={false} value={v.locationId || null} onChange={(x) => set({ locationId: x ?? "" })} options={(lookups?.locations ?? []).map((l) => ({ value: l.id, label: l.name }))} />
           <Field label={t("common.date")} htmlFor="pu-date"><Input id="pu-date" type="datetime-local" required value={dateValue} onChange={(e) => set({ date: `${e.target.value}:00` })} /></Field>
           <Field label={t("ops.refNo")} htmlFor="pu-ref"><Input id="pu-ref" disabled={!!id} placeholder={t("catalog.autoSku")} value={v.refNo ?? ""} onChange={(e) => set({ refNo: e.target.value || undefined })} /></Field>
-          <PickField label={t("ops.purchaseStatus")} nullable={false} value={v.status} onChange={(x) => set({ status: x as PurchaseInput["status"] })}
-            options={(["received", "pending", "ordered"] as const).map((s) => ({ value: s, label: t(`status.${s}`) }))} />
+          {showStatus && (
+            <PickField label={t("ops.purchaseStatus")} nullable={false} value={v.status} onChange={(x) => set({ status: x as PurchaseInput["status"] })}
+              options={(["received", "pending", "ordered"] as const).map((s) => ({ value: s, label: t(`status.${s}`) }))} />
+          )}
           <Field label={t("ops.payTerm")}>
             <div className="flex gap-2">
               <NumInput label={t("ops.payTerm")} nullable value={v.payTerm?.number ?? null} onChange={(n) => set({ payTerm: n == null ? null : { number: n, type: v.payTerm?.type ?? "days" } })} />
@@ -128,12 +134,12 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
                   <TableHead className="w-24">{t("catalog.qty")}</TableHead>
                   <TableHead className="w-32">{t("ops.unitCostExc")}</TableHead>
                   <TableHead className="w-24">{t("ops.discountPct")}</TableHead>
-                  <TableHead className="w-40">{t("products.tax")}</TableHead>
+                  {showTax && <TableHead className="w-40">{t("products.tax")}</TableHead>}
                   <TableHead className="text-right">{t("common.subtotal")}</TableHead>
-                  <TableHead className="w-28">{t("catalog.lotNo")}</TableHead>
+                  {showLot && <TableHead className="w-28">{t("catalog.lotNo")}</TableHead>}
                   {expiry && <TableHead className="w-36">{t("catalog.mfgDate")}</TableHead>}
                   {expiry && <TableHead className="w-36">{t("catalog.expDate")}</TableHead>}
-                  <TableHead className="w-48">{t("ops.updateSellPrice")}</TableHead>
+                  {showPriceUpdate && <TableHead className="w-48">{t("ops.updateSellPrice")}</TableHead>}
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -147,24 +153,28 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
                       <TableCell><NumInput label={`${r.name} ${t("catalog.qty")}`} value={r.qty} min={0} onChange={(n) => setRow(i, { qty: n })} /></TableCell>
                       <TableCell><NumInput label={`${r.name} ${t("ops.unitCostExc")}`} value={r.unitPrice} onChange={(n) => setRow(i, { unitPrice: n })} /></TableCell>
                       <TableCell><NumInput label={`${r.name} ${t("ops.discountPct")}`} value={r.discount?.amount ?? 0} onChange={(n) => setRow(i, { discount: n > 0 ? { type: "percentage", amount: n } : null })} /></TableCell>
-                      <TableCell>
+                      {showTax && (
+                        <TableCell>
                         <PickField label={`${r.name} ${t("products.tax")}`} value={r.taxId} onChange={(x) => setRow(i, { taxId: x })} options={taxes.map((x) => ({ value: x.id, label: x.name }))} className="[&>label]:sr-only" />
-                      </TableCell>
+                        </TableCell>
+                      )}
                       <TableCell className="text-right tabular">{f.amount(lt.subtotal)}</TableCell>
-                      <TableCell><Input aria-label={`${r.name} ${t("catalog.lotNo")}`} value={r.lotNo ?? ""} onChange={(e) => setRow(i, { lotNo: e.target.value })} /></TableCell>
+                      {showLot && <TableCell><Input aria-label={`${r.name} ${t("catalog.lotNo")}`} value={r.lotNo ?? ""} onChange={(e) => setRow(i, { lotNo: e.target.value })} /></TableCell>}
                       {expiry && <TableCell><Input aria-label={`${r.name} ${t("catalog.mfgDate")}`} type="date" value={r.mfgDate ?? ""} onChange={(e) => setRow(i, { mfgDate: e.target.value || null })} /></TableCell>}
                       {expiry && <TableCell><Input aria-label={`${r.name} ${t("catalog.expDate")}`} type="date" value={r.expDate ?? ""} onChange={(e) => setRow(i, { expDate: e.target.value || null })} /></TableCell>}
-                      <TableCell>
-                        <div className="grid gap-1">
-                          <label className="flex items-center gap-2 text-xs"><Checkbox checked={r.updatePrice} onCheckedChange={(c) => setRow(i, { updatePrice: !!c, sellPriceInc: c ? (r.sellPriceInc ?? r.currentSellInc) : null })} />{t("ops.updateSellPrice")}</label>
-                          {r.updatePrice && (
-                            <div className="flex items-center gap-1">
-                              <NumInput label={`${r.name} ${t("catalog.sellInc")}`} value={r.sellPriceInc ?? null} nullable onChange={(n) => setRow(i, { sellPriceInc: n })} />
-                              <span className="text-xs text-muted-foreground tabular whitespace-nowrap">{f.number(margin)}%</span>
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
+                      {showPriceUpdate && (
+                        <TableCell>
+                          <div className="grid gap-1">
+                            <label className="flex items-center gap-2 text-xs"><Checkbox checked={r.updatePrice} onCheckedChange={(c) => setRow(i, { updatePrice: !!c, sellPriceInc: c ? (r.sellPriceInc ?? r.currentSellInc) : null })} />{t("ops.updateSellPrice")}</label>
+                            {r.updatePrice && (
+                              <div className="flex items-center gap-1">
+                                <NumInput label={`${r.name} ${t("catalog.sellInc")}`} value={r.sellPriceInc ?? null} nullable onChange={(n) => setRow(i, { sellPriceInc: n })} />
+                                <span className="text-xs text-muted-foreground tabular whitespace-nowrap">{f.number(margin)}%</span>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell><Button type="button" variant="ghost" size="icon-sm" aria-label={t("common.remove")} onClick={() => setRows(rows.filter((_, j) => j !== i))}><Trash2Icon /></Button></TableCell>
                     </TableRow>
                   );
@@ -223,7 +233,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
 
       <div data-print-hide className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 px-6 py-3 backdrop-blur md:left-(--sidebar-width,0px)">
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-2">
-          <div className="text-sm text-muted-foreground">{t("ops.itemsTotal", { count: f.qty(totals.itemsCount) })} · <span className="font-semibold text-foreground"><Money value={totals.total} /></span></div>
+          <div className="text-sm text-muted-foreground">{t("ops.itemsTotal", { count: totals.itemsCount })} · <span className="font-semibold text-foreground"><Money value={totals.total} /></span></div>
           <div className="flex gap-2">
             <Button asChild variant="ghost"><Link href="/purchases">{t("common.cancel")}</Link></Button>
             <Button type="submit" disabled={save.isPending || rows.length === 0 || !v.contactId}>{t("common.save")}</Button>

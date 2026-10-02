@@ -41,3 +41,12 @@ describe("Bangla display details", () => {
     expect(createFormatter("en").unit("Pc(s)")).toBe("Pc(s)");
   });
 });
+
+describe("zone-less timestamps", () => {
+  it("are shown as written, whatever the browser's time zone", () => {
+    const en = createFormatter("en", { timeZone: "Asia/Dhaka" });
+    expect(en.dateTime("2026-10-03T03:01:00")).toBe("03-10-2026 3:01 AM");
+    expect(en.date("2026-10-03")).toBe("03-10-2026");
+    expect(en.time("2026-10-03T15:30:00")).toBe("3:30 PM");
+  });
+});

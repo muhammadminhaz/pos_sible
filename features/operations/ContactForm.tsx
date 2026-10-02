@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, NumInput, PickField } from "@/features/catalog/formParts";
 import { useContact, useContactMutations } from "@/lib/data/hooks/contacts";
+import { useSettings } from "@/lib/data/hooks/settings";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import type { Contact } from "@/lib/data/schemas";
 import type { ContactInput } from "@/lib/data/services/contacts";
@@ -25,7 +26,10 @@ function Form({ initial, id, onClose, onSaved }: { initial: ContactInput; id?: s
   const t = useTranslations();
   const { data: lookups } = useLookups();
   const { save } = useContactMutations();
-  const [v, setV] = useState<ContactInput>({ ...initial, customFields: Array.from({ length: 10 }, (_, i) => initial.customFields[i] ?? "") });
+  const { data: appSettings } = useSettings();
+  // A new customer starts with the business's default credit limit.
+  const startLimit = !id && initial.type !== "supplier" && initial.creditLimit == null ? appSettings?.contact.defaultCreditLimit ?? null : initial.creditLimit;
+  const [v, setV] = useState<ContactInput>({ ...initial, creditLimit: startLimit, customFields: Array.from({ length: 10 }, (_, i) => initial.customFields[i] ?? "") });
   const set = (p: Partial<ContactInput>) => setV((s) => ({ ...s, ...p }));
   const setAddr = (p: Partial<ContactInput["address"]>) => set({ address: { ...v.address, ...p } });
   const isCustomer = v.type !== "supplier";

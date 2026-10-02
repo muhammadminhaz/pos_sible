@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { useIsMutating } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { AppError, InsufficientStockError, ProductUnavailableError, SerialsRequiredError, ValidationError } from "@/lib/data/errors";
+import { AppError, BelowMinPriceError, InsufficientStockError, ProductUnavailableError, SerialsRequiredError, ValidationError } from "@/lib/data/errors";
 import { usePosMutations } from "@/lib/data/hooks/pos";
 import { useSettings } from "@/lib/data/hooks/settings";
 import type { CheckoutPayment, SaleStatus } from "@/lib/data/services/sales";
@@ -20,10 +20,12 @@ export function usePosError() {
   return (e: unknown) => {
     if (e instanceof InsufficientStockError || e instanceof SerialsRequiredError || e instanceof ProductUnavailableError) flag(e.productName);
     if (e instanceof InsufficientStockError) return toast.error(t("errors.insufficientStock", { available: f.qty(e.available), product: e.productName }));
+    if (e instanceof BelowMinPriceError) return toast.error(t("pos.errors.belowMinPrice", { product: e.productName }));
     if (e instanceof SerialsRequiredError) return toast.error(t("pos.errors.serialsRequired", { count: f.number(e.count), product: e.productName }));
     if (e instanceof ProductUnavailableError) return toast.error(t("pos.errors.productGone", { product: e.productName }));
     if (e instanceof ValidationError) {
       if (e.fields.payments) return toast.error(t("pos.pay.nonCashOverpaid"));
+      if (e.fields.serviceStaff) return toast.error(t("pos.errors.serviceStaffRequired"));
       if (e.fields.pointsRedeemed) return toast.error(t("pos.errors.pointsInvalid"));
     }
     if (e instanceof AppError) {

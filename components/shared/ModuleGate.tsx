@@ -14,8 +14,8 @@ import { EmptyState } from "./EmptyState";
 export function ModuleGate({ children }: { children: ReactNode }) {
   const t = useTranslations();
   const pathname = usePathname();
-  const modules = useSettings().data?.modules;
-  if (isPathEnabled(modules, pathname)) return children;
+  const settings = useSettings().data;
+  if (isPathEnabled(settings, pathname)) return children;
   return (
     <div className="rounded-xl border bg-card">
       <EmptyState

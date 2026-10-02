@@ -64,3 +64,9 @@ export class ProductUnavailableError extends AppError {
     super(`${productName} is no longer available.`, "product_unavailable");
   }
 }
+
+export class BelowMinPriceError extends AppError {
+  constructor(public productName: string) {
+    super(`${productName} can't be sold below its minimum price.`, "below_min_price");
+  }
+}

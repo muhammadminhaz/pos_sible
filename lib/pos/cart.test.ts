@@ -74,3 +74,19 @@ describe("cart", () => {
     expect(a).toEqual(snapshot);
   });
 });
+
+import { applySaleDefaults } from "./cart";
+
+describe("applySaleDefaults", () => {
+  it("fills in the default discount and tax only when the cart has none", () => {
+    const c = applySaleDefaults(emptyCart(), { defaultDiscount: 5, defaultTaxId: "tax_vat" }, 7.5);
+    expect(c.discount).toEqual({ type: "percentage", amount: 5 });
+    expect([c.orderTaxId, c.orderTaxRate]).toEqual(["tax_vat", 7.5]);
+    const kept = applySaleDefaults({ ...c, discount: { type: "fixed", amount: 10 } }, { defaultDiscount: 5, defaultTaxId: "tax_x" }, 1);
+    expect(kept.discount).toEqual({ type: "fixed", amount: 10 });
+    expect(kept.orderTaxId).toBe("tax_vat");
+  });
+  it("does nothing when no defaults are set", () => {
+    expect(applySaleDefaults(emptyCart(), { defaultDiscount: 0, defaultTaxId: null }, null)).toEqual(emptyCart());
+  });
+});
