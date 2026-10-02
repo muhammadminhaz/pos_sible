@@ -5,7 +5,7 @@ import { todayISO } from "@/lib/dates";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
 import { delay } from "../_util";
-import { dayOf, inScope, isFinalSale, isReceivedPurchase, names, sumBy, type ReportFilter } from "./_shared";
+import { dayOf, inScope, isFinalSale, isReceivedPurchase, names, type ReportFilter } from "./_shared";
 import { stockExpiry, type ExpiryRow } from "./stock";
 import { trendingProducts, type TrendingRow } from "./products";
 
@@ -79,10 +79,4 @@ export function dashboardExtras(d: DB, f: ReportFilter & { today?: string }): Da
 
 export const dashboardReports = {
   async extras(f: ReportFilter & { today?: string } = {}) { await delay(); return dashboardExtras(getDB(), f); },
-  /** Totals behind the due tables, so the screen can say how much more there is than it lists. */
-  async dueTotals(f: ReportFilter = {}) {
-    await delay();
-    const d = getDB();
-    return { sales: sumBy(dues(d, isFinalSale, f), (r) => r.due), purchases: sumBy(dues(d, isReceivedPurchase, f), (r) => r.due) };
-  },
 };

@@ -6,7 +6,7 @@ It is **frontend only**. All data is mock data generated in the browser and save
 
 ## Status
 
-**Overall: 6 of 8 sub-projects done.** 57 of 87 route pages are live; the other 30 render a "Coming soon" placeholder.
+**Overall: 7 of 8 sub-projects done.** 75 of 87 route pages are live; the other 12 render a "Coming soon" placeholder.
 
 | # | Sub-project | Status | Plan |
 |---|---|---|---|
@@ -16,7 +16,7 @@ It is **frontend only**. All data is mock data generated in the browser and save
 | 4 | ✅ Catalog: product form and detail, units, categories, brands, variations, warranties, price groups, opening stock, imports, labels | Done | [plan](docs/superpowers/plans/2026-10-02-possible-catalog.md) |
 | 5 | ✅ Contacts, Purchases, Stock | Done | [plan](docs/superpowers/plans/2026-10-03-possible-contacts-purchases-stock.md) |
 | 6 | ✅ Expenses and Accounts | ✅ Done | [plan](docs/superpowers/plans/2026-10-04-possible-expenses-accounts.md) |
-| 7 | ⬜ Reports and Dashboard | Planned | [plan](docs/superpowers/plans/2026-10-05-possible-reports-dashboard.md) |
+| 7 | ✅ Reports and Dashboard | ✅ Done | [plan](docs/superpowers/plans/2026-10-05-possible-reports-dashboard.md) |
 | 8 | ⬜ Settings and Admin, plus POS follow-ups | Planned | [plan](docs/superpowers/plans/2026-10-06-possible-settings-admin.md) |
 
 ### What works today
@@ -27,7 +27,7 @@ It is **frontend only**. All data is mock data generated in the browser and save
 - Sales: all sales, drafts and quotations lists, add/edit sale (shipping, additional expenses, payments, subscriptions, linked orders), sale detail, payments, convert to invoice, sell returns, sales orders, shipments, discounts and CSV import with revert.
 
 ### Still to build (roughly)
-Every other route in the sidebar: product create/edit/detail and the reference lists; customers, suppliers, purchases, transfers, adjustments; the 18 reports and the rest of the dashboard; all settings, users and roles, backup, profile and calendar. Each has a task list in its plan.
+Every other route in the sidebar: product create/edit/detail and the reference lists; customers, suppliers, purchases, transfers, adjustments; all settings, users and roles, backup, profile and calendar. Each has a task list in its plan.
 
 ## Tech stack
 Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand (persisted), next-intl, next-themes, zod, recharts, sonner, lucide-react, vitest. Fonts: Inter and Anek Bangla.

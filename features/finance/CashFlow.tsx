@@ -15,6 +15,7 @@ import { useCashFlow } from "@/lib/data/hooks/finance";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import { useFormat } from "@/lib/i18n/format";
 import type { CashFlowRow } from "@/lib/data/services/ledgerReports";
+import { PrintPortal, useReportPrint } from "@/features/reports/print";
 import { useReportScope } from "./ReportControls";
 
 type UrlFilters = { location?: string; account?: string; kind?: string; range?: string };
@@ -26,6 +27,7 @@ export function CashFlow() {
   const { defaultLocation } = useReportScope();
   const [url, setUrl, resetUrl] = useUrlFilters<UrlFilters>(["location", "account", "kind", "range"]);
   const [query, setQuery] = useTableQuery("cash-flow");
+  const { printing, print } = useReportPrint();
   const range = decodeRange(url.range);
   const { data } = useCashFlow({
     from: range?.from, to: range?.to, locationId: url.location ?? defaultLocation, accountId: url.account ?? null, kind: (url.kind as "credit" | "debit" | undefined) ?? null,
@@ -54,7 +56,7 @@ export function CashFlow() {
 
   return (
     <>
-      <PageHeader title={t("nav.cashFlow")} description={t("finance.flowDescription")} actions={<Button variant="outline" onClick={() => window.print()}><PrinterIcon />{t("common.print")}</Button>} />
+      <PageHeader title={t("nav.cashFlow")} description={t("finance.flowDescription")} actions={<Button variant="outline" onClick={print}><PrinterIcon />{t("common.print")}</Button>} />
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <StatCard label={t("finance.broughtForward")} value={<Money value={data?.opening ?? 0} />} />
         <StatCard label={t("finance.moneyIn")} value={<Money value={data?.totalIn ?? 0} />} />
@@ -66,6 +68,18 @@ export function CashFlow() {
         tableId="cash-flow" columns={columns} data={pageRows} total={rows.length} loading={!data} query={query} onQueryChange={setQuery}
         exportName="cash-flow" exportRows={async () => rows} empty={<EmptyState icon={WavesIcon} title={t("finance.noFlow")} />}
       />
+      <PrintPortal printing={printing}>
+        <h1 className="mb-2 text-lg font-semibold">{t("nav.cashFlow")}</h1>
+        <p className="mb-3">{`${t("finance.broughtForward")}: ${f.money(data?.opening ?? 0)} · ${t("finance.moneyIn")}: ${f.money(data?.totalIn ?? 0)} · ${t("finance.moneyOut")}: ${f.money(data?.totalOut ?? 0)} · ${t("finance.closingBalance")}: ${f.money(data?.closing ?? 0)}`}</p>
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b">{[t("common.date"), t("finance.accountName"), t("finance.description"), t("ops.refNo"), t("finance.debit"), t("finance.credit")].map((h) => <th key={h} className="py-1">{h}</th>)}</tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-b"><td className="py-0.5">{f.dateTime(r.date)}</td><td>{r.accountName}</td><td>{r.description ? t(`finance.txn.${r.description}`) : r.note}</td><td>{r.refNo}</td><td>{r.kind === "debit" ? f.money(r.amount) : ""}</td><td>{r.kind === "credit" ? f.money(r.amount) : ""}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </PrintPortal>
     </>
   );
 }

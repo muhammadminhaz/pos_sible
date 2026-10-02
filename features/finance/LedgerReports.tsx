@@ -10,6 +10,7 @@ import { useBalanceSheet, useTrialBalance } from "@/lib/data/hooks/finance";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import type { LedgerAccount, SheetRow } from "@/lib/domain/ledger";
 import { useFormat } from "@/lib/i18n/format";
+import { PrintPortal, useReportPrint } from "@/features/reports/print";
 import { DateField, ReportControls, useReportScope } from "./ReportControls";
 
 function useScope() {
@@ -40,12 +41,9 @@ export function TrialBalance() {
   const label = useAccountLabel();
   const s = useScope();
   const { data } = useTrialBalance({ date: s.date, locationId: s.locationId });
-  return (
+  const { printing, print } = useReportPrint();
+  const body = (
     <>
-      <PageHeader title={t("nav.trialBalance")} description={t("finance.trialDescription")} />
-      <ReportControls locationId={s.locationId} onLocation={s.setLocation}>
-        <DateField id="tb-date" label={t("finance.asOfDate")} value={s.date} onChange={s.setDate} />
-      </ReportControls>
       <ScopeLine locationId={s.locationId} date={s.date} />
       {!data ? <Skeleton className="h-64" /> : (
         <div className="rounded-xl border bg-card">
@@ -66,6 +64,16 @@ export function TrialBalance() {
           </Table>
         </div>
       )}
+    </>
+  );
+  return (
+    <>
+      <PageHeader title={t("nav.trialBalance")} description={t("finance.trialDescription")} />
+      <ReportControls locationId={s.locationId} onLocation={s.setLocation} onPrint={print}>
+        <DateField id="tb-date" label={t("finance.asOfDate")} value={s.date} onChange={s.setDate} />
+      </ReportControls>
+      {body}
+      <PrintPortal printing={printing}><h1 className="mb-2 text-lg font-semibold">{t("nav.trialBalance")}</h1>{body}</PrintPortal>
     </>
   );
 }
@@ -91,12 +99,9 @@ export function BalanceSheet() {
   const t = useTranslations();
   const s = useScope();
   const { data } = useBalanceSheet({ date: s.date, locationId: s.locationId });
-  return (
+  const { printing, print } = useReportPrint();
+  const body = (
     <>
-      <PageHeader title={t("nav.balanceSheet")} description={t("finance.sheetDescription")} />
-      <ReportControls locationId={s.locationId} onLocation={s.setLocation}>
-        <DateField id="bs-date" label={t("finance.asOfDate")} value={s.date} onChange={s.setDate} />
-      </ReportControls>
       <ScopeLine locationId={s.locationId} date={s.date} />
       {!data ? <Skeleton className="h-64" /> : (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -107,6 +112,16 @@ export function BalanceSheet() {
           </div>
         </div>
       )}
+    </>
+  );
+  return (
+    <>
+      <PageHeader title={t("nav.balanceSheet")} description={t("finance.sheetDescription")} />
+      <ReportControls locationId={s.locationId} onLocation={s.setLocation} onPrint={print}>
+        <DateField id="bs-date" label={t("finance.asOfDate")} value={s.date} onChange={s.setDate} />
+      </ReportControls>
+      {body}
+      <PrintPortal printing={printing}><h1 className="mb-2 text-lg font-semibold">{t("nav.balanceSheet")}</h1>{body}</PrintPortal>
     </>
   );
 }

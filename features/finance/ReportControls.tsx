@@ -18,14 +18,14 @@ export function useReportScope() {
   return { today: todayISO(settings?.business.timeZone), defaultLocation: globalLocation === "all" ? null : globalLocation };
 }
 
-export function ReportControls({ locationId, onLocation, children }: { locationId: string | null; onLocation: (id: string | null) => void; children?: ReactNode }) {
+export function ReportControls({ locationId, onLocation, onPrint, children }: { locationId: string | null; onLocation: (id: string | null) => void; onPrint: () => void; children?: ReactNode }) {
   const t = useTranslations();
   const { data: lookups } = useLookups();
   return (
     <div data-print-hide className="mb-4 flex flex-wrap items-end gap-4">
       <PickField label={t("common.location")} value={locationId} onChange={onLocation} className="w-56" options={(lookups?.locations ?? []).map((l) => ({ value: l.id, label: l.name }))} />
       {children}
-      <Button variant="outline" className="ml-auto" onClick={() => window.print()}><PrinterIcon />{t("common.print")}</Button>
+      <Button variant="outline" className="ml-auto" onClick={onPrint}><PrinterIcon />{t("common.print")}</Button>
     </div>
   );
 }

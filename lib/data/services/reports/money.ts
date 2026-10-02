@@ -48,7 +48,10 @@ export function profitLoss(d: DB, f: ReportFilter): ProfitLoss {
   };
 }
 
-/** Line-level profit (before order discounts, shipping and order tax) grouped by one dimension; returns count negative. */
+/**
+ * Profit grouped by one dimension; returns count negative. Each document's order-level discount, shipping and extra charges
+ * are spread over its lines in proportion to their value, so every grouping adds up to the summary's gross profit.
+ */
 export function profitBreakdown(d: DB, dim: ProfitDimension, f: ReportFilter): ReportResult<ProfitRow> {
   const prod = new Map(d.products.map((p) => [p.id, p]));
   const cats = new Map(d.categories.map((c) => [c.id, c.name]));
@@ -58,6 +61,8 @@ export function profitBreakdown(d: DB, dim: ProfitDimension, f: ReportFilter): R
   for (const t of d.transactions) {
     if (!inScope(t, f) || !(isFinalSale(t) || t.type === "sell_return")) continue;
     const sign = t.type === "sell_return" ? -1 : 1;
+    const lineEx = sumBy(t.lines, (l) => l.subtotal - lineTax(l));
+    const adjust = lineEx > 0 ? (exTax(t) - lineEx) / lineEx : 0;
     for (const l of t.lines) {
       const p = prod.get(l.productId);
       const v = vars.get(l.variationId);
@@ -70,7 +75,7 @@ export function profitBreakdown(d: DB, dim: ProfitDimension, f: ReportFilter): R
         : dim === "date" ? [dayOf(t.date), dayOf(t.date)]
         : [t.contactId ?? "", names.contact(d, t.contactId)];
       const row = acc.get(key) ?? { label, sales: 0, cost: 0 };
-      row.sales += sign * (l.subtotal - lineTax(l));
+      row.sales += sign * (l.subtotal - lineTax(l)) * (1 + adjust);
       row.cost += sign * (t.type === "sell_return" ? l.qty * l.unitCost : lineCostOf(l));
       acc.set(key, row);
     }

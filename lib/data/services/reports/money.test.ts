@@ -68,11 +68,16 @@ describe("profit / loss", () => {
     expect(Object.values(p).every((v) => v === 0)).toBe(true);
   });
 
-  it("every breakdown sums to the same line-level profit, and a refund expense raises net profit", () => {
-    const f = { from: "2026-04-01", to: "2026-09-30" };
-    const totals = (["product", "category", "brand", "location", "invoice", "date", "customer"] as const).map((dim) => profitBreakdown(seed, dim, f).totals.profit ?? 0);
-    for (const t of totals) near(t, totals[0], 0.5);
-    expect(totals[0]).toBeGreaterThan(0);
+  it("every breakdown adds up to the summary's gross profit, and a refund expense raises net profit", () => {
+    for (const f of [{ from: "2026-04-01", to: "2026-09-30" }, ...ranges]) {
+      const summary = profitLoss(seed, f);
+      for (const dim of ["product", "category", "brand", "location", "invoice", "date", "customer"] as const) {
+        const b = profitBreakdown(seed, dim, f).totals;
+        near(b.sales ?? 0, summary.sales - summary.sellReturn, 0.5);
+        near(b.profit ?? 0, summary.grossProfit, 0.5);
+      }
+    }
+    expect(profitLoss(seed, { from: "2026-04-01", to: "2026-09-30" }).grossProfit).toBeGreaterThan(0);
     const d = structuredClone(seed);
     const exp = d.transactions.find((t) => t.type === "expense")!;
     const before = profitLoss(d, { from: "2000-01-01" }).netProfit;
