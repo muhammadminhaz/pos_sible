@@ -10,7 +10,7 @@ import { delay, matches, nowISO, uid } from "./_util";
 
 export type AccountInput = Pick<Account, "name" | "typeId" | "number" | "note" | "details" | "openingBalance" | "allowOverdraft"> & { id?: string };
 export type AccountRow = {
-  id: string; name: string; typeName: string; subTypeName: string; number: string; note: string; details: Account["details"];
+  id: string; name: string; typeId: string | null; typeName: string; subTypeName: string; number: string; note: string; details: Account["details"];
   balance: number; status: Account["status"]; allowOverdraft: boolean; addedBy: string;
 };
 export type BookRow = {
@@ -30,7 +30,7 @@ function row(d: DB, a: Account): AccountRow {
   const type = d.accountTypes.find((x) => x.id === a.typeId);
   const parent = type?.parentId ? d.accountTypes.find((x) => x.id === type.parentId) : undefined;
   return {
-    id: a.id, name: a.name, typeName: (parent ?? type)?.name ?? "", subTypeName: parent ? (type?.name ?? "") : "", number: a.number, note: a.note, details: a.details,
+    id: a.id, name: a.name, typeId: a.typeId, typeName: (parent ?? type)?.name ?? "", subTypeName: parent ? (type?.name ?? "") : "", number: a.number, note: a.note, details: a.details,
     balance: accountBalance(d, a.id), status: a.status, allowOverdraft: a.allowOverdraft, addedBy: userName(d, a.createdBy),
   };
 }

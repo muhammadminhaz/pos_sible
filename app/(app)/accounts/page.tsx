@@ -1,5 +1,11 @@
-import { RoutePlaceholder } from "@/components/shared/RoutePlaceholder";
+import { Suspense } from "react";
+import { RequirePermission } from "@/components/shared/Can";
+import { AccountsList } from "@/features/finance/AccountsList";
 
 export default function Page() {
-  return <RoutePlaceholder route="/accounts" />;
+  return (
+    <RequirePermission permission="account.view">
+      <Suspense><AccountsList /></Suspense>
+    </RequirePermission>
+  );
 }

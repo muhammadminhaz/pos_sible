@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { accountsService } from "@/lib/data/services/accounts";
 import { expensesService, type ExpenseFilters } from "@/lib/data/services/expenses";
 
 /** Expenses move money, so every mutation refreshes the tables the ledger screens read. */
@@ -29,5 +30,29 @@ export function useExpenseMutations() {
     removePayment: useMutation({ mutationFn: (a: { id: string; paymentId: string }) => expensesService.removePayment(a.id, a.paymentId), onSuccess: done }),
     remove: useMutation({ mutationFn: (id: string) => expensesService.remove(id), onSuccess: done }),
     generateNext: useMutation({ mutationFn: (id: string) => expensesService.generateNext(id), onSuccess: done }),
+  };
+}
+
+export function useAccounts(f: { status?: "active" | "closed"; search?: string } = {}) {
+  return useQuery({ queryKey: ["accounts", "list", f], queryFn: () => accountsService.list(f), placeholderData: keepPreviousData });
+}
+
+export function useAccount(id: string | undefined) {
+  return useQuery({ queryKey: ["accounts", "detail", id], queryFn: () => accountsService.get(id!), enabled: !!id });
+}
+
+export function useAccountBook(id: string | undefined, range: { from?: string; to?: string }) {
+  return useQuery({ queryKey: ["accountTxns", "book", id, range], queryFn: () => accountsService.book(id!, range), enabled: !!id, placeholderData: keepPreviousData });
+}
+
+export function useAccountMutations() {
+  const qc = useQueryClient();
+  const done = () => Promise.all(["accounts", "accountTxns", "lookups"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+  return {
+    save: useMutation({ mutationFn: accountsService.save, onSuccess: done }),
+    close: useMutation({ mutationFn: (id: string) => accountsService.close(id), onSuccess: done }),
+    reopen: useMutation({ mutationFn: (id: string) => accountsService.reopen(id), onSuccess: done }),
+    transfer: useMutation({ mutationFn: accountsService.transfer, onSuccess: done }),
+    deposit: useMutation({ mutationFn: accountsService.deposit, onSuccess: done }),
   };
 }

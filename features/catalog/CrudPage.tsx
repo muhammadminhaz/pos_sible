@@ -60,6 +60,8 @@ export type CrudConfig<N extends TableName> = {
   fields: FieldDef[];
   /** Permission for the add / edit / delete controls. */
   permission?: string;
+  /** Inside another page (e.g. a tab): no page header, just the add button above the table. */
+  embedded?: boolean;
 };
 
 const NONE = "__none__";
@@ -232,7 +234,11 @@ export function CrudPage<N extends TableName>({ cfg }: { cfg: CrudConfig<N> }) {
 
   return (
     <>
-      <PageHeader title={cfg.title} description={cfg.description} actions={write && <Button onClick={() => setEdit("new")}><PlusIcon />{cfg.addLabel}</Button>} />
+      {cfg.embedded ? (
+        write && <div className="mb-4 flex justify-end"><Button onClick={() => setEdit("new")}><PlusIcon />{cfg.addLabel}</Button></div>
+      ) : (
+        <PageHeader title={cfg.title} description={cfg.description} actions={write && <Button onClick={() => setEdit("new")}><PlusIcon />{cfg.addLabel}</Button>} />
+      )}
       <DataTable
         tableId={`catalog-${cfg.table}`} columns={columns} data={(list.data?.rows ?? []) as R[]} total={list.data?.total ?? 0}
         loading={list.isFetching} query={query} onQueryChange={setQuery} exportName={cfg.table}
