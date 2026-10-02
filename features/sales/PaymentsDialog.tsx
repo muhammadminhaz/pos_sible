@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Money } from "@/components/shared/Money";
 import { useCan } from "@/lib/auth/useCan";
+import { financeErrorMessage } from "@/features/finance/financeError";
+import { useExpense, useExpenseMutations } from "@/lib/data/hooks/finance";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import { usePurchase, usePurchaseMutations } from "@/lib/data/hooks/operations";
 import { useSale, useSaleMutations } from "@/lib/data/hooks/sales";
@@ -23,7 +25,9 @@ import { methodLabel, tillMethods } from "@/lib/pos/methods";
 import { opsErrorMessage } from "@/features/operations/opsError";
 import { saleErrorMessage } from "./saleError";
 
-export type PaymentsKind = "sell" | "purchase";
+export type PaymentsKind = "sell" | "purchase" | "expense";
+
+const PAYMENT_PERMISSION: Record<PaymentsKind, string> = { sell: "sell.payments", purchase: "purchase.payments", expense: "expense.update" };
 
 function Body({ saleId, mode, kind, onClose }: { saleId: string; mode: "add" | "view"; kind: PaymentsKind; onClose: () => void }) {
   const t = useTranslations();
@@ -31,15 +35,17 @@ function Body({ saleId, mode, kind, onClose }: { saleId: string; mode: "add" | "
   const can = useCan();
   const isSale = kind === "sell";
   const saleQ = useSale(isSale ? saleId : undefined);
-  const purchaseQ = usePurchase(isSale ? undefined : saleId);
-  const sale = isSale ? saleQ.data : purchaseQ.data;
-  const errorMessage = isSale ? saleErrorMessage : opsErrorMessage;
+  const purchaseQ = usePurchase(kind === "purchase" ? saleId : undefined);
+  const expenseQ = useExpense(kind === "expense" ? saleId : undefined);
+  const sale = isSale ? saleQ.data : kind === "purchase" ? purchaseQ.data : expenseQ.data;
+  const errorMessage = isSale ? saleErrorMessage : kind === "purchase" ? opsErrorMessage : financeErrorMessage;
   const { data: lookups } = useLookups();
   const { data: settings } = useSettings();
   const sm = useSaleMutations();
   const pm = usePurchaseMutations();
-  const addPayment = isSale ? sm.addPayment : pm.addPayment;
-  const removePayment = isSale ? sm.removePayment : pm.removePayment;
+  const em = useExpenseMutations();
+  const mutations = isSale ? sm : kind === "purchase" ? pm : em;
+  const { addPayment, removePayment } = mutations;
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -50,7 +56,7 @@ function Body({ saleId, mode, kind, onClose }: { saleId: string; mode: "add" | "
   const methods = tillMethods(location?.paymentMethods ?? ["cash"], labels);
   const { due } = paymentSummary(sale.totals.total, sale.payments);
   const payments = sale.payments.filter((p) => !p.isReturn);
-  const canAdd = can(isSale ? "sell.payments" : "purchase.payments") && due > 0;
+  const canAdd = can(PAYMENT_PERMISSION[kind]) && due > 0;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -103,7 +109,7 @@ function Body({ saleId, mode, kind, onClose }: { saleId: string; mode: "add" | "
                 <TableCell>{methodLabel(p.method, t, labels)}</TableCell>
                 <TableCell className="text-right"><Money value={p.amount} /></TableCell>
                 <TableCell>
-                  {can(isSale ? "sell.payments" : "purchase.payments") && (
+                  {can(PAYMENT_PERMISSION[kind]) && (
                     <Button variant="ghost" size="icon-sm" aria-label={t("sales.removePayment")} onClick={() => remove(p.id)} disabled={removePayment.isPending}>
                       <Trash2Icon />
                     </Button>
