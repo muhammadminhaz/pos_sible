@@ -48,7 +48,7 @@ function IconAction({ label, onClick, disabled, badge, children }: {
         <Button variant="ghost" size="icon" aria-label={label} onClick={onClick} disabled={disabled} className="relative">
           {children}
           {!!badge && (
-            <span className="absolute -top-2.5 -right-1.5 pointer-coarse:-top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-xs leading-none font-semibold text-primary-foreground ring-2 ring-card tabular-nums">
+            <span className="absolute -top-[3px] -right-[3px] pointer-coarse:top-[3px] pointer-coarse:right-[3px] grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-xs leading-none font-semibold text-primary-foreground ring-2 ring-card tabular-nums">
               {f.number(badge)}
             </span>
           )}

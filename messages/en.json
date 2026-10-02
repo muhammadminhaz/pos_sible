@@ -231,10 +231,14 @@
     "last30": "Last 30 days",
     "thisMonth": "This month",
     "lastMonth": "Last month",
+    "last3Months": "Last 3 months",
+    "last6Months": "Last 6 months",
+    "last12Months": "Last 12 months",
     "thisFY": "This financial year",
     "lastFY": "Last financial year",
     "custom": "Custom range",
-    "pick": "Pick a date range"
+    "pick": "Pick a date range",
+    "quick": "Quick ranges"
   },
   "products": {
     "title": "Products",
@@ -295,6 +299,13 @@
     "purchaseDue": "Purchase due",
     "totalPurchaseReturn": "Total purchase return",
     "expense": "Expense",
+    "salesTrend": "Sales trend",
+    "vsPrevious": "vs previous period",
+    "salesPeriod": "Summary for the selected period",
+    "needsAttention": "Dues and returns",
+    "short3": "3 months",
+    "short6": "6 months",
+    "short12": "12 months",
     "thisMonth": "This month"
   },
   "status": {

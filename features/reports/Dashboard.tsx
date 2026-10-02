@@ -2,35 +2,24 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { BanknoteIcon, CircleDollarSignIcon, FileClockIcon, ReceiptIcon, ShoppingBagIcon, TrendingDownIcon, TrendingUpIcon, Undo2Icon, WalletIcon, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { FilterBar, type FilterDef } from "@/components/shared/FilterBar";
 import { Money } from "@/components/shared/Money";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { StatCard } from "@/components/shared/StatCard";
-import type { Tone } from "@/components/shared/tones";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrentUser } from "@/lib/auth/useCan";
 import { useDashboardKpis } from "@/lib/data/hooks/dashboard";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import { useReport } from "@/lib/data/hooks/reports";
-import type { Kpis } from "@/lib/data/services/dashboard";
+import { encodeRange } from "@/components/shared/FilterBar/useUrlFilters";
+import { previousRange } from "@/lib/domain/dateRanges";
 import { dashboardReports, type DuePayment } from "@/lib/data/services/reports/dashboard";
 import { useFormat } from "@/lib/i18n/format";
 import { AreaChart, BarChart } from "./Charts";
+import { DashboardRange } from "./DashboardRange";
+import { KpiSummary } from "./KpiSummary";
 import { Panel } from "./parts";
 import { useReportFilters } from "./ReportShell";
-
-const CARDS: { key: keyof Kpis; label: string; icon: LucideIcon; tone: Exclude<Tone, "primary"> }[] = [
-  { key: "totalSales", label: "totalSales", icon: CircleDollarSignIcon, tone: "default" },
-  { key: "net", label: "net", icon: TrendingUpIcon, tone: "default" },
-  { key: "invoiceDue", label: "invoiceDue", icon: FileClockIcon, tone: "warning" },
-  { key: "sellReturn", label: "totalSellReturn", icon: Undo2Icon, tone: "default" },
-  { key: "totalPurchase", label: "totalPurchase", icon: ShoppingBagIcon, tone: "default" },
-  { key: "purchaseDue", label: "purchaseDue", icon: WalletIcon, tone: "warning" },
-  { key: "purchaseReturn", label: "totalPurchaseReturn", icon: BanknoteIcon, tone: "default" },
-  { key: "expense", label: "expense", icon: ReceiptIcon, tone: "default" },
-];
 
 function Empty({ children }: { children: ReactNode }) {
   return <p className="py-6 text-center text-sm text-muted-foreground">{children}</p>;
@@ -66,30 +55,27 @@ export function Dashboard() {
   const { data: lookups } = useLookups();
   const rf = useReportFilters();
   const loc = rf.filter.locationId ?? "all";
-  const kpis = useDashboardKpis({ locationId: loc, from: rf.filter.from!, to: rf.filter.to! });
+  const range = { from: rf.filter.from!, to: rf.filter.to! };
+  const kpis = useDashboardKpis({ locationId: loc, ...range });
+  const prev = useDashboardKpis({ locationId: loc, ...previousRange(range) });
   const extras = useReport("dashboard", rf.filter, () => dashboardReports.extras(rf.filter));
   const x = extras.data;
   const defs: FilterDef[] = [
     { key: "location", label: common("common.location"), type: "select", options: (lookups?.locations ?? []).map((l) => ({ value: l.id, label: l.name })) },
-    { key: "range", label: common("sales.dateRange"), type: "daterange" },
   ];
   return (
     <>
-      <PageHeader title={t("title", { name })} description={t("description")} />
+      <PageHeader
+        title={t("title", { name })}
+        description={t("description")}
+        actions={<DashboardRange value={range} onChange={(r) => rf.setUrl({ range: r ? encodeRange(r) : undefined })} />}
+      />
       <div className="mb-4"><FilterBar defs={defs} value={rf.shown} onChange={(p) => rf.setUrl(p)} onReset={rf.resetUrl} /></div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {CARDS.map((c) => {
-          // A negative net is a loss: say so with colour, icon and sign instead of the neutral green trend.
-          const loss = c.key === "net" && (kpis.data?.net ?? 0) < 0;
-          return (
-          <StatCard key={c.key} label={t(c.label)} icon={loss ? TrendingDownIcon : c.icon} tone={loss ? "danger" : (kpis.data?.[c.key] ?? 0) !== 0 ? c.tone : "default"} loading={kpis.isPending} value={kpis.data ? f.money(kpis.data[c.key]) : null} />
-          );
-        })}
-      </div>
+      <KpiSummary now={kpis.data} before={prev.data} loading={kpis.isPending} />
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Panel title={r("salesLast30")}>
-            {x ? <AreaChart data={x.salesByDay} xKey="date" yKey="sales" label={r("salesLast30")} /> : <div className="h-60" />}
+          <Panel title={t("salesTrend")}>
+            {x ? <AreaChart data={x.salesByDay} xKey="date" yKey="sales" label={t("salesTrend")} /> : <div className="h-60" />}
           </Panel>
         </div>
         <Panel title={r("topProducts")}>

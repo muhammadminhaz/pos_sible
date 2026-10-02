@@ -1,5 +1,8 @@
-export type RangePreset = "today" | "yesterday" | "last7" | "last30" | "thisMonth" | "lastMonth" | "thisFY" | "lastFY";
-export const RANGE_PRESETS: RangePreset[] = ["today", "yesterday", "last7", "last30", "thisMonth", "lastMonth", "thisFY", "lastFY"];
+export type RangePreset =
+  | "today" | "yesterday" | "last7" | "last30" | "thisMonth" | "lastMonth" | "last3Months" | "last6Months" | "last12Months" | "thisFY" | "lastFY";
+export const RANGE_PRESETS: RangePreset[] = [
+  "today", "yesterday", "last7", "last30", "thisMonth", "lastMonth", "last3Months", "last6Months", "last12Months", "thisFY", "lastFY",
+];
 
 export type DateRange = { from: string; to: string };
 
@@ -33,6 +36,13 @@ export function presetRange(p: RangePreset, today: string, fyStartMonth: number)
       return { from: iso(y, m, 1), to: monthEnd(y, m) };
     case "lastMonth":
       return { from: iso(y, m - 1, 1), to: monthEnd(y, m - 1) };
+    // Whole calendar months: the current month so far plus the N-1 before it.
+    case "last3Months":
+      return { from: iso(y, m - 2, 1), to: today };
+    case "last6Months":
+      return { from: iso(y, m - 5, 1), to: today };
+    case "last12Months":
+      return { from: iso(y, m - 11, 1), to: today };
     case "thisFY":
     case "lastFY": {
       const startYear = (m >= fyStartMonth ? y : y - 1) - (p === "lastFY" ? 1 : 0);
@@ -47,4 +57,13 @@ export function matchPreset(r: DateRange, today: string, fyStartMonth: number): 
     const x = presetRange(p, today, fyStartMonth);
     return x.from === r.from && x.to === r.to;
   });
+}
+
+/** The window of equal length that ends the day before `r` starts, for period-over-period comparisons. */
+export function previousRange(r: DateRange): DateRange {
+  const a = parse(r.from);
+  const b = parse(r.to);
+  const days = Math.round((Date.UTC(b.y, b.m - 1, b.day) - Date.UTC(a.y, a.m - 1, a.day)) / 86_400_000) + 1;
+  const to = addDays(r.from, -1);
+  return { from: addDays(to, -(days - 1)), to };
 }

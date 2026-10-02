@@ -1,4 +1,4 @@
-import { addDays, format, parseISO } from "date-fns";
+import { addDays, format, parseISO, differenceInCalendarDays } from "date-fns";
 import type { DB } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
 import { todayISO } from "@/lib/dates";
@@ -68,7 +68,14 @@ export function dashboardExtras(d: DB, f: ReportFilter & { today?: string }): Da
   const alertDays = d.settings.dashboard.stockExpiryAlertDays;
   const expiring = stockExpiry(d, { locationId: f.locationId, today }).rows.filter((r) => r.daysLeft <= alertDays);
   return {
-    salesByDay: salesByDay(d, 30, today, f.locationId),
+    // Follows the selected range (never past today); without one, the last 30 days.
+    salesByDay: f.from && f.to
+      ? (() => {
+          const end = f.to < today ? f.to : today;
+          const days = Math.min(400, Math.max(1, differenceInCalendarDays(parseISO(end), parseISO(f.from)) + 1));
+          return salesByDay(d, days, end, f.locationId);
+        })()
+      : salesByDay(d, 30, today, f.locationId),
     topProducts: trendingProducts(d, f, 5).rows,
     stockAlerts: stockAlerts(d, f.locationId).slice(0, LIST),
     salesDue: dues(d, isFinalSale, { locationId: f.locationId }).slice(0, LIST),

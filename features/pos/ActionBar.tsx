@@ -5,11 +5,15 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { cn } from "cn";
 import type { Location } from "@/lib/data/schemas";
 import { useSettings } from "@/lib/data/hooks/settings";
 import { useFormat } from "@/lib/i18n/format";
 import { BKASH, NAGAD, methodLabel, tillMethods } from "@/lib/pos/methods";
 import { usePosCommands } from "./usePosCommands";
+
+/** The three tender buttons share one size so they read as a set; only the colour tells them apart. */
+const PAY_BUTTON = "h-12 min-w-12 justify-center xl:min-w-32";
 
 export function ActionBar({ location }: { location: Location }) {
   const t = useTranslations();
@@ -64,10 +68,11 @@ export function ActionBar({ location }: { location: Location }) {
       <div className="ml-auto flex min-w-0 items-center gap-2">
         {methods.includes(BKASH) && (
           <Button
+            size="lg"
             onClick={() => cmd.pay(BKASH)}
             disabled={off}
             aria-label={methodLabel(BKASH, t, labels)}
-            className="bg-[#E2136E] text-white hover:bg-[#c5105f]"
+            className={cn(PAY_BUTTON, "bg-[#E2136E] text-white hover:bg-[#c5105f]")}
           >
             <SmartphoneIcon />
             <span className="hidden xl:inline">{methodLabel(BKASH, t, labels)}</span>
@@ -75,10 +80,11 @@ export function ActionBar({ location }: { location: Location }) {
         )}
         {methods.includes(NAGAD) && (
           <Button
+            size="lg"
             onClick={() => cmd.pay(NAGAD)}
             disabled={off}
             aria-label={methodLabel(NAGAD, t, labels)}
-            className="bg-[#F6921E] text-white hover:bg-[#dc8219]"
+            className={cn(PAY_BUTTON, "bg-[#F6921E] text-neutral-950 hover:bg-[#dc8219]")}
           >
             <SmartphoneIcon />
             <span className="hidden xl:inline">{methodLabel(NAGAD, t, labels)}</span>
@@ -94,7 +100,7 @@ export function ActionBar({ location }: { location: Location }) {
             onClick={cmd.express}
             disabled={off}
             aria-label={t("pos.actions.cash")}
-            className="h-12 min-w-12 bg-success text-success-foreground hover:bg-success/90 xl:min-w-32"
+            className={cn(PAY_BUTTON, "bg-success text-white hover:bg-success/90 dark:text-background")}
           >
             <BanknoteIcon />
             <span className="hidden xl:inline">{t("pos.actions.cash")}</span>

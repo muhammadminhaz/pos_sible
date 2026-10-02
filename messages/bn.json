@@ -231,10 +231,14 @@
     "last30": "গত ৩০ দিন",
     "thisMonth": "এই মাস",
     "lastMonth": "গত মাস",
+    "last3Months": "গত ৩ মাস",
+    "last6Months": "গত ৬ মাস",
+    "last12Months": "গত ১২ মাস",
     "thisFY": "এই অর্থবছর",
     "lastFY": "গত অর্থবছর",
     "custom": "নিজস্ব সময়সীমা",
-    "pick": "তারিখের সীমা বাছুন"
+    "pick": "তারিখের সীমা বাছুন",
+    "quick": "দ্রুত সময়সীমা"
   },
   "products": {
     "title": "পণ্য",
@@ -295,6 +299,13 @@
     "purchaseDue": "বকেয়া ক্রয়",
     "totalPurchaseReturn": "মোট ক্রয় ফেরত",
     "expense": "খরচ",
+    "salesTrend": "বিক্রয়ের প্রবণতা",
+    "vsPrevious": "আগের সময়ের তুলনায়",
+    "salesPeriod": "নির্বাচিত সময়ের সারসংক্ষেপ",
+    "needsAttention": "বকেয়া ও ফেরত",
+    "short3": "৩ মাস",
+    "short6": "৬ মাস",
+    "short12": "১২ মাস",
     "thisMonth": "এই মাস"
   },
   "status": {
