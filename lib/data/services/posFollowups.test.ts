@@ -120,3 +120,39 @@ describe("sales orders", () => {
     await expect(salesService.fromOrder(untouched.id)).rejects.toMatchObject({ code: "not_found" });
   });
 });
+
+describe("points expiry end to end", () => {
+  beforeEach(async () => {
+    resetDB(structuredClone(seed));
+    useSession.setState({ userId: "user_admin" });
+    commit((d) => {
+      Object.assign(d.settings.rewards, { enabled: true, minOrderTotalToRedeem: 0, minRedeemPoint: 1, maxRedeemPoint: null, redeemAmountPerPoint: 0.01, minOrderTotalToEarn: 0, amountForUnitPoint: 100, maxPointsPerOrder: null });
+      for (const r of d.cashRegisters) if (r.status === "open") Object.assign(r, { status: "close", closedAt: r.openedAt });
+    });
+    await registersService.open(LOC_RANGO, 0);
+  });
+
+  it("lapsed points are shown as expired and can't be redeemed", async () => {
+    const customer = getDB().contacts.find((c) => c.type === "customer" && !c.isDefault)!;
+    commit((d) => {
+      d.contacts.find((c) => c.id === customer.id)!.points = 0;
+      d.settings.rewards.expiryPeriod = null;
+    });
+    await salesService.checkout({ cart: await cartWithItem(customer.id, 0), locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 999999 }] });
+    const earned = getDB().contacts.find((c) => c.id === customer.id)!.points;
+    expect(earned).toBeGreaterThan(0);
+    expect((await contactsService.get(customer.id)).points).toBe(earned);
+
+    // Back-date that sale a year: with a 6 month expiry its points have lapsed.
+    commit((d) => {
+      d.settings.rewards.expiryPeriod = 6;
+      d.settings.rewards.expiryType = "month";
+      for (const t of d.transactions.filter((x) => x.contactId === customer.id && x.type === "sell")) t.date = "2025-01-01T10:00:00";
+    });
+    const row = await contactsService.get(customer.id);
+    expect(row.points).toBe(0);
+    expect(row.pointsExpired).toBeGreaterThanOrEqual(earned);
+    await expect(salesService.checkout({ cart: await cartWithItem(customer.id, 1), locationId: LOC_RANGO, status: "final", payments: [{ method: "cash", amount: 999999 }] })).rejects.toMatchObject({ name: "ValidationError" });
+  });
+});
+

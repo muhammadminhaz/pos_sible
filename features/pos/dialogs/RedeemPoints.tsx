@@ -51,6 +51,9 @@ function RedeemForm({ locationId }: { locationId: string }) {
       <div className="grid gap-1 text-sm">
         <p>{t("pos.points.available", { points: f.number(balance) })}</p>
         <p className="text-muted-foreground">{t("pos.points.max", { points: f.number(max) })}</p>
+        {contact?.pointsExpiring && (
+          <p className="text-warning-foreground dark:text-warning">{t("pos.points.expiring", { points: f.number(contact.pointsExpiring.points), date: f.date(contact.pointsExpiring.on) })}</p>
+        )}
       </div>
       <div className="grid gap-2">
         <Label htmlFor="redeem">{t("pos.points.label")}</Label>

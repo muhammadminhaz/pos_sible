@@ -78,7 +78,10 @@ export function ContactDetail({ id }: { id: string }) {
           <Fact label={t("ops.creditLimit")} value={c.creditLimit != null ? f.money(c.creditLimit) : ""} />
           <Fact label={t("ops.openingBalance")} value={f.money(c.openingBalance)} />
           <Fact label={t("ops.advance")} value={f.money(c.advanceBalance)} />
-          <Fact label={t("ops.points")} value={f.number(c.points)} />
+          <Fact
+            label={t("ops.points")}
+            value={[f.number(c.points), c.pointsExpiring && t("ops.pointsExpiring", { points: f.number(c.pointsExpiring.points), date: f.date(c.pointsExpiring.on) }), c.pointsExpired > 0 && t("ops.pointsExpired", { points: f.number(c.pointsExpired) })].filter(Boolean).join(" · ")}
+          />
           <Fact label={t("ops.payTerm")} value={c.payTerm ? `${c.payTerm.number} ${t(`catalog.${c.payTerm.type}`)}` : ""} />
           <Fact label={t("ops.assignedTo")} value={users} />
           <Fact label={t("ops.address")} value={[c.address.line1, c.address.city].filter(Boolean).join(", ")} />

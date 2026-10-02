@@ -23,7 +23,6 @@ const HIDDEN: Partial<Record<(typeof TABS)[number], string[]>> = {
   purchase: ["enablePurchaseOrder", "enablePurchaseRequisition"],
   payment: ["denominationOn"],
   system: ["showHelpText"],
-  rewards: ["expiryPeriod", "expiryType"],
   modules: ["kitchen", "modifiers", "typesOfService"],
 };
 

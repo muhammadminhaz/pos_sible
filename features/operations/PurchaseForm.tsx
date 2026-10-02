@@ -27,6 +27,8 @@ import { useFormat } from "@/lib/i18n/format";
 import { methodLabel, tillMethods } from "@/lib/pos/methods";
 import { ContactFormDialog } from "./ContactForm";
 import { opsErrorMessage } from "./opsError";
+import { PurchaseImportButton } from "./PurchaseImportDialog";
+import type { PurchaseImportRow } from "@/lib/data/services/purchaseImport";
 import { ProductPicker, variationLabel } from "./ProductPicker";
 
 export type PurchaseRowState = PurchaseLineInput & { name: string; sku: string; unitName: string; updatePrice: boolean; currentSellInc: number };
@@ -71,6 +73,23 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
       productId: p.id, variationId: variation.id, qty: 1, unitPrice: variation.purchasePriceExc, discount: null, taxId: p.taxId, lotNo: "", mfgDate: null, expDate: null,
       sellPriceInc: null, name: variationLabel(p, variation), sku: variation.sku, unitName: p.unitName, updatePrice: false, currentSellInc: variation.sellPriceInc,
     }]);
+  };
+
+  /** Imported rows join the table; a variation already there just gets more quantity. */
+  const addImported = (imported: PurchaseImportRow[]) => {
+    setRows((current) => {
+      const next = [...current];
+      for (const r of imported) {
+        const at = next.findIndex((x) => x.variationId === r.variationId && x.unitPrice === r.unitPrice && (x.lotNo ?? "") === r.lotNo);
+        if (at >= 0) next[at] = { ...next[at], qty: next[at].qty + r.qty };
+        else next.push({
+          productId: r.productId, variationId: r.variationId, qty: r.qty, unitPrice: r.unitPrice, discount: null, taxId: r.taxId, lotNo: r.lotNo, mfgDate: r.mfgDate, expDate: r.expDate,
+          sellPriceInc: null, name: r.name, sku: r.sku, unitName: r.unitName, updatePrice: false, currentSellInc: r.currentSellInc,
+        });
+      }
+      return next;
+    });
+    toast.success(t("ops.importAdded", { count: imported.length }));
   };
 
   const submit = async (e: FormEvent) => {
@@ -123,7 +142,10 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
       </Section>
 
       <Section title={t("ops.items")}>
-        <ProductPicker onPick={addProduct} />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1"><ProductPicker onPick={addProduct} /></div>
+          <PurchaseImportButton onAdd={addImported} />
+        </div>
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("ops.noItems")}</p>
         ) : (

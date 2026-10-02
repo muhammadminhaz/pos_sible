@@ -445,6 +445,7 @@
       "address": "Address"
     },
     "points": {
+      "expiring": "{points} points expire on {date}",
       "title": "Redeem points",
       "available": "Available: {points}",
       "max": "Max for this sale: {points}",
@@ -610,6 +611,27 @@
     }
   },
   "ops": {
+    "pointsExpiring": "{points} expire on {date}",
+    "pointsExpired": "{points} expired",
+    "importProducts": "Import Products",
+    "importProductsHint": "Upload a CSV with the columns sku, qty, unit_cost, lot_no, mfg_date, exp_date. Only sku and qty are required; unit_cost defaults to the product's current cost. Dates look like 2026-12-31.",
+    "importFile": "CSV file",
+    "importTemplate": "Download template",
+    "importRowError": "Row {row}: {problem}",
+    "importErrors": {
+      "missing_columns": "The file needs sku and qty columns",
+      "sku_unknown": "No active product has that SKU",
+      "qty_invalid": "Quantity must be a number above zero",
+      "cost_invalid": "Unit cost must be a number",
+      "date_invalid": "Dates must look like 2026-12-31",
+      "date_order": "The expiry date is before the manufacturing date"
+    },
+    "importSku": "SKU",
+    "importProduct": "Product",
+    "importQty": "Qty",
+    "importCost": "Unit cost",
+    "importAdd": "{count, plural, one {Add # product} other {Add # products}}",
+    "importAdded": "{count, plural, one {# product added} other {# products added}}",
     "viewParentPurchase": "View original purchase",
     "code": "Code",
     "mobile": "Mobile",

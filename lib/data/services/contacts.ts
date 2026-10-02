@@ -5,6 +5,8 @@ import { accountTxn, contact, type Contact, type DB, type PaymentMethod } from "
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary } from "@/lib/domain/payments";
+import { todayISO } from "@/lib/dates";
+import { customerPoints } from "@/lib/domain/rewards";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
@@ -20,6 +22,9 @@ export type ContactRow = Contact & {
   sellReturnDue: number;
   purchaseReturnDue: number;
   lastSellDate: string | null;
+  /** `points` above is what can be spent; these say what lapsed and what is about to. */
+  pointsExpired: number;
+  pointsExpiring: { points: number; on: string } | null;
 };
 
 export type ContactFilters = ListQuery & {
@@ -66,8 +71,12 @@ function toRows(db: DB): ContactRow[] {
   return db.contacts.map((c) => {
     const a = agg.get(c.id) ?? { sell: 0, purchase: 0, sellReturn: 0, purchaseReturn: 0, invoice: 0, paid: 0, last: null };
     const returnDue = a.sellReturn + a.purchaseReturn;
+    const pts = customerPoints(db, c, todayISO());
     return {
       ...c,
+      points: pts.available,
+      pointsExpired: pts.expired,
+      pointsExpiring: pts.expiring,
       groupName: c.customerGroupId ? group.get(c.customerGroupId) : undefined,
       totalInvoice: roundMoney(a.invoice),
       totalPaid: roundMoney(a.paid),

@@ -445,6 +445,7 @@
       "address": "ঠিকানা"
     },
     "points": {
+      "expiring": "{points} পয়েন্টের মেয়াদ শেষ হবে {date}",
       "title": "পয়েন্ট রিডিম",
       "available": "প্রাপ্য: {points}",
       "max": "এই বিক্রয়ে সর্বোচ্চ: {points}",
@@ -610,6 +611,27 @@
     }
   },
   "ops": {
+    "pointsExpiring": "{points} মেয়াদ শেষ হবে {date}",
+    "pointsExpired": "{points} মেয়াদোত্তীর্ণ",
+    "importProducts": "পণ্য ইমপোর্ট",
+    "importProductsHint": "sku, qty, unit_cost, lot_no, mfg_date, exp_date কলামসহ একটি CSV আপলোড করুন। শুধু sku ও qty আবশ্যক; unit_cost না দিলে পণ্যের বর্তমান ক্রয়মূল্য ধরা হবে। তারিখ হবে 2026-12-31 ধরনের।",
+    "importFile": "CSV ফাইল",
+    "importTemplate": "টেমপ্লেট ডাউনলোড",
+    "importRowError": "সারি {row}: {problem}",
+    "importErrors": {
+      "missing_columns": "ফাইলে sku ও qty কলাম থাকতে হবে",
+      "sku_unknown": "এই SKU এর কোনো সক্রিয় পণ্য নেই",
+      "qty_invalid": "পরিমাণ শূন্যের বেশি সংখ্যা হতে হবে",
+      "cost_invalid": "ইউনিট খরচ একটি সংখ্যা হতে হবে",
+      "date_invalid": "তারিখ 2026-12-31 ধরনের হতে হবে",
+      "date_order": "মেয়াদ উত্তীর্ণের তারিখ উৎপাদনের আগে"
+    },
+    "importSku": "SKU",
+    "importProduct": "পণ্য",
+    "importQty": "পরিমাণ",
+    "importCost": "ইউনিট খরচ",
+    "importAdd": "{count}টি পণ্য যোগ করুন",
+    "importAdded": "{count}টি পণ্য যোগ হয়েছে",
     "viewParentPurchase": "মূল ক্রয় দেখুন",
     "code": "কোড",
     "mobile": "মোবাইল",
