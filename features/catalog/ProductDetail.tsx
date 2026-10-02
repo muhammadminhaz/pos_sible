@@ -17,6 +17,7 @@ import { useProduct, useProductHistory, useProductStock } from "@/lib/data/hooks
 import { useFormat } from "@/lib/i18n/format";
 import { OpeningStockDialog } from "./OpeningStockDialog";
 import { Section } from "./formParts";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -81,7 +82,7 @@ export function ProductDetail({ id }: { id: string }) {
       </Section>
 
       <Section title={t("catalog.variations")}>
-        <div className="overflow-x-auto rounded-lg border">
+        <ScrollFade className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -106,7 +107,7 @@ export function ProductDetail({ id }: { id: string }) {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </ScrollFade>
       </Section>
 
       {p.manageStock && (

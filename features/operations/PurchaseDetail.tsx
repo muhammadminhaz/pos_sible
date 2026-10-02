@@ -25,6 +25,7 @@ import { useFormat } from "@/lib/i18n/format";
 import { methodLabel } from "@/lib/pos/methods";
 import { PurchaseSheet } from "./PurchaseSheet";
 import { PurchaseStatusDialog } from "./StatusDialog";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 export function PurchaseDetail({ id }: { id: string }) {
   const t = useTranslations();
@@ -64,7 +65,7 @@ export function PurchaseDetail({ id }: { id: string }) {
       </div>
 
       <Section title={t("ops.items")}>
-        <div className="overflow-x-auto rounded-lg border">
+        <ScrollFade className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -89,7 +90,7 @@ export function PurchaseDetail({ id }: { id: string }) {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </ScrollFade>
       </Section>
 
       <Section title={t("ops.payments")}>

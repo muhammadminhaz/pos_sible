@@ -20,6 +20,7 @@ import { expandLabels, isValidLabelQty, paginateLabels, type LabelSheet as Sheet
 import { useFormat } from "@/lib/i18n/format";
 import { Field, PickField } from "./formParts";
 import { LabelPages, type LabelFields, type LabelItem } from "./LabelSheet";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 type Row = { key: string; product: ProductRow; variationId: string; qty: number; packing: string; expiry: string; groupId: string | null };
 
@@ -112,7 +113,7 @@ export function Labels() {
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("catalog.noLabelRows")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
+          <ScrollFade className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -144,7 +145,7 @@ export function Labels() {
                 })}
               </TableBody>
             </Table>
-          </div>
+          </ScrollFade>
         )}
         {rows.length > 0 && !valid && sheet && <p className="text-sm text-danger">{t("catalog.labelQtyInvalid")}</p>}
       </div>

@@ -52,7 +52,19 @@ function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: 
   const t = useTranslations("nav");
   const active = useActive();
   const openGroups = useUI((s) => s.openGroups);
-  const toggleGroup = useUI((s) => s.toggleGroup);
+  const setOpenGroups = useUI((s) => s.setOpenGroups);
+
+  // Accordion: opening a group folds the rest. A group counts as open when its stored flag differs from
+  // "contains the active page", so to land on the wanted state we store the flag only where they disagree.
+  const isOpen = (key: string) => openGroups.includes(key) !== (active.group?.key === key);
+  const toggleGroup = (key: string) => {
+    const willOpen = !isOpen(key);
+    setOpenGroups(
+      groups
+        .filter((g) => g.items && (g.key === key ? willOpen : false) !== (active.group?.key === g.key))
+        .map((g) => g.key),
+    );
+  };
 
   return (
     <nav className="flex flex-col gap-0.5 px-3 py-2">
@@ -68,7 +80,7 @@ function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: 
           );
         }
         const containsActive = active.group?.key === g.key;
-        const open = openGroups.includes(g.key) !== containsActive; // the active group is open unless toggled shut
+        const open = isOpen(g.key);
         return (
           <Collapsible key={g.key} open={open} onOpenChange={() => toggleGroup(g.key)}>
             <CollapsibleTrigger className={cn(itemBase, "w-full", containsActive && "text-foreground")}>

@@ -33,7 +33,7 @@ export function Notifications() {
         <Button variant="ghost" size="icon" className="relative" aria-label={`${t("notifications")} (${unread})`}>
           <BellIcon />
           {unread > 0 && (
-            <span className="absolute top-1 right-1 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white tabular">
+            <span className="absolute top-1 right-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-danger px-1 text-xs font-semibold text-white tabular">
               {unread > 9 ? "9+" : unread}
             </span>
           )}
@@ -59,7 +59,7 @@ export function Notifications() {
                     <div className="min-w-0 flex-1">
                       <p className={cn("text-sm", !n.readAt && "font-medium")}>{n.title}</p>
                       {n.body && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.body}</p>}
-                      <p className="mt-1 text-[11px] text-muted-foreground">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(n.createdAt), {
                           addSuffix: true,
                           locale: locale === "bn" ? bnLocale : undefined,

@@ -50,7 +50,7 @@ function SearchTrigger() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden h-8 w-full max-w-sm items-center gap-2 rounded-lg border bg-muted/40 px-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted md:flex"
+        className="hidden h-8 pointer-coarse:h-11 w-full max-w-sm items-center gap-2 rounded-lg border bg-muted/40 px-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted md:flex"
       >
         <SearchIcon className="size-4" />
         <span className="flex-1 text-left">{t("searchTrigger")}</span>

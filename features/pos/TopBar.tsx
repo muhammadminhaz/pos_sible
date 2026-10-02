@@ -48,7 +48,7 @@ function IconAction({ label, onClick, disabled, badge, children }: {
         <Button variant="ghost" size="icon" aria-label={label} onClick={onClick} disabled={disabled} className="relative">
           {children}
           {!!badge && (
-            <span className="absolute -top-0.5 -right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground tabular-nums">
+            <span className="absolute -top-0.5 -right-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground tabular-nums">
               {f.number(badge)}
             </span>
           )}
@@ -95,7 +95,7 @@ export function TopBar({ location, allowed, register }: {
       <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => show("shortcuts")}>
         <KeyboardIcon />
         {t("pos.top.shortcuts")}
-        <kbd className="rounded border bg-muted px-1 text-[10px]">?</kbd>
+        <kbd className="rounded border bg-muted px-1 text-xs">?</kbd>
       </Button>
 
       <div className="ml-auto flex items-center gap-0.5">
@@ -109,6 +109,7 @@ export function TopBar({ location, allowed, register }: {
             <HistoryIcon />
           </IconAction>
         )}
+        <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />
         {can("expense.create") && (
           <IconAction label={t("pos.top.addExpense")} onClick={() => show("expense")} disabled={locked}>
             <WalletIcon />
@@ -122,6 +123,7 @@ export function TopBar({ location, allowed, register }: {
             <LockIcon />
           </IconAction>
         )}
+        <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />
         <Calculator />
         <ProfitPopover />
         {can("sell_return.view") && (
@@ -136,6 +138,7 @@ export function TopBar({ location, allowed, register }: {
             <TooltipContent>{t("pos.top.sellReturn")}</TooltipContent>
           </Tooltip>
         )}
+        <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />
         <LocaleToggle />
         <ThemeToggle />
       </div>

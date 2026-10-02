@@ -21,6 +21,7 @@ import { useFormat } from "@/lib/i18n/format";
 import { methodLabel } from "@/lib/pos/methods";
 import { ContactFormDialog } from "./ContactForm";
 import { PayDueDialog } from "./PayDueDialog";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -89,7 +90,7 @@ export function ContactDetail({ id }: { id: string }) {
         {ledger.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("ops.noLedger")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
+          <ScrollFade className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -116,7 +117,7 @@ export function ContactDetail({ id }: { id: string }) {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </ScrollFade>
         )}
       </Section>
       <ContactFormDialog editId={edit} defaultType={c.type} onClose={() => setEdit(null)} />

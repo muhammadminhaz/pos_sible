@@ -172,6 +172,15 @@
   --sidebar-ring: oklch(0.68 0.17 275 / 55%);
 }
 
+/* Right-edge fade on scrollable tables while there is more to scroll to. */
+.edge-fade-x[data-more="true"] {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+}
+@media print {
+  .edge-fade-x { -webkit-mask-image: none !important; mask-image: none !important; }
+}
+
 @keyframes pos-flash {
   from { background-color: color-mix(in oklab, var(--primary) 18%, transparent); }
   to { background-color: transparent; }

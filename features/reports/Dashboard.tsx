@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { BanknoteIcon, CircleDollarSignIcon, FileClockIcon, ReceiptIcon, ShoppingBagIcon, TrendingUpIcon, Undo2Icon, WalletIcon, type LucideIcon } from "lucide-react";
+import { BanknoteIcon, CircleDollarSignIcon, FileClockIcon, ReceiptIcon, ShoppingBagIcon, TrendingDownIcon, TrendingUpIcon, Undo2Icon, WalletIcon, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { FilterBar, type FilterDef } from "@/components/shared/FilterBar";
 import { Money } from "@/components/shared/Money";
@@ -78,9 +78,13 @@ export function Dashboard() {
       <PageHeader title={t("title", { name })} description={t("description")} />
       <div className="mb-4"><FilterBar defs={defs} value={rf.shown} onChange={(p) => rf.setUrl(p)} onReset={rf.resetUrl} /></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {CARDS.map((c) => (
-          <StatCard key={c.key} label={t(c.label)} icon={c.icon} tone={c.tone} loading={kpis.isPending} value={kpis.data ? f.money(kpis.data[c.key]) : null} />
-        ))}
+        {CARDS.map((c) => {
+          // A negative net is a loss: say so with colour, icon and sign instead of the neutral green trend.
+          const loss = c.key === "net" && (kpis.data?.net ?? 0) < 0;
+          return (
+          <StatCard key={c.key} label={t(c.label)} icon={loss ? TrendingDownIcon : c.icon} tone={loss ? "danger" : c.tone} loading={kpis.isPending} value={kpis.data ? f.money(kpis.data[c.key]) : null} />
+          );
+        })}
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -90,7 +94,7 @@ export function Dashboard() {
         </div>
         <Panel title={r("topProducts")}>
           {!x ? <div className="h-60" /> : x.topProducts.length === 0 ? <Empty>{r("empty")}</Empty> : (
-            <BarChart layout="vertical" data={x.topProducts.map((p) => ({ name: p.label, sold: p.sold }))} xKey="name" yKey="sold" label={r("topProducts")} height={240} format={(n) => f.qty(n)} />
+            <BarChart layout="vertical" data={x.topProducts.map((p) => ({ name: p.label, sold: p.sold }))} xKey="name" yKey="sold" label={r("topProducts")} height={264} format={(n) => f.qty(n)} axisTitle={r("unitsSold")} />
           )}
         </Panel>
       </div>

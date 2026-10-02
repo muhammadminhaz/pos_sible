@@ -27,6 +27,7 @@ import { methodLabel, tillMethods } from "@/lib/pos/methods";
 import { cartTotals } from "@/lib/pos/selectors";
 import { usePosDialogs } from "@/features/pos/dialogStore";
 import { saleErrorMessage } from "./saleError";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 type Status = "final" | "draft" | "quotation" | "proforma";
 export type SaleFormInit = { id?: string; cart: Cart; sale?: Transaction; status: Status };
@@ -153,7 +154,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
           )}
         </div>
         {cart.lines.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">{t("sales.noLines")}</p> : (
-          <div className="overflow-x-auto">
+          <ScrollFade className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-muted-foreground">
                 <th className="py-1 pr-2">{t("sales.product")}</th><th className="w-24 px-1">{t("sales.qty")}</th><th className="w-28 px-1">{t("sales.unitPrice")}</th><th className="w-36 px-1">{t("sales.discount")}</th><th className="w-20 px-1">{t("sales.tax")}</th><th className="px-1 text-right">{t("sales.lineSubtotal")}</th><th className="w-8" />
@@ -177,7 +178,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollFade>
         )}
       </div>
 

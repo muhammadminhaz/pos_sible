@@ -28,6 +28,7 @@ import { methodLabel, tillMethods } from "@/lib/pos/methods";
 import { ContactFormDialog } from "./ContactForm";
 import { opsErrorMessage } from "./opsError";
 import { ProductPicker, variationLabel } from "./ProductPicker";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 export type PurchaseRowState = PurchaseLineInput & { name: string; sku: string; unitName: string; updatePrice: boolean; currentSellInc: number };
 
@@ -120,7 +121,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("ops.noItems")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
+          <ScrollFade className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -171,7 +172,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
                 })}
               </TableBody>
             </Table>
-          </div>
+          </ScrollFade>
         )}
       </Section>
 

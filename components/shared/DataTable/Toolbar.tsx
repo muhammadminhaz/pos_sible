@@ -43,14 +43,14 @@ function SearchInput({ value, onChange }: { value: string; onChange: (v: string)
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         placeholder={t("searchPlaceholder")}
-        className="h-8 pr-8 pl-8 [&::-webkit-search-cancel-button]:hidden"
+        className="h-8 pr-8 pl-8 pointer-coarse:h-11 pointer-coarse:pr-11 [&::-webkit-search-cancel-button]:hidden"
         aria-label={t("search")}
       />
       {draft && (
         <button
           type="button"
           onClick={() => setDraft("")}
-          className="absolute top-1/2 right-2 -translate-y-1/2 rounded text-muted-foreground hover:text-foreground"
+          className="absolute top-1/2 right-2 grid -translate-y-1/2 place-items-center rounded text-muted-foreground hover:text-foreground pointer-coarse:size-11 pointer-coarse:right-0"
           aria-label={t("clear")}
         >
           <XIcon className="size-3.5" />
