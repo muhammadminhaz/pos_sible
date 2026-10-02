@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { useOnboardingActions } from "@/lib/data/hooks/onboarding";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import type { Settings } from "@/lib/data/schemas";
 import { SectionForm } from "./SectionForm";
@@ -25,6 +26,20 @@ const HIDDEN: Partial<Record<(typeof TABS)[number], string[]>> = {
   system: ["showHelpText"],
   modules: ["kitchen", "modifiers", "typesOfService"],
 };
+
+function SetupAgain() {
+  const t = useTranslations("onboarding");
+  const { restart, showChecklist } = useOnboardingActions();
+  return (
+    <div className="grid gap-2 rounded-lg border border-dashed p-4">
+      <p className="text-sm text-muted-foreground">{t("restartHint")}</p>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" onClick={() => void restart()}>{t("restart")}</Button>
+        <Button type="button" variant="outline" onClick={() => void showChecklist()}>{t("showChecklist")}</Button>
+      </div>
+    </div>
+  );
+}
 
 /** A mocked send: succeeds when the form is filled in, fails otherwise, like a real provider would. */
 function TestSend({ kind, ready }: { kind: "email" | "sms"; ready: boolean }) {
@@ -74,7 +89,8 @@ export function BusinessSettings() {
               themeColor: ["indigo", "blue", "black", "purple", "green", "red", "amber", "sky"].map((v) => ({ value: v, label: v[0].toUpperCase() + v.slice(1) })),
             }}
             extra={(d) =>
-              tab === "email" ? <TestSend kind="email" ready={!!(d as Settings["email"]).host && !!(d as Settings["email"]).fromAddress} />
+              tab === "business" ? <SetupAgain />
+              : tab === "email" ? <TestSend kind="email" ready={!!(d as Settings["email"]).host && !!(d as Settings["email"]).fromAddress} />
               : tab === "sms" ? <TestSend kind="sms" ready={(d as Settings["sms"]).service === "twilio" ? !!(d as Settings["sms"]).twilioSid : (d as Settings["sms"]).service === "nexmo" ? !!(d as Settings["sms"]).nexmoKey : !!(d as Settings["sms"]).url} />
               : null
             }

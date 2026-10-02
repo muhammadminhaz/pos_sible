@@ -26,6 +26,8 @@ for (const [locale, theme, width] of [["en", "light", 1360], ["bn", "dark", 1360
   await page.locator('input[type="password"]').fill("112233");
   await page.keyboard.press("Enter");
   await page.waitForURL(/\/home/, { timeout: 15000 });
+  // First run shows the welcome wizard; keep the demo shop for the sweep.
+  await page.getByRole("button", { name: /Skip, keep the demo|এড়িয়ে যান/ }).click({ timeout: 8000 }).catch(() => {});
 
   await page.waitForTimeout(800);
   const db = await page.evaluate(() => new Promise((res) => { const r = indexedDB.open("posible", 1); r.onsuccess = () => { const g = r.result.transaction("kv").objectStore("kv").get("posible:v1:db"); g.onsuccess = () => res(JSON.parse(g.result).state.db); }; }));

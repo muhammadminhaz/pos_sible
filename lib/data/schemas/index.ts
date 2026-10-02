@@ -61,6 +61,18 @@ export type DBMeta = {
   seededAt: string;
   /** Reference counters keyed by prefix ("PO", "SP", …) — next ref = counter + 1. */
   counters: Record<string, number>;
+  /** First-run setup. Absent on data created before onboarding existed. */
+  onboarding?: Onboarding;
+};
+
+export type Onboarding = {
+  done: boolean;
+  /** "demo" keeps the sample shop; "fresh" starts with an empty one. */
+  mode?: "demo" | "fresh";
+  completedAt?: string;
+  checklistDismissed?: boolean;
+  /** Checklist steps ticked by visiting a screen (e.g. reports). */
+  visited?: string[];
 };
 
 export type DB = Tables & { settings: Settings; meta: DBMeta };

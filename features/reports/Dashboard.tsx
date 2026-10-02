@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { GettingStarted } from "@/features/onboarding/GettingStarted";
 import { BanknoteIcon, CircleDollarSignIcon, FileClockIcon, ReceiptIcon, ShoppingBagIcon, TrendingUpIcon, Undo2Icon, WalletIcon, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { FilterBar, type FilterDef } from "@/components/shared/FilterBar";
@@ -75,6 +76,7 @@ export function Dashboard() {
   ];
   return (
     <>
+      <GettingStarted />
       <PageHeader title={t("title", { name })} description={t("description")} />
       <div className="mb-4"><FilterBar defs={defs} value={rf.shown} onChange={(p) => rf.setUrl(p)} onReset={rf.resetUrl} /></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

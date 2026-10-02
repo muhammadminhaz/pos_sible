@@ -85,7 +85,7 @@ const setHealth = (h: StorageHealth) => { health = h; healthListeners.forEach((f
 
 /**
  * The business database. Reads fall back to the old localStorage copy once (and move it over); writes are
- * coalesced for 250 ms and flushed when the tab is hidden, so a burst of edits is one write. If a write fails,
+ * coalesced for 100 ms and flushed when the tab is hidden, so a burst of edits is one write. If a write fails,
  * `storageHealth` says so and the app tells the user instead of losing data silently.
  */
 export const dbStorage = <S>() => {
@@ -101,20 +101,34 @@ export const dbStorage = <S>() => {
     if (!job) return;
     try {
       await idbRun("readwrite", (s) => s.put(job.value, job.name));
+      try { window.localStorage.removeItem(parked(job.name)); } catch { /* nothing parked */ }
       if (!health.ok) setHealth({ ok: true, reason: null });
     } catch (e) {
       setHealth({ ok: false, reason: e instanceof Error ? e.message : "write failed" });
     }
   };
+  // An IndexedDB write started while the page is unloading can be cut off, so unsaved data is also parked in
+  // localStorage (synchronous) and picked up on the next load.
+  const parked = (name: string) => `${name}:unsaved`;
+  const park = () => {
+    if (!pending) return;
+    try { window.localStorage.setItem(parked(pending.name), pending.value); } catch { /* too big: the IndexedDB write is the only hope */ }
+  };
   if (usable) {
-    window.addEventListener("pagehide", () => void flush());
-    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") void flush(); });
+    window.addEventListener("pagehide", () => { park(); void flush(); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { park(); void flush(); } });
   }
 
   const state: StateStorage = usable
     ? {
         async getItem(name) {
           try {
+            const unsaved = window.localStorage.getItem(parked(name));
+            if (unsaved != null) {
+              await idbRun("readwrite", (s) => s.put(unsaved, name));
+              window.localStorage.removeItem(parked(name));
+              return unsaved;
+            }
             const v = await idbRun<string | undefined>("readonly", (s) => s.get(name));
             if (v != null) return v;
             // First run after the upgrade: adopt the localStorage copy.
@@ -131,7 +145,7 @@ export const dbStorage = <S>() => {
         },
         setItem(name, value) {
           pending = { name, value };
-          if (!timer) timer = setTimeout(() => void flush(), 250);
+          if (!timer) timer = setTimeout(() => void flush(), 100);
         },
         async removeItem(name) {
           pending = null;
