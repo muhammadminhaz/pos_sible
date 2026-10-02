@@ -117,6 +117,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
                 options={[{ value: "days", label: t("catalog.days") }, { value: "months", label: t("catalog.months") }]} />
             </div>
           </Field>
+          <Field label={t("sales.attachDocument")} htmlFor="pu-doc"><Input id="pu-doc" type="file" onChange={(e) => set({ documents: e.target.files?.[0] ? [e.target.files[0].name] : [] })} />{v.documents[0] && <span className="text-xs text-muted-foreground">{v.documents[0]}</span>}</Field>
           <Field label={t("ops.exchangeRate")}><NumInput label={t("ops.exchangeRate")} min={0.0001} value={v.exchangeRate} onChange={(n) => set({ exchangeRate: n })} /></Field>
         </div>
       </Section>

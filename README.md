@@ -28,8 +28,12 @@ It is **frontend only**. All data is mock data generated in the browser and save
 
 - Settings and admin: business settings (16 tabs, driven by the settings schema, with a shortcut recorder and mocked test email/SMS), locations, invoice schemes and layouts (with a live preview), barcode sheets, printers, tax rates and groups, users and roles (permission matrix), backup and restore, module switches (hide menu items and routes), profile and calendar.
 
-### Known gaps
-Most field labels inside the Business Settings tabs are generated from the setting names and are English-only in Bangla mode. The invoice layout preview is a sample receipt that follows the toggles, not the real receipt components. The native print dialog was checked only up to `window.print()` (the right thermal or A4 layout is rendered and the call is made); the browser's own dialog can't be driven headlessly.
+### Good to know
+- **Frontend only.** All data lives in the browser (IndexedDB, with the old localStorage copy migrated automatically). Nothing is shared between devices or users until the service layer is pointed at a real API. A banner appears if the browser ever refuses to save, and **Backup** exports everything as JSON.
+- **Devices.** Back office works from phone to desktop. The POS works on tablets (768px and up) with a Products/Cart switch, and shows the full two-pane layout from 1024px. The app is installable as a PWA.
+- **Settings are live.** Every switch in Business Settings changes behaviour straight away (edit window, minimum selling price, default discount/tax, expiry stop-selling, theme colour, page size, module switches...). Settings with no feature behind them yet (restaurant modules, payment links, purchase orders/requisitions, reward expiry) are hidden rather than shown as dead switches.
+- **Email/SMS** "test" buttons are mocked; there is no real gateway without a backend.
+- **Field labels** inside some Business Settings tabs are generated from the setting names and are English-only in Bangla mode.
 
 ## Tech stack
 Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand (persisted), next-intl, next-themes, zod, recharts, sonner, lucide-react, vitest. Fonts: Inter and Anek Bangla.
@@ -42,7 +46,7 @@ npm run dev        # http://localhost:3000
 Sign in with `admin` / `112233` (also `cashier`, `rafiq`, `nazmul`, all with `112233`). Data is seeded on first load (about six months of history). Clear site storage to reset it.
 
 ```bash
-npm test           # vitest, 394 tests
+npm test           # vitest, 407 tests incl. a workflow fuzz that runs 1,000 random user actions and checks the books reconcile
 npx tsc --noEmit   # typecheck
 npm run lint
 npm run build
