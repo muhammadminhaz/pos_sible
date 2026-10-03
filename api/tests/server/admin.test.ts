@@ -88,7 +88,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
   it("shows plan, users and storage per business and nothing from inside it", async () => {
     const id = await open(`Counted ${tag}`, `counted${tag}`, "standard");
     const s = await summary(id);
-    expect(Object.keys(s).sort()).toEqual(["contactEmail", "contactPhone", "createdAt", "expiresAt", "free", "id", "lastActiveAt", "maxUsers", "modules", "name", "ownerUsername", "plan", "planLabel", "priceMonthly", "state", "status", "storageBytes", "users"]);
+    expect(Object.keys(s).sort()).toEqual(["code", "contactEmail", "contactPhone", "createdAt", "expiresAt", "free", "id", "lastActiveAt", "maxUsers", "modules", "name", "ownerUsername", "plan", "planLabel", "priceMonthly", "state", "status", "storageBytes", "users"]);
     expect(s).toMatchObject({ name: `Counted ${tag}`, ownerUsername: `counted${tag}`, plan: "standard", planLabel: "Standard", priceMonthly: 1500, state: "active", users: 1, maxUsers: 10 });
     expect(s.storageBytes).toBeGreaterThan(10_000);
     const before = s.storageBytes;
@@ -299,5 +299,54 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect((await auth.login(`staff${tag}`, "owner-pass-1", true, "ip-s4", `staff${tag}`)).ok).toBe(true);
     const blocked = await rpc.handleRpc({ businessId: id, userId: r.principal.userId, role: r.principal.role, modules: r.principal.modules }, { service: "expensesService", method: "x", args: [] });
     expect(blocked).toMatchObject({ ok: false, error: { code: "module_off" } });
+  });
+
+  it("the same staff username can exist in two businesses; the business code says which one you mean", async () => {
+    await open(`Code A ${tag}`, `codea${tag}`, "premium");
+    await open(`Code B ${tag}`, `codeb${tag}`, "premium");
+    const mk = async (ownerName: string, pass: string) => {
+      const owner = await principal(ownerName);
+      const r = await rpc.handleRpc(owner.p, { service: "crud:users", method: "create", args: [{ username: `till${tag}`, firstName: "Till", lastName: "", email: "", roleId: "role_cashier", password: pass, locationIds: [], isActive: true, allowLogin: true, modules: ["pos"], prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 }] });
+      expect(r.ok, JSON.stringify(r)).toBe(true);
+    };
+    await mk(`codea${tag}`, "pass-for-a-1");
+    await mk(`codeb${tag}`, "pass-for-b-1"); // same username as in A: allowed
+    const a = await auth.login(`till${tag}`, "pass-for-a-1", true, "ip-k1", `codea${tag}`);
+    const b = await auth.login(`till${tag}`, "pass-for-b-1", true, "ip-k2", `CodeB${tag}`); // codes ignore case
+    expect(a.ok && b.ok).toBe(true);
+    if (a.ok && b.ok) expect(a.principal.businessId).not.toBe(b.principal.businessId);
+    // Each password only opens its own business, and staff can't sign in without a code.
+    expect((await auth.login(`till${tag}`, "pass-for-a-1", true, "ip-k3", `codeb${tag}`)).ok).toBe(false);
+    expect((await auth.login(`till${tag}`, "pass-for-a-1", true, "ip-k4")).ok).toBe(false);
+    // A second "till" inside the same business is still refused.
+    const owner = await principal(`codea${tag}`);
+    const again = await rpc.handleRpc(owner.p, { service: "crud:users", method: "create", args: [{ username: `TILL${tag}`, firstName: "Dup", lastName: "", email: "", roleId: "role_cashier", password: "pass-for-a-2", locationIds: [], isActive: true, allowLogin: true, prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 }] });
+    expect(again).toMatchObject({ ok: false });
+  });
+
+  it("business codes: default to the owner's username, can be chosen, must be unique, and can be changed", async () => {
+    const make = (extra: object, user: string) => list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: `Cd ${user}`, username: user, password: "owner-pass-1", plan: "starter", ...extra }) }));
+    const res1 = await make({}, `plain${tag}`);
+    expect(res1.status).toBe(201);
+    ids.push((await res1.json()).id);
+    const res2 = await make({ code: `Lotus-${tag}` }, `chosen${tag}`);
+    expect(res2.status).toBe(201);
+    const id2 = (await res2.json()).id as string;
+    ids.push(id2);
+    expect(await summary(id2)).toMatchObject({ code: `lotus-${tag}` });
+    expect((await make({ code: `lotus-${tag}` }, `other${tag}`)).status).toBe(409);
+    expect((await make({ code: "no spaces" }, `bad${tag}`)).status).toBe(400);
+    const rows = (await (await list.GET(asAdmin("/api/admin/businesses"))).json()).businesses;
+    expect(rows.find((b: { name: string }) => b.name === `Cd plain${tag}`)).toMatchObject({ code: `plain${tag}` });
+
+    // Staff reach the business by its code; changing it moves them to the new one at once.
+    const patch = (body: object) => patchRoute.PATCH(asAdmin(`/api/admin/businesses/${id2}`, { method: "PATCH", body: JSON.stringify(body) }), { params: Promise.resolve({ id: id2 }) });
+    expect((await auth.login(`chosen${tag}`, "owner-pass-1", true, "ip-cc1", `lotus-${tag}`)).ok).toBe(true);
+    expect((await patch({ code: `plain${tag}` })).status).toBe(409);
+    expect((await patch({ code: `renamed-${tag}` })).status).toBe(200);
+    expect((await auth.login(`chosen${tag}`, "owner-pass-1", true, "ip-cc2", `lotus-${tag}`)).ok).toBe(false);
+    expect((await auth.login(`chosen${tag}`, "owner-pass-1", true, "ip-cc3", `renamed-${tag}`)).ok).toBe(true);
+    // The owner still signs in with just a username.
+    expect((await auth.login(`chosen${tag}`, "owner-pass-1", true, "ip-cc4")).ok).toBe(true);
   });
 });

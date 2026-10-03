@@ -10,7 +10,7 @@ import { effectiveModules, subscriptionState, type ModuleId } from "./plans";
 export const COOKIE = "posible_sid";
 const DAY = 86_400_000;
 
-export type Principal = { businessId: string; userId: string; user: PublicUser; role: Role; businessName: string; plan: string; modules: ModuleId[] };
+export type Principal = { businessId: string; userId: string; user: PublicUser; role: Role; businessName: string; /** What staff type to reach this business. */ businessCode: string; plan: string; modules: ModuleId[] };
 export type { PublicUser };
 
 /** What one person can use: the business's modules, narrowed to the ones the owner gave them (none chosen = all). */
@@ -43,22 +43,24 @@ const recordFail = (key: string) => {
 export type LoginResult = { ok: true; token: string; maxAge: number | null; principal: Principal } | { ok: false; reason: "invalid" | "throttled" | "cancelled" | "expired" };
 
 /**
- * Signs in. `business` is the business owner's username: when given, the account name is looked up inside that business
- * (staff sign-in); without it the account name alone identifies the person.
+ * Signs in. Staff give the `business` code of the business they work for, and their username is looked up inside it, so
+ * the same username can exist in many businesses. Without a code only a business owner's username is looked up.
  */
 export async function login(username: string, password: string, remember: boolean, ip: string, business?: string): Promise<LoginResult> {
   await ready();
-  const key = `${ip}|${business?.trim().toLowerCase() ?? ""}|${username.trim().toLowerCase()}`;
+  const code = business?.trim().toLowerCase();
+  const key = `${ip}|${code ?? ""}|${username.trim().toLowerCase()}`;
   if (throttled(key)) return { ok: false, reason: "throttled" };
 
-  let row = (await pool().query<{ business_id: string; user_id: string }>("SELECT business_id, user_id FROM logins WHERE username = $1", [(business?.trim() || username).toLowerCase()])).rows[0];
+  const name = username.trim().toLowerCase();
+  const row = (await pool().query<{ business_id: string; user_id: string }>(
+    code
+      ? "SELECT l.business_id, l.user_id FROM logins l JOIN businesses b ON b.id = l.business_id WHERE b.code = $1 AND l.username = $2"
+      : "SELECT business_id, user_id FROM logins WHERE username = $2 AND user_id = 'user_admin' AND $1::text IS NULL",
+    [code ?? null, name],
+  )).rows[0];
   const loaded = row ? await loadBusiness(row.business_id) : null;
-  let user = row && loaded ? loaded.db.users.find((u) => u.id === row!.user_id) : undefined;
-  if (business?.trim() && row && loaded) {
-    // The business name resolved to its owner's login; now find the person inside that business.
-    user = loaded.db.users.find((u) => u.username.toLowerCase() === username.trim().toLowerCase());
-    row = user ? { business_id: row.business_id, user_id: user.id } : (undefined as never);
-  }
+  const user = row && loaded ? loaded.db.users.find((u) => u.id === row!.user_id) : undefined;
   // Same work whether or not the user exists, so timing doesn't reveal which usernames are real.
   const good = verifyPassword(password, user?.password ?? "scrypt$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
   if (!row || !loaded || !user || !good || !user.isActive || !user.allowLogin) {
@@ -69,7 +71,7 @@ export async function login(username: string, password: string, remember: boolea
   const role = loaded.db.roles.find((r) => r.id === user.roleId);
   if (!role) return { ok: false, reason: "invalid" };
   // Only someone who knows the right password learns that the subscription is the problem.
-  const sub = (await pool().query<{ plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null; modules: string[] | null; free: boolean }>("SELECT plan, subscription_status, subscription_expires_at, modules, free FROM businesses WHERE id = $1", [row.business_id])).rows[0];
+  const sub = (await pool().query<{ plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null; modules: string[] | null; free: boolean; code: string }>("SELECT plan, code, subscription_status, subscription_expires_at, modules, free FROM businesses WHERE id = $1", [row.business_id])).rows[0];
   const state = subscriptionState(sub.subscription_status, sub.subscription_expires_at, new Date(), sub.free);
   if (state !== "active") return { ok: false, reason: state };
 
@@ -77,7 +79,7 @@ export async function login(username: string, password: string, remember: boolea
   const ttl = remember ? 30 * DAY : DAY / 2;
   await pool().query("INSERT INTO sessions (token_hash, business_id, user_id, expires_at) VALUES ($1, $2, $3, now() + $4 * interval '1 millisecond')", [sha(token), row.business_id, row.user_id, ttl]);
   void pool().query("DELETE FROM sessions WHERE expires_at < now()").catch(() => {});
-  return { ok: true, token, maxAge: remember ? ttl / 1000 : null, principal: { businessId: row.business_id, userId: user.id, user: publicUser(user), role, businessName: loaded.db.settings.business.name, plan: sub.plan, modules: userModules(effectiveModules(sub.modules, sub.free), user) } };
+  return { ok: true, token, maxAge: remember ? ttl / 1000 : null, principal: { businessId: row.business_id, userId: user.id, user: publicUser(user), role, businessName: loaded.db.settings.business.name, businessCode: sub.code, plan: sub.plan, modules: userModules(effectiveModules(sub.modules, sub.free), user) } };
 }
 
 export async function logout(token: string | undefined): Promise<void> {
@@ -89,8 +91,8 @@ export async function authenticate(req: NextRequest | { cookies: { get(name: str
   const token = req.cookies.get(COOKIE)?.value;
   if (!token) return null;
   await ready();
-  const s = (await pool().query<{ business_id: string; user_id: string; plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null; modules: string[] | null; free: boolean }>(
-    `SELECT s.business_id, s.user_id, b.plan, b.subscription_status, b.subscription_expires_at, b.modules, b.free
+  const s = (await pool().query<{ business_id: string; user_id: string; plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null; modules: string[] | null; free: boolean; code: string }>(
+    `SELECT s.business_id, s.user_id, b.code, b.plan, b.subscription_status, b.subscription_expires_at, b.modules, b.free
        FROM sessions s JOIN businesses b ON b.id = s.business_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`, [sha(token)])).rows[0];
   if (!s) return null;
@@ -100,7 +102,7 @@ export async function authenticate(req: NextRequest | { cookies: { get(name: str
   const user = db.users.find((u) => u.id === s.user_id);
   const role = user && db.roles.find((r) => r.id === user.roleId);
   if (!user || !role || !user.isActive || !user.allowLogin) return null;
-  return { businessId: s.business_id, userId: user.id, user: publicUser(user), role, businessName: db.settings.business.name, plan: s.plan, modules: userModules(effectiveModules(s.modules, s.free), user) };
+  return { businessId: s.business_id, userId: user.id, user: publicUser(user), role, businessName: db.settings.business.name, businessCode: s.code, plan: s.plan, modules: userModules(effectiveModules(s.modules, s.free), user) };
 }
 
 export function cookieOptions(maxAge: number | null) {

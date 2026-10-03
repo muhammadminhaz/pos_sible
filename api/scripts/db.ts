@@ -17,10 +17,10 @@ async function main() {
     await seedDemoIfEmpty();
     console.log("Demo shop ready (admin / 112233).");
   } else if (cmd === "create-business") {
-    const [name, username, password, firstName] = rest;
-    if (!name || !username || !password) throw new Error('Usage: npm run db:create-business -- "Shop Name" username password "Owner Name"');
-    const { businessId } = await createBusiness({ name, admin: { username, password, firstName: firstName ?? username } });
-    console.log(`Created ${name} (${businessId}). Sign in as ${username}.`);
+    const [name, username, password, firstName, code] = rest;
+    if (!name || !username || !password) throw new Error('Usage: npm run db:create-business -- "Shop Name" username password ["Owner Name" [business-code]]');
+    const { businessId } = await createBusiness({ name, admin: { username, password, firstName: firstName ?? username }, code });
+    console.log(`Created ${name} (${businessId}). Sign in as ${username}; staff use business code ${code ?? username.toLowerCase()}.`);
   } else throw new Error("Unknown command. Use migrate, seed or create-business.");
 }
 

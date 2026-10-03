@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 // [en, bn] pairs; split into two JSON files so key parity is guaranteed.
 const M = {
@@ -183,10 +183,10 @@ const M = {
     subtitle: ["Welcome back. Sign in to continue.", "স্বাগতম। চালিয়ে যেতে সাইন ইন করুন।"],
     username: ["Username", "ইউজারনেম"],
     password: ["Password", "পাসওয়ার্ড"],
-    businessUsername: ["Business username", "ব্যবসার ইউজারনেম"],
+    businessUsername: ["Business code", "ব্যবসার কোড"],
     asOwner: ["Business owner", "ব্যবসার মালিক"],
     asStaff: ["Staff member", "কর্মী"],
-    staffHint: ["Use the business username, then the account name and password your owner gave you.", "ব্যবসার ইউজারনেম, এরপর মালিকের দেওয়া অ্যাকাউন্টের নাম ও পাসওয়ার্ড দিন।"],
+    staffHint: ["Use your business code, then your own username and password.", "আপনার ব্যবসার কোড, এরপর নিজের ইউজারনেম ও পাসওয়ার্ড দিন।"],
     rememberMe: ["Remember me", "মনে রাখুন"],
     signIn: ["Sign in", "সাইন ইন"],
     signingIn: ["Signing in…", "সাইন ইন হচ্ছে…"],
@@ -1690,6 +1690,7 @@ const M = {
     addLocation: ["Add Location", "লোকেশন যোগ করুন"],
     editLocation: ["Edit Location", "লোকেশন সম্পাদনা"],
     noLocations: ["No locations yet", "এখনও কোনো লোকেশন নেই"],
+    staffCode: ["Staff sign in with the business code {code}, their own username and their password.", "কর্মীরা ব্যবসার কোড {code}, নিজের ইউজারনেম ও পাসওয়ার্ড দিয়ে সাইন ইন করেন।"],
     usersDescription: ["Staff who can sign in, with their role and locations.", "যারা সাইন ইন করতে পারেন, তাদের ভূমিকা ও লোকেশনসহ।"],
     addUser: ["Add User", "ইউজার যোগ করুন"],
     editUser: ["Edit User", "ইউজার সম্পাদনা"],
@@ -1929,6 +1930,20 @@ const M = {
 const pick = (node, i) =>
   Object.fromEntries(Object.entries(node).map(([k, v]) => [k, Array.isArray(v) ? v[i] : pick(v, i)]));
 
+// Some messages were added straight to the JSON files. Regenerating must never throw those away, so keys that exist
+// in a file but not in this script are carried over (values from this script still win).
+const keep = (fresh, file) => {
+  if (!existsSync(file)) return fresh;
+  const merge = (into, from) => {
+    for (const [k, v] of Object.entries(from)) {
+      if (!(k in into)) into[k] = v;
+      else if (v && typeof v === "object" && into[k] && typeof into[k] === "object") merge(into[k], v);
+    }
+    return into;
+  };
+  return merge(fresh, JSON.parse(readFileSync(file, "utf8")));
+};
+
 const dir = process.argv[2];
-writeFileSync(`${dir}/en.json`, JSON.stringify(pick(M, 0), null, 2) + "\n");
-writeFileSync(`${dir}/bn.json`, JSON.stringify(pick(M, 1), null, 2) + "\n");
+writeFileSync(`${dir}/en.json`, JSON.stringify(keep(pick(M, 0), `${dir}/en.json`), null, 2) + "\n");
+writeFileSync(`${dir}/bn.json`, JSON.stringify(keep(pick(M, 1), `${dir}/bn.json`), null, 2) + "\n");

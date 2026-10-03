@@ -39,7 +39,8 @@ await admin.getByRole("heading", { name: "Businesses" }).waitFor();
 await admin.getByRole("button", { name: "Add business" }).click();
 check(!(await admin.getByLabel("Owner name").isVisible().catch(() => false)), "no owner name field");
 await admin.getByLabel("Business name").fill(name);
-await admin.getByLabel("Username", { exact: true }).fill(owner);
+await admin.getByLabel("Owner username").fill(owner);
+await admin.getByLabel("Business code (optional)").fill(`${owner}-shop`);
 await admin.getByLabel("Password", { exact: true }).fill("zeta-owner-pass");
 await admin.getByLabel("Email (optional)").fill("owner@zeta.example");
 await admin.getByRole("combobox", { name: /Country code/ }).click();
@@ -55,7 +56,7 @@ await admin.getByRole("button", { name: "Create business" }).click();
 const row = admin.locator("tr", { hasText: name });
 await row.waitFor();
 const text = await row.innerText();
-check(text.includes(owner) && /Starter/.test(text) && /Active/.test(text) && /1 \/ 3/.test(text), "listed with username, package, status and 1 / 3 users");
+check(text.includes(owner) && text.includes(`${owner}-shop`) && /Starter/.test(text) && /Active/.test(text) && /1 \/ 3/.test(text), "listed with username, package, status and 1 / 3 users");
 check(/\d+(\.\d+)? (KB|MB)/.test(text), "storage is shown");
 check(text.includes("+880 1711 000111") && text.includes("owner@zeta.example") && (await row.locator("svg.rounded-\\[3px\\]").count()) > 0, "the phone (with its flag) and email are listed");
 const body = await admin.locator("main").innerText();
@@ -82,6 +83,18 @@ const signIn = async (password) => {
 await signIn("zeta-owner-pass");
 await shop.waitForURL(/\/home/);
 check(true, "the new business owner signs in");
+
+// The business code works from the Staff tab too (here with the owner's own account).
+const staffPage = await newPage();
+await staffPage.goto(`${BASE}/login`);
+await staffPage.getByRole("button", { name: "Staff member" }).click();
+await staffPage.getByLabel("Business code").fill(`${owner}-shop`);
+await staffPage.getByLabel("Username").fill(owner);
+await staffPage.locator('input[type="password"]').fill("zeta-owner-pass");
+await staffPage.getByRole("button", { name: "Sign in" }).click();
+await staffPage.waitForURL(/\/home/);
+check(true, "signing in on the Staff tab with the business code works");
+await staffPage.close();
 
 // …until the subscription is cancelled.
 await admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Businesses" }).click();

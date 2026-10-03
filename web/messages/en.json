@@ -180,10 +180,10 @@
     "subtitle": "Welcome back. Sign in to continue.",
     "username": "Username",
     "password": "Password",
-    "businessUsername": "Business username",
+    "businessUsername": "Business code",
     "asOwner": "Business owner",
     "asStaff": "Staff member",
-    "staffHint": "Use the business username, then the account name and password your owner gave you.",
+    "staffHint": "Use your business code, then your own username and password.",
     "rememberMe": "Remember me",
     "signIn": "Sign in",
     "signingIn": "Signing in…",
@@ -275,7 +275,11 @@
     "thisFY": "This financial year",
     "lastFY": "Last financial year",
     "custom": "Custom range",
-    "pick": "Pick a date range"
+    "pick": "Pick a date range",
+    "last3Months": "Last 3 months",
+    "last6Months": "Last 6 months",
+    "last12Months": "Last 12 months",
+    "quick": "Quick ranges"
   },
   "products": {
     "title": "Products",
@@ -336,7 +340,14 @@
     "purchaseDue": "Purchase due",
     "totalPurchaseReturn": "Total purchase return",
     "expense": "Expense",
-    "thisMonth": "This month"
+    "thisMonth": "This month",
+    "salesTrend": "Sales trend",
+    "vsPrevious": "vs previous period",
+    "salesPeriod": "Summary for the selected period",
+    "needsAttention": "Dues and returns",
+    "short3": "3 months",
+    "short6": "6 months",
+    "short12": "12 months"
   },
   "status": {
     "paid": "Paid",
@@ -931,7 +942,6 @@
     "weight": "Weight",
     "prepTime": "Preparation time (minutes)",
     "rack": "Rack",
-    "row": "Row",
     "position": "Position",
     "enableSerial": "Track serial / IMEI numbers",
     "customField": "Custom field {n}",
@@ -968,6 +978,7 @@
     "review": "Review",
     "rowsReady": "{count, plural, one {# row ready} other {# rows ready}}",
     "rowsWithErrors": "{count, plural, one {# row has a problem} other {# rows have problems}}",
+    "row": "Row",
     "importNow": "Import now",
     "imported": "{count, plural, one {# row imported} other {# rows imported}}",
     "history": "Import history",
@@ -1718,6 +1729,7 @@
     "addLocation": "Add Location",
     "editLocation": "Edit Location",
     "noLocations": "No locations yet",
+    "staffCode": "Staff sign in with the business code {code}, their own username and their password.",
     "usersDescription": "Staff who can sign in, with their role and locations.",
     "addUser": "Add User",
     "editUser": "Edit User",
@@ -1966,5 +1978,51 @@
     "editWindowExpired": "This transaction can no longer be edited",
     "notFoundEntity": "{what} not found",
     "invalidBackup": "This file isn't a valid backup"
+  },
+  "alerts": {
+    "overdueSales": {
+      "title": "{count, plural, one {# invoice is} other {# invoices are}} overdue at {location}",
+      "body": "{amount} is past its pay term. Follow up with the customers."
+    },
+    "supplierOverdue": {
+      "title": "{count, plural, one {# supplier bill is} other {# supplier bills are}} overdue at {location}",
+      "body": "{amount} owed to suppliers is past its pay term."
+    },
+    "outOfStock": {
+      "title": "{count, plural, one {# product is} other {# products are}} out of stock at {location}",
+      "body": "Starting with {example}. Reorder to keep selling."
+    },
+    "lowStock": {
+      "title": "{count, plural, one {# product is} other {# products are}} low on stock at {location}",
+      "body": "Starting with {example}. Check the stock report before it runs out."
+    },
+    "expired": {
+      "title": "{count, plural, one {# lot has} other {# lots have}} expired at {location}",
+      "body": "Starting with {example}. Remove expired stock so it cannot be sold."
+    },
+    "expiringSoon": {
+      "title": "{count, plural, one {# lot expires} other {# lots expire}} within {days} days at {location}",
+      "body": "Starting with {example}. Sell or discount it first."
+    },
+    "registerOpen": {
+      "title": "Cash register at {location} was left open",
+      "body": "{user} opened it on {since} and it has not been closed. Count the cash and close it."
+    },
+    "creditLimit": {
+      "title": "{count, plural, one {# customer is} other {# customers are}} over the credit limit",
+      "body": "{name} owes {amount} against a limit of {limit}."
+    },
+    "suspendedStale": {
+      "title": "{count, plural, one {# held sale was} other {# held sales were}} left from an earlier day at {location}",
+      "body": "Resume or cancel them so they are not forgotten."
+    },
+    "transferStuck": {
+      "title": "Transfer {ref} has been waiting {days} days",
+      "body": "{from} to {to}. Confirm receipt or follow up."
+    },
+    "undelivered": {
+      "title": "{count, plural, one {# order has} other {# orders have}} not been delivered after {days} days at {location}",
+      "body": "Check the shipments list and update the delivery status."
+    }
   }
 }

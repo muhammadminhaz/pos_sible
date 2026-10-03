@@ -107,29 +107,36 @@ async function applyDiff(client: PoolClient, businessId: string, d: Diff): Promi
       );
     }
   }
-  // Keep the global sign-in index in step with the users table.
+  // Keep the sign-in index in step with the users table (usernames are unique per business; owners also globally).
   const removed = d.deletes.get("users") ?? [];
   const upserted = d.upserts.get("users") ?? [];
   if (removed.length || upserted.length) {
     await client.query("DELETE FROM logins WHERE business_id = $1 AND user_id = ANY($2::text[])", [businessId, [...removed, ...upserted.map((u) => u.id)]]);
     if (upserted.length) {
-      const res = await client.query(
-        `INSERT INTO logins (username, business_id, user_id)
-         SELECT lower(x.username), $1, x.id FROM jsonb_to_recordset($2::jsonb) AS x(id text, username text)
-         ON CONFLICT (username) DO NOTHING`,
-        [businessId, JSON.stringify(upserted.map((u) => ({ id: u.id, username: (u.data as { username: string }).username })))],
-      );
-      if ((res.rowCount ?? 0) < upserted.length) throw new ValidationError({ username: "duplicate" });
+      let inserted = 0;
+      try {
+        inserted = (await client.query(
+          `INSERT INTO logins (username, business_id, user_id)
+           SELECT lower(x.username), $1, x.id FROM jsonb_to_recordset($2::jsonb) AS x(id text, username text)
+           ON CONFLICT (business_id, username) DO NOTHING`,
+          [businessId, JSON.stringify(upserted.map((u) => ({ id: u.id, username: (u.data as { username: string }).username })))],
+        )).rowCount ?? 0;
+      } catch (e) {
+        // The owner's username must also be free across every business (owners sign in without a business code).
+        if ((e as { code?: string }).code === "23505") throw new ValidationError({ username: "duplicate" });
+        throw e;
+      }
+      if (inserted < upserted.length) throw new ValidationError({ username: "duplicate" });
     }
   }
 }
 
 /** Stores a brand-new business: its row plus every record, in one transaction. */
-export async function insertBusiness(id: string, db: DB): Promise<void> {
+export async function insertBusiness(id: string, db: DB, code: string): Promise<void> {
   const client = await pool().connect();
   try {
     await client.query("BEGIN");
-    await client.query("INSERT INTO businesses (id, name, settings, meta, version) VALUES ($1, $2, $3, $4, 1)", [id, db.settings.business.name, db.settings, db.meta]);
+    await client.query("INSERT INTO businesses (id, name, code, settings, meta, version) VALUES ($1, $2, $3, $4, $5, 1)", [id, db.settings.business.name, code, db.settings, db.meta]);
     await applyDiff(client, id, diff({ tables: new Map(), settings: "", meta: "" }, db));
     await client.query("COMMIT");
   } catch (e) {

@@ -17,7 +17,7 @@ cd web && cp .env.example .env.local && npm run dev:api     # UI on :3000, /api/
 ```
 
 Deployment (Vercel for `web/`, Coolify for `api/`) is in the README, section C. Sign in as `admin` / `112233` (the demo
-shop). Create your own business with `npm run db:create-business -- "My Shop" myname 'a good password' "My Name"` from
+shop). Create your own business with `npm run db:create-business -- "My Shop" myname 'a good password' "My Name" [business-code]` from
 `api/` (with `DATABASE_URL` set), or set `POS_ALLOW_SIGNUP=true` on the API and `NEXT_PUBLIC_ALLOW_SIGNUP=true` on the
 web project to offer `/signup`.
 
@@ -94,7 +94,7 @@ admin cookie never opens a business and a business cookie never opens `/api/admi
 and end date. The list is computed in SQL as totals only (`COUNT` of accounts that can sign in, `SUM(pg_column_size)` of the
 records, the last audit-log time); no record content is selected, and there is no impersonation. Packages live in the `plans` table (name, user limit, monthly price; editable from the console). Subscription state is checked at sign-in and on every request (`authenticate`), cancelling deletes
 the business's sessions, and `crud:users` create / re-enable is refused at the plan's user limit (`assertUserQuota` in
-`rpc.ts`). Migration 2 adds `plan`, `subscription_status`, `subscription_expires_at` and `platform_sessions`; migration 3 adds `plans`, migration 4 the optional `contact_email` / `contact_phone` (international format) of a business, and migration 5 renames the status "suspended" to "cancelled". Renewing (`POST /api/admin/businesses/:id/renew`) extends an active term from its end date or restarts a cancelled/lapsed one from today; cancelling (`…/cancel`) signs everyone out.
+`rpc.ts`). Migration 2 adds `plan`, `subscription_status`, `subscription_expires_at` and `platform_sessions`; migration 3 adds `plans`, migration 4 the optional `contact_email` / `contact_phone` (international format) of a business, migration 5 renames the status "suspended" to "cancelled", and migration 7 adds the business `code` and makes sign-in names unique per business (owners stay globally unique through a partial index). Renewing (`POST /api/admin/businesses/:id/renew`) extends an active term from its end date or restarts a cancelled/lapsed one from today; cancelling (`…/cancel`) signs everyone out.
 The console can also replace a business owner's password (never read it) and delete a business after its owner's username is typed (everything cascades).
 
 ## Tests

@@ -73,7 +73,7 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 - **Per-person modules.** Under Settings → Users the owner can narrow what each person may use (none picked = everything the business has).
 - **Free account.** Switch on in `/admin` → Manage: price 0, no end date, every module, unlimited users.
 - **Demo account.** Tick "Demo account" when adding a business: three months of random sample data and no welcome wizard. Real business accounts still get the wizard; the browser-only demo never shows it.
-- **Staff sign-in.** The login page has "Business owner" and "Staff member" tabs. Staff enter the business username (the owner's sign-in name), their own account name and the password the owner set for them under Settings → Users.
+- **Staff sign-in.** The login page has "Business owner" and "Staff member" tabs. Staff enter the **business code**, their own username and the password the owner set for them under Settings → Users. A business code is a short unique name (3 to 40 letters, digits, dot, dash or underscore) chosen in the admin console when the business is created; it defaults to the owner's username and can be changed later. Because staff are looked up inside their business, the same staff username (`till`, `rafiq`…) can exist in many businesses; an owner still signs in with just their username, so owner usernames are unique everywhere. Owners can see the code under Settings → Users. The demo shop's code is `demo` (the quick-fill buttons on the sign-in page use it).
 - **Notifications.** The bell re-derives alerts from the data before every read and re-checks every 5 minutes and on focus.
 
 ## Tech stack
@@ -123,7 +123,7 @@ npm install
 cp .env.example .env.local      # NEXT_PUBLIC_DATA_MODE=api, BACKEND_URL=http://localhost:3001
 npm run dev:api
 ```
-Migrations run on the API's first request. Sign in as `admin` / `112233` (the demo shop). The platform owner console is at `/admin` (default `minhaz` / `11111111`). The API reads `ALLOWED_ORIGINS` (default `http://localhost:3000`); change it if the UI runs on another port. The API sets `Secure` cookies, which Chrome and Firefox accept on `http://localhost`; Safari does not, so use HTTPS there.
+Migrations run on the API's first request. Sign in as `admin` / `112233` (the demo shop; its staff use business code `demo`). The platform owner console is at `/admin` (default `minhaz` / `11111111`). The API reads `ALLOWED_ORIGINS` (default `http://localhost:3000`); change it if the UI runs on another port. The API sets `Secure` cookies, which Chrome and Firefox accept on `http://localhost`; Safari does not, so use HTTPS there.
 
 To work on the API without Docker for the app itself: `cd api && cp .env.example .env && docker compose up -d db && npm install && npm run dev` (port 3001, database on `127.0.0.1:5435`).
 

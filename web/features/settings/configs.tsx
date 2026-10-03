@@ -1,5 +1,7 @@
 "use client";
 
+import { API_MODE } from "@/lib/data/api/mode";
+import { useAuth } from "@/lib/auth/authStore";
 import { crudPerm } from "@/lib/auth/permissions";
 import { BarcodeIcon, BuildingIcon, FileTextIcon, PercentIcon, PrinterIcon, ReceiptIcon, UsersIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -207,9 +209,10 @@ export function LocationsPage() {
 
 export function UsersPage() {
   const t = useTranslations();
+  const businessCode = useAuth((s) => s.businessCode);
   const { data } = useLookups();
   const cfg: CrudConfig<"users"> = {
-    table: "users", permission: crudPerm("user"), title: t("nav.users"), description: t("settings.usersDescription"), icon: UsersIcon,
+    table: "users", permission: crudPerm("user"), title: t("nav.users"), description: API_MODE && businessCode ? `${t("settings.usersDescription")} ${t("settings.staffCode", { code: businessCode })}` : t("settings.usersDescription"), icon: UsersIcon,
     addLabel: t("settings.addUser"), editLabel: t("settings.editUser"), emptyTitle: t("settings.noUsers"),
     columns: [
       { key: "username", label: t("settings.f.username") },

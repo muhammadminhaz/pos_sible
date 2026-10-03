@@ -106,7 +106,7 @@ export function BusinessesPage() {
   const [renewing, setRenewing] = useState<Business | null>(null);
   const [cancelling, setCancelling] = useState<Business | null>(null);
   const term = q.trim().toLowerCase();
-  const rows = (businesses ?? []).filter((b) => !term || b.name.toLowerCase().includes(term) || (b.ownerUsername ?? "").toLowerCase().includes(term));
+  const rows = (businesses ?? []).filter((b) => !term || b.name.toLowerCase().includes(term) || (b.ownerUsername ?? "").toLowerCase().includes(term) || b.code.includes(term));
 
   return (
     <>
@@ -124,7 +124,8 @@ export function BusinessesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Business</TableHead>
-              <TableHead>Username</TableHead>
+              <TableHead>Business code</TableHead>
+              <TableHead>Owner username</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Package</TableHead>
               <TableHead>Modules</TableHead>
@@ -142,6 +143,7 @@ export function BusinessesPage() {
             {rows.map((b) => (
               <TableRow key={b.id}>
                 <TableCell className="font-medium">{b.name}</TableCell>
+                <TableCell><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{b.code}</code></TableCell>
                 <TableCell className="text-muted-foreground">{b.ownerUsername ?? "—"}</TableCell>
                 <TableCell><Contact email={b.contactEmail} phone={b.contactPhone} /></TableCell>
                 <TableCell>{b.planLabel}{b.free && <span className="ml-2 rounded-full bg-success-soft px-2 py-0.5 text-xs text-success-foreground">Free</span>}</TableCell>
@@ -170,13 +172,13 @@ export function BusinessesPage() {
       </div>
 
       <Dialog open={adding} onOpenChange={setAdding}>
-        <DialogContent className="sm:max-w-md">{adding && <AddForm plans={plans} modules={modules} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
+        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-md">{adding && <AddForm plans={plans} modules={modules} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
       </Dialog>
       <Dialog open={managing !== null} onOpenChange={(o) => !o && setManaging(null)}>
-        <DialogContent className="sm:max-w-md">{managing && <ManageForm key={managing.id} business={managing} plans={plans} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onRenew={() => { setRenewing(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
+        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-md">{managing && <ManageForm key={managing.id} business={managing} plans={plans} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onRenew={() => { setRenewing(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
       </Dialog>
       <Dialog open={renewing !== null} onOpenChange={(o) => !o && setRenewing(null)}>
-        <DialogContent className="sm:max-w-sm">{renewing && <RenewForm key={renewing.id} business={renewing} onClose={() => setRenewing(null)} onDone={async () => { setRenewing(null); await reload(); }} />}</DialogContent>
+        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-sm">{renewing && <RenewForm key={renewing.id} business={renewing} onClose={() => setRenewing(null)} onDone={async () => { setRenewing(null); await reload(); }} />}</DialogContent>
       </Dialog>
       <CancelDialog business={cancelling} onClose={() => setCancelling(null)} onDone={async () => { setCancelling(null); await reload(); }} />
       <DeleteDialog business={deleting} onClose={() => setDeleting(null)} onDone={async () => { setDeleting(null); await reload(); }} />
@@ -187,6 +189,7 @@ export function BusinessesPage() {
 function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: ModuleDef[]; onClose: () => void; onDone: () => void }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -202,14 +205,14 @@ function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: 
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password, email, phone, plan, months: term === "none" ? null : Number(term), modules: picked, free, demo }) }).catch(() => null);
+    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, ...(code.trim() ? { code: code.trim() } : {}), password, email, phone, plan, months: term === "none" ? null : Number(term), modules: picked, free, demo }) }).catch(() => null);
     setBusy(false);
     if (res?.ok) {
       toast.success("Business account created");
       return onDone();
     }
     const body = await res?.json().catch(() => null);
-    setError(body?.reason === "username_taken" ? "That username is already used by another business." : "Check the details: the username needs 3+ letters or digits and the password at least 8 characters.");
+    setError(body?.reason === "code_taken" ? "That business code is already used by another business." : body?.reason === "username_taken" ? "That owner username is already used by another business." : "Check the details: the username needs 3+ letters or digits and the password at least 8 characters.");
   };
 
   return (
@@ -220,7 +223,8 @@ function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: 
       </DialogHeader>
       {error && <div role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger-foreground">{error}</div>}
       <div className="grid gap-1.5"><Label htmlFor="b-name">Business name</Label><Input id="b-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={80} autoFocus /></div>
-      <div className="grid gap-1.5"><Label htmlFor="b-user">Username</Label><Input id="b-user" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} maxLength={40} pattern="[a-zA-Z0-9._-]+" autoComplete="off" /><p className="text-xs text-muted-foreground">Letters, digits, dot, dash or underscore. The business signs in with this.</p></div>
+      <div className="grid gap-1.5"><Label htmlFor="b-user">Owner username</Label><Input id="b-user" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} maxLength={40} pattern="[a-zA-Z0-9._-]+" autoComplete="off" /><p className="text-xs text-muted-foreground">Letters, digits, dot, dash or underscore. The business signs in with this.</p></div>
+      <div className="grid gap-1.5"><Label htmlFor="b-code">Business code (optional)</Label><Input id="b-code" value={code} onChange={(e) => setCode(e.target.value)} maxLength={40} pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{2,39}" placeholder={username.trim().toLowerCase() || "same as the owner username"} autoComplete="off" /><p className="text-xs text-muted-foreground">Staff type this at sign-in, so the same staff username can exist in many businesses. Leave empty to use the owner username.</p></div>
       <PasswordField id="b-pass" label="Password" value={password} onChange={setPassword} />
       <div className="grid gap-1.5"><Label htmlFor="b-email">Email (optional)</Label><Input id="b-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
       <div className="grid gap-1.5"><Label htmlFor="b-phone">Phone (optional)</Label><PhoneInput id="b-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
@@ -245,6 +249,7 @@ function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: 
 
 function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCancel }: { business: Business; plans: Plan[]; modules: ModuleDef[]; onClose: () => void; onDone: () => void; onRenew: () => void; onCancel: () => void }) {
   const [plan, setPlan] = useState(business.plan);
+  const [code, setCode] = useState(business.code);
   const [email, setEmail] = useState(business.contactEmail ?? "");
   const [phone, setPhone] = useState(business.contactPhone ?? "");
   const [picked, setPicked] = useState(business.modules);
@@ -256,9 +261,12 @@ function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCanc
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ plan, contactEmail: email, contactPhone: phone, modules: picked, free, ...(free ? { expiresAt: null } : {}) }) }).catch(() => null);
+    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ plan, ...(code.trim().toLowerCase() !== business.code ? { code: code.trim() } : {}), contactEmail: email, contactPhone: phone, modules: picked, free, ...(free ? { expiresAt: null } : {}) }) }).catch(() => null);
     setBusy(false);
-    if (!res?.ok) return void toast.error("Couldn't save the change.");
+    if (!res?.ok) {
+      const body = await res?.json().catch(() => null);
+      return void toast.error(body?.reason === "code_taken" ? "That business code is already used by another business." : res?.status === 400 && code.trim() ? "Check the business code: 3 to 40 letters, digits, dot, dash or underscore." : "Couldn't save the change.");
+    }
     toast.success("Account updated");
     onDone();
   };
@@ -294,6 +302,7 @@ function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCanc
       </div>
 
       <form onSubmit={save} className="grid gap-4">
+        <div className="grid gap-1.5"><Label htmlFor="m-code">Business code</Label><Input id="m-code" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={40} autoComplete="off" /><p className="text-xs text-muted-foreground">What staff type at sign-in. Changing it means staff must use the new one straight away.</p></div>
         <div className="grid gap-1.5"><Label htmlFor="m-plan">Package</Label><PlanSelect id="m-plan" plans={plans} value={plan} onChange={setPlan} /></div>
         <ModulePicker modules={modules} value={picked} onChange={setPicked} disabled={free} />
         <FreeSwitch id="m-free" value={free} onChange={setFree} />

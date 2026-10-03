@@ -156,4 +156,22 @@ INSERT INTO modules (id, label, sort) VALUES
 ON CONFLICT (id) DO NOTHING;
 `,
   },
+  {
+    id: 7,
+    name: "business codes and per-business usernames",
+    sql: `
+-- A short code identifies a business at sign-in, so staff usernames only need to be unique inside their own business.
+-- Existing businesses get their owner's username as the code, which is what staff already type today.
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS code text;
+UPDATE businesses b SET code = lower(l.username) FROM logins l WHERE l.business_id = b.id AND l.user_id = 'user_admin' AND b.code IS NULL;
+UPDATE businesses SET code = 'b' || substr(replace(id::text, '-', ''), 1, 10) WHERE code IS NULL;
+ALTER TABLE businesses ALTER COLUMN code SET NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS businesses_code_key ON businesses (code);
+
+-- Usernames are now unique per business. Owners still sign in with just their username, so those stay unique everywhere.
+ALTER TABLE logins DROP CONSTRAINT IF EXISTS logins_pkey;
+ALTER TABLE logins ADD PRIMARY KEY (business_id, username);
+CREATE UNIQUE INDEX IF NOT EXISTS logins_owner_name ON logins (username) WHERE user_id = 'user_admin';
+`,
+  },
 ];

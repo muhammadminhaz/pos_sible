@@ -114,6 +114,8 @@ export type BusinessSummary = {
   createdAt: string;
   /** The owner's sign-in name: what the platform owner types to confirm a deletion. */
   ownerUsername: string | null;
+  /** What staff type at sign-in to reach this business. */
+  code: string;
   contactEmail: string | null;
   contactPhone: string | null;
   plan: string;
@@ -146,11 +148,11 @@ export async function listBusinesses(): Promise<BusinessSummary[]> {
   await ready();
   const { rows } = await pool().query<{
     id: string; name: string; created_at: Date; plan: string; plan_label: string; price: string; max_users: number | null;
-    subscription_status: SubscriptionStatus; subscription_expires_at: Date | null; owner: string | null; contact_email: string | null; contact_phone: string | null;
+    subscription_status: SubscriptionStatus; subscription_expires_at: Date | null; owner: string | null; code: string; contact_email: string | null; contact_phone: string | null;
     modules: string[] | null; free: boolean; users: string; storage: string; last_active: Date | null;
   }>(`
     SELECT b.id, b.name, b.created_at, b.plan, p.label AS plan_label, p.price_monthly AS price, p.max_users,
-           b.subscription_status, b.subscription_expires_at, l.username AS owner, b.contact_email, b.contact_phone, b.modules, b.free,
+           b.subscription_status, b.subscription_expires_at, l.username AS owner, b.code, b.contact_email, b.contact_phone, b.modules, b.free,
            COALESCE(u.n, 0) AS users,
            COALESCE(s.bytes, 0) + pg_column_size(b.settings) + pg_column_size(b.meta) AS storage,
            a.last_active
@@ -165,7 +167,7 @@ export async function listBusinesses(): Promise<BusinessSummary[]> {
   return rows.map((r) => {
     const modules = effectiveModules(r.modules, r.free);
     return {
-      id: r.id, name: r.name, createdAt: r.created_at.toISOString(), ownerUsername: r.owner, contactEmail: r.contact_email, contactPhone: r.contact_phone,
+      id: r.id, name: r.name, createdAt: r.created_at.toISOString(), ownerUsername: r.owner, code: r.code, contactEmail: r.contact_email, contactPhone: r.contact_phone,
       plan: r.plan, planLabel: r.plan_label, priceMonthly: r.free ? 0 : Number(r.price) + modules.reduce((sum, m) => sum + (prices.get(m) ?? 0), 0),
       modules, free: r.free, status: r.subscription_status, expiresAt: r.subscription_expires_at?.toISOString() ?? null,
       state: subscriptionState(r.subscription_status, r.subscription_expires_at, new Date(), r.free), users: Number(r.users),
@@ -243,4 +245,16 @@ export async function renewSubscription(businessId: string, months: number): Pro
 /** Ends a subscription: nobody in the business can sign in until it is renewed, and everyone is signed out now. */
 export async function cancelSubscription(businessId: string): Promise<boolean> {
   return setSubscription(businessId, { status: "cancelled" });
+}
+
+/** Changes the code staff type at sign-in. Returns "taken" when another business already uses it. */
+export async function setBusinessCode(businessId: string, code: string): Promise<"ok" | "taken" | "not_found"> {
+  await ready();
+  try {
+    const r = await pool().query("UPDATE businesses SET code = $2 WHERE id = $1", [businessId, code]);
+    return r.rowCount === 1 ? "ok" : "not_found";
+  } catch (e) {
+    if ((e as { code?: string }).code === "23505") return "taken";
+    throw e;
+  }
 }

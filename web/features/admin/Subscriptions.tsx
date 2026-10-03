@@ -73,10 +73,10 @@ export function SubscriptionsPage() {
         </Table>
       </div>
       <Dialog open={pricing !== null} onOpenChange={(o) => !o && setPricing(null)}>
-        <DialogContent className="sm:max-w-md">{pricing && <ModuleForm key={pricing.id} module={pricing} onClose={() => setPricing(null)} />}</DialogContent>
+        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-md">{pricing && <ModuleForm key={pricing.id} module={pricing} onClose={() => setPricing(null)} />}</DialogContent>
       </Dialog>
       <Dialog open={editing !== null} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="sm:max-w-md">{editing && <PlanForm key={editing.id} plan={editing} onClose={() => setEditing(null)} />}</DialogContent>
+        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-md">{editing && <PlanForm key={editing.id} plan={editing} onClose={() => setEditing(null)} />}</DialogContent>
       </Dialog>
     </>
   );

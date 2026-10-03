@@ -65,7 +65,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ username, password, remember, ...(staff ? { business } : {}) }) }).catch(() => null);
       if (res?.ok) {
         const body = await res.json();
-        useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName, modules: body.modules });
+        useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName, businessCode: body.businessCode, modules: body.modules });
         return;
       }
       const reason = await res?.json().then((b: { reason?: string }) => b.reason).catch(() => undefined);
@@ -81,7 +81,10 @@ export default function LoginPage() {
   });
 
   const fillDemo = (username: string) => {
-    form.reset({ username, password: "112233", remember: true });
+    // With a server only the owner signs in by username alone; the other demo accounts are staff of the "demo" business.
+    const asStaff = API_MODE && username !== "admin";
+    setStaff(asStaff);
+    form.reset({ business: asStaff ? "demo" : "", username, password: "112233", remember: true });
     setFailed(false);
   };
 

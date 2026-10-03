@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { MODULE_IDS } from "@/lib/server/plans";
 import { requireAdmin } from "@/lib/server/adminRoute";
+import { businessCode } from "@/lib/server/code";
 import { contactEmail, contactPhone } from "@/lib/server/contact";
-import { deleteBusiness, getPlans, resetOwnerPassword, setSubscription } from "@/lib/server/platform";
+import { deleteBusiness, getPlans, resetOwnerPassword, setBusinessCode, setSubscription } from "@/lib/server/platform";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,8 @@ const patch = z.object({
   plan: z.string().min(1).max(40).optional(),
   status: z.enum(["active", "cancelled"]).optional(),
   expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
+  /** What staff type at sign-in. */
+  code: businessCode.optional(),
   contactEmail: contactEmail.optional(),
   contactPhone: contactPhone.optional(),
   modules: z.array(z.enum(MODULE_IDS)).optional(),
@@ -29,10 +32,14 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   const { id } = await ctx.params;
   const parsed = patch.safeParse(await req.json().catch(() => null));
   if (!uuid.safeParse(id).success || !parsed.success) return NextResponse.json({ ok: false, reason: "invalid" }, { status: 400 });
-  const { ownerPassword, ...subscription } = parsed.data;
+  const { ownerPassword, code, ...subscription } = parsed.data;
   if (subscription.plan && !(await getPlans()).some((p) => p.id === subscription.plan)) return NextResponse.json({ ok: false, reason: "invalid" }, { status: 400 });
   const found = await setSubscription(id, subscription as Parameters<typeof setSubscription>[1]);
   if (!found) return NextResponse.json({ ok: false, reason: "not_found" }, { status: 404 });
+  if (code) {
+    const r = await setBusinessCode(id, code);
+    if (r === "taken") return NextResponse.json({ ok: false, reason: "code_taken" }, { status: 409 });
+  }
   if (ownerPassword && !(await resetOwnerPassword(id, ownerPassword))) return NextResponse.json({ ok: false, reason: "no_owner" }, { status: 409 });
   return NextResponse.json({ ok: true });
 }

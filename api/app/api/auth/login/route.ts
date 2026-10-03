@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   }
   const r = await login(body.username, body.password, body.remember !== false, clientIp(req), (body.business as string | undefined) || undefined);
   if (!r.ok) return NextResponse.json({ ok: false, reason: r.reason }, { status: r.reason === "throttled" ? 429 : r.reason === "cancelled" || r.reason === "expired" ? 403 : 401 });
-  const res = NextResponse.json({ ok: true, user: r.principal.user, role: r.principal.role, businessName: r.principal.businessName, modules: r.principal.modules });
+  const res = NextResponse.json({ ok: true, user: r.principal.user, role: r.principal.role, businessName: r.principal.businessName, businessCode: r.principal.businessCode, modules: r.principal.modules });
   res.cookies.set(COOKIE, r.token, cookieOptions(r.maxAge));
   return res;
 }

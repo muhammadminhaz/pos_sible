@@ -84,7 +84,7 @@ describe.runIf(up)("Postgres backend", () => {
     await ok(admin, "crud:users", "create", { username: name, firstName: "Rina", lastName: "", email: "", roleId: "role_cashier", password: "secret-pass", locationIds: [], isActive: true, allowLogin: true, prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 });
     const stored = (await poolMod.pool().query("SELECT data->>'password' AS p FROM users WHERE business_id = $1 AND data->>'username' = $2", [biz, name])).rows[0].p as string;
     expect(stored.startsWith("scrypt$")).toBe(true);
-    const r = await auth.login(name, "secret-pass", true, "ip3");
+    const r = await auth.login(name, "secret-pass", true, "ip3", uname);
     expect(r.ok).toBe(true);
     if (r.ok) {
       const cashier = { businessId: biz, userId: r.principal.userId, role: r.principal.role };
@@ -106,7 +106,7 @@ describe.runIf(up)("Postgres backend", () => {
     const mk = async (roleId: string, tag: string) => {
       const username = `${tag}${Date.now().toString(36)}`;
       await ok(admin, "crud:users", "create", { username, firstName: tag, lastName: "Shop", email: "", roleId, password: "pass-word1", locationIds: [], isActive: true, allowLogin: true, prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 });
-      const r = await auth.login(username, "pass-word1", true, `ip-${tag}`);
+      const r = await auth.login(username, "pass-word1", true, `ip-${tag}`, uname);
       if (!r.ok) throw new Error("login failed");
       return { businessId: biz, userId: r.principal.userId, role: r.principal.role };
     };
@@ -133,7 +133,7 @@ describe.runIf(up)("Postgres backend", () => {
   it("deactivating a user ends their session straight away", async () => {
     const name = `temp${Date.now().toString(36)}`;
     const created = await ok(admin, "crud:users", "create", { username: name, firstName: "Temp", lastName: "", email: "", roleId: "role_cashier", password: "temp-pass1", locationIds: [], isActive: true, allowLogin: true, prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 });
-    const r = await auth.login(name, "temp-pass1", true, "ip4");
+    const r = await auth.login(name, "temp-pass1", true, "ip4", uname);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const req = { cookies: { get: () => ({ value: r.token }) } };

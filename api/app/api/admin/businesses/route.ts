@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { MODULE_IDS } from "@/lib/server/plans";
 import { requireAdmin } from "@/lib/server/adminRoute";
+import { businessCode, defaultCode } from "@/lib/server/code";
 import { contactEmail, contactPhone } from "@/lib/server/contact";
 import { getPlans, listBusinesses, setSubscription } from "@/lib/server/platform";
 import { pool, ready } from "@/lib/server/pool";
@@ -21,6 +22,8 @@ const create = z.object({
   businessName: z.string().trim().min(2).max(80),
   username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/),
   password: z.string().min(8).max(200),
+  /** What staff type at sign-in; defaults to the owner's username. */
+  code: businessCode.optional(),
   email: contactEmail.optional(),
   phone: contactPhone.optional(),
   plan: z.string().min(1).max(40),
@@ -39,15 +42,19 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
   const parsed = create.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, reason: "invalid", fields: parsed.error.flatten().fieldErrors }, { status: 400 });
-  const { businessName, username, password, plan, expiresAt, months, email, phone, modules, free, demo } = parsed.data;
+  const { businessName, username, password, code, plan, expiresAt, months, email, phone, modules, free, demo } = parsed.data;
   await ready();
   if (!(await getPlans()).some((p) => p.id === plan)) return NextResponse.json({ ok: false, reason: "invalid", fields: { plan: ["unknown"] } }, { status: 400 });
-  if ((await pool().query("SELECT 1 FROM logins WHERE username = $1", [username.toLowerCase()])).rowCount) {
+  // Owners sign in with just their username, so that must be free everywhere; staff names only need to be free inside their business.
+  if ((await pool().query("SELECT 1 FROM logins WHERE username = $1 AND user_id = 'user_admin'", [username.toLowerCase()])).rowCount) {
     return NextResponse.json({ ok: false, reason: "username_taken" }, { status: 409 });
+  }
+  if ((await pool().query("SELECT 1 FROM businesses WHERE code = $1", [code ?? defaultCode(username)])).rowCount) {
+    return NextResponse.json({ ok: false, reason: "code_taken" }, { status: 409 });
   }
   let businessId: string;
   try {
-    ({ businessId } = await createBusiness({ name: businessName, admin: { username, password, firstName: businessName }, demo }));
+    ({ businessId } = await createBusiness({ name: businessName, admin: { username, password, firstName: businessName }, code, demo }));
   } catch {
     return NextResponse.json({ ok: false, reason: "username_taken" }, { status: 409 });
   }

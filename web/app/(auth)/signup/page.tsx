@@ -29,7 +29,7 @@ export default function SignupPage() {
     setBusy(false);
     if (res?.ok) {
       const body = await res.json();
-      useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName, modules: body.modules });
+      useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName, businessCode: body.businessCode, modules: body.modules });
       router.replace("/home");
     } else setError(res?.status === 409 ? t("usernameTaken") : t("signupFailed"));
   };
