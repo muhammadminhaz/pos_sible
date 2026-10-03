@@ -3,6 +3,7 @@ import {
   BarChart3Icon,
   CalendarDaysIcon,
   HomeIcon,
+  LineChartIcon,
   LandmarkIcon,
   PackageIcon,
   ReceiptIcon,
@@ -19,6 +20,18 @@ export type NavGroup = { key: string; icon: LucideIcon; href?: string; permissio
 /** The sidebar tree. Labels are `t(\`nav.${key}\`)`; hrefs match the route scaffold in spec §3.3. */
 export const NAV: NavGroup[] = [
   { key: "home", icon: HomeIcon, href: "/home", permission: "dashboard.view" },
+  {
+    key: "analytics",
+    icon: LineChartIcon,
+    items: [
+      { key: "analyticsOverview", href: "/analytics", permission: "report.view" },
+      { key: "analyticsSales", href: "/analytics/sales", permission: "report.view" },
+      { key: "analyticsProducts", href: "/analytics/products", permission: "report.view" },
+      { key: "analyticsCustomers", href: "/analytics/customers", permission: "report.view" },
+      { key: "analyticsInventory", href: "/analytics/inventory", permission: "report.view" },
+      { key: "analyticsExpenses", href: "/analytics/expenses", permission: "report.view" },
+    ],
+  },
   {
     key: "contacts",
     icon: UsersIcon,

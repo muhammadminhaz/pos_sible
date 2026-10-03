@@ -23,7 +23,7 @@ type Url = Record<string, string | undefined>;
 export function useReportFilters<K extends string = never>(extraKeys: readonly K[] = [], opts: { defaultRange?: boolean } = {}) {
   const globalLocation = useUI((s) => s.locationId);
   const { today, fyStartMonth } = useRangeContext();
-  const [url, setUrl, resetUrl] = useUrlFilters<Url>(["location", "range", ...extraKeys]);
+  const [url, setUrl, resetUrl] = useUrlFilters<Url>(["location", "range", ...extraKeys], { autoRange: false });
   const fallback = opts.defaultRange === false ? undefined : presetRange("thisMonth", today, fyStartMonth);
   const range = decodeRange(url.range) ?? fallback;
   const filter: ReportFilter = { from: range?.from, to: range?.to, locationId: url.location ?? (globalLocation === "all" ? null : globalLocation) };

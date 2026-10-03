@@ -69,6 +69,12 @@ export const ROUTES = {
   "/accounts/cash-flow": { title: "cashFlow", module: "finance", permission: "account.view" },
   "/accounts/payment-report": { title: "paymentAccountReport", module: "finance", permission: "account.view" },
 
+  "/analytics": { title: "analyticsOverview", module: "reports", permission: "report.view" },
+  "/analytics/sales": { title: "analyticsSales", module: "reports", permission: "report.view" },
+  "/analytics/products": { title: "analyticsProducts", module: "reports", permission: "report.view" },
+  "/analytics/customers": { title: "analyticsCustomers", module: "reports", permission: "report.view" },
+  "/analytics/inventory": { title: "analyticsInventory", module: "reports", permission: "report.view" },
+  "/analytics/expenses": { title: "analyticsExpenses", module: "reports", permission: "report.view" },
   "/reports/profit-loss": { title: "profitLoss", module: "reports", permission: "report.profit_loss" },
   "/reports/purchase-sale": { title: "purchaseSale", module: "reports", permission: "report.view" },
   "/reports/tax": { title: "taxReport", module: "reports", permission: "report.view" },

@@ -413,3 +413,30 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
 @media (prefers-reduced-motion: reduce) {
   .route-sweep { animation: none; width: 100%; opacity: 0.5; }
 }
+
+/* Analytics card grid (react-grid-layout): placeholder and resize handle follow the theme. */
+.react-grid-item.react-grid-placeholder {
+  background: var(--primary);
+  opacity: 0.14;
+  border-radius: 1.5rem;
+}
+.react-grid-item > .react-resizable-handle {
+  opacity: 0.55;
+  right: 6px;
+  bottom: 6px;
+}
+.react-grid-item:hover > .react-resizable-handle { opacity: 1; }
+.react-grid-item > .react-resizable-handle::after {
+  right: 5px;
+  bottom: 5px;
+  border-right-color: var(--muted-foreground);
+  border-bottom-color: var(--muted-foreground);
+  border-bottom-right-radius: 3px;
+}
+.react-grid-item.react-draggable-dragging > section,
+.react-grid-item.resizing > section {
+  box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.35);
+}
+@media print {
+  .react-grid-item > .react-resizable-handle { display: none; }
+}

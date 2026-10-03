@@ -56,8 +56,8 @@ export type DataTableProps<T> = {
   empty?: ReactNode;
   /** Columns hidden until the user shows them (only used before a preference is saved). */
   defaultHidden?: string[];
-  /** "card" gives the table the same surface as the dashboard cards (used by reports). */
-  surface?: "plain" | "card";
+  /** "card" gives the table the same surface as the dashboard cards (used by reports); "bare" has none, for a table already inside a card. */
+  surface?: "plain" | "card" | "bare";
 };
 
 const ROW_H = { comfortable: "h-10", compact: "h-8" };
@@ -195,7 +195,7 @@ export function DataTable<T>({
   const skeletonRows = Math.min(query.pageSize === -1 ? 10 : query.pageSize, 10);
 
   return (
-    <div className={cn("text-card-foreground", surface === "card" ? `${CARD} overflow-hidden p-0 sm:p-0` : "overflow-hidden rounded-xl border bg-card")}>
+    <div className={cn("text-card-foreground", surface === "card" ? `${CARD} overflow-hidden p-0 sm:p-0` : surface === "bare" ? "overflow-hidden" : "overflow-hidden rounded-xl border bg-card")}>
       <Toolbar
         table={table}
         search={query.search}

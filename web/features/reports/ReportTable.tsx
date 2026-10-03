@@ -28,9 +28,11 @@ export type Col<R> = {
  * Rows are already computed, so sorting is by what the report returned; the empty state replaces the table when there are none.
  */
 export function ReportTable<R>({
-  id, columns, rows: all, totals: reportTotals, loading, empty, getRowId,
+  id, columns, rows: all, totals: reportTotals, loading, empty, getRowId, bare,
 }: {
   id: string; columns: Col<R>[]; rows: R[]; totals?: Partial<Record<string, number>>; loading?: boolean; empty?: string; getRowId?: (r: R) => string;
+  /** Drop the table's own card, for use inside a Panel. */
+  bare?: boolean;
 }) {
   const t = useTranslations();
   const f = useFormat();
@@ -75,7 +77,7 @@ export function ReportTable<R>({
     return (
     <DataTable
       tableId={`report-${id}`} columns={columnDefs} data={pageRows} total={rows.length} loading={loading} query={query} onQueryChange={setQuery}
-      surface="card" exportName={id} exportRows={async () => rows} getRowId={getRowId ? getRowId : undefined}
+      surface={bare ? "bare" : "card"} exportName={id} exportRows={async () => rows} getRowId={getRowId ? getRowId : undefined}
       empty={<EmptyState icon={FileBarChartIcon} title={empty ?? t("reports.empty")} />} footer={footer}
     />
   );

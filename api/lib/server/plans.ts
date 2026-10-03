@@ -30,6 +30,7 @@ export const SERVICE_MODULES: Record<string, ModuleId[]> = {
   accountsService: ["accounts", "sales", "pos", "purchases", "expenses"],
   ledgerReportsService: ["accounts"],
   moneyReports: ["reports"],
+  analyticsReports: ["reports"],
   stockReports: ["reports"],
   productReports: ["reports"],
   contactReports: ["reports"],
