@@ -40,7 +40,7 @@ export default function LoginPage() {
   const serverStatus = useAuth((s) => s.status);
   const userId = API_MODE ? (serverStatus === "in" ? "server" : null) : localUserId;
   const login = useSession((s) => s.login);
-  const [failed, setFailed] = useState<false | "invalid" | "throttled" | "suspended" | "expired">(false);
+  const [failed, setFailed] = useState<false | "invalid" | "throttled" | "cancelled" | "expired">(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<Values>({
@@ -66,7 +66,7 @@ export default function LoginPage() {
         return;
       }
       const reason = await res?.json().then((b: { reason?: string }) => b.reason).catch(() => undefined);
-      setFailed(res?.status === 429 ? "throttled" : reason === "suspended" || reason === "expired" ? reason : "invalid");
+      setFailed(res?.status === 429 ? "throttled" : reason === "cancelled" || reason === "expired" ? reason : "invalid");
       form.setFocus("password");
       return;
     }

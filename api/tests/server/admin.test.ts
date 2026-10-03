@@ -101,16 +101,16 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     for (const secret of ["scrypt$", "owner-pass-1", "password"]) expect(raw).not.toContain(secret);
   });
 
-  it("a suspended or expired business cannot sign in, and a live session ends at once", async () => {
+  it("a cancelled or expired business cannot sign in, and a live session ends at once", async () => {
     const id = await open(`Gate ${tag}`, `gate${tag}`);
     const { cookie } = await principal(`gate${tag}`);
     const req = () => new NextRequest("http://localhost:3000/api/rpc", { headers: { cookie: `posible_sid=${cookie}` } });
     expect(await auth.authenticate(req())).not.toBeNull();
 
     const patch = (body: object) => patchRoute.PATCH(asAdmin(`/api/admin/businesses/${id}`, { method: "PATCH", body: JSON.stringify(body) }), { params: Promise.resolve({ id }) });
-    expect((await patch({ status: "suspended" })).status).toBe(200);
+    expect((await patch({ status: "cancelled" })).status).toBe(200);
     expect(await auth.authenticate(req())).toBeNull();
-    expect(await auth.login(`gate${tag}`, "owner-pass-1", true, "ip-g1")).toMatchObject({ ok: false, reason: "suspended" });
+    expect(await auth.login(`gate${tag}`, "owner-pass-1", true, "ip-g1")).toMatchObject({ ok: false, reason: "cancelled" });
     expect(await auth.login(`gate${tag}`, "wrong", true, "ip-g2")).toMatchObject({ ok: false, reason: "invalid" }); // a wrong password learns nothing
 
     expect((await patch({ status: "active", expiresAt: "2020-01-01T00:00:00Z" })).status).toBe(200);
@@ -121,6 +121,44 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect((await auth.login(`gate${tag}`, "owner-pass-1", true, "ip-g4")).ok).toBe(true);
     expect((await patch({ plan: "nonsense" })).status).toBe(400);
     expect((await patchRoute.PATCH(asAdmin("/api/admin/businesses/00000000-0000-4000-8000-000000000000", { method: "PATCH", body: JSON.stringify({ status: "active" }) }), { params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000000" }) })).status).toBe(404);
+  });
+
+  it("renewing extends from the end date, restarts a lapsed one, and switches a cancelled one back on", async () => {
+    const id = await open(`Renew ${tag}`, `renew${tag}`, "starter", new Date(Date.now() + 10 * 86_400_000).toISOString());
+    const post = (path: string, body: object = {}) => asAdmin(`/api/admin/businesses/${id}/${path}`, { method: "POST", body: JSON.stringify(body) });
+    const renew = (await import("@/app/api/admin/businesses/[id]/renew/route")).POST;
+    const cancel = (await import("@/app/api/admin/businesses/[id]/cancel/route")).POST;
+    const ctx = { params: Promise.resolve({ id }) };
+    const before = new Date((await summary(id)).expiresAt).getTime();
+
+    expect((await renew(post("renew", { months: 0 }), ctx)).status).toBe(400);
+    const r1 = await (await renew(post("renew", { months: 3 }), ctx)).json();
+    const gained = (new Date(r1.expiresAt).getTime() - before) / 86_400_000;
+    expect(gained).toBeGreaterThan(88); // three months added to the existing end date, not to today
+    expect(gained).toBeLessThan(93);
+
+    // Cancel: signed out, cannot sign in, and the message names the cause.
+    const { cookie } = await principal(`renew${tag}`);
+    expect((await cancel(post("cancel"), ctx)).status).toBe(200);
+    expect(await auth.authenticate(new NextRequest("http://localhost:3000/api/rpc", { headers: { cookie: `posible_sid=${cookie}` } }))).toBeNull();
+    expect(await auth.login(`renew${tag}`, "owner-pass-1", true, "ip-c1")).toMatchObject({ ok: false, reason: "cancelled" });
+    expect((await summary(id)).state).toBe("cancelled");
+
+    // Renewing brings it back, counting from today because the old term was cancelled.
+    const r2 = await (await renew(post("renew", { months: 1 }), ctx)).json();
+    const fromToday = (new Date(r2.expiresAt).getTime() - Date.now()) / 86_400_000;
+    expect(fromToday).toBeGreaterThan(27);
+    expect(fromToday).toBeLessThan(32);
+    expect((await auth.login(`renew${tag}`, "owner-pass-1", true, "ip-c2")).ok).toBe(true);
+    expect((await summary(id)).state).toBe("active");
+
+    // A first term can be given in months when the business is created.
+    const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: `Term ${tag}`, username: `term${tag}`, password: "owner-pass-1", plan: "starter", months: 6 }) }));
+    const termId = (await res.json()).id as string;
+    ids.push(termId);
+    const term = (new Date((await summary(termId)).expiresAt).getTime() - Date.now()) / 86_400_000;
+    expect(term).toBeGreaterThan(178);
+    expect(term).toBeLessThan(186);
   });
 
   it("the package limits how many users can sign in", async () => {

@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, reason: "invalid" }, { status: 400 });
   }
   const r = await login(body.username, body.password, body.remember !== false, clientIp(req));
-  if (!r.ok) return NextResponse.json({ ok: false, reason: r.reason }, { status: r.reason === "throttled" ? 429 : r.reason === "suspended" || r.reason === "expired" ? 403 : 401 });
+  if (!r.ok) return NextResponse.json({ ok: false, reason: r.reason }, { status: r.reason === "throttled" ? 429 : r.reason === "cancelled" || r.reason === "expired" ? 403 : 401 });
   const res = NextResponse.json({ ok: true, user: r.principal.user, role: r.principal.role, businessName: r.principal.businessName });
   res.cookies.set(COOKIE, r.token, cookieOptions(r.maxAge));
   return res;

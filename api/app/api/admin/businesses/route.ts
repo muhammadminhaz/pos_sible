@@ -24,6 +24,8 @@ const create = z.object({
   phone: contactPhone.optional(),
   plan: z.string().min(1).max(40),
   expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
+  /** A first term in months (1, 3, 6, 12…); leave out for no end date. */
+  months: z.number().int().min(1).max(60).nullable().optional(),
 });
 
 /** Opens a business account: its name, the sign-in the owner will use, and a package. */
@@ -32,7 +34,7 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
   const parsed = create.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, reason: "invalid", fields: parsed.error.flatten().fieldErrors }, { status: 400 });
-  const { businessName, username, password, plan, expiresAt, email, phone } = parsed.data;
+  const { businessName, username, password, plan, expiresAt, months, email, phone } = parsed.data;
   await ready();
   if (!(await getPlans()).some((p) => p.id === plan)) return NextResponse.json({ ok: false, reason: "invalid", fields: { plan: ["unknown"] } }, { status: 400 });
   if ((await pool().query("SELECT 1 FROM logins WHERE username = $1", [username.toLowerCase()])).rowCount) {
@@ -44,6 +46,6 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, reason: "username_taken" }, { status: 409 });
   }
-  await setSubscription(businessId, { plan, status: "active", expiresAt: expiresAt ?? null, contactEmail: email ?? null, contactPhone: phone ?? null });
+  await setSubscription(businessId, { plan, status: "active", expiresAt: months ? new Date(new Date().setMonth(new Date().getMonth() + months)).toISOString() : (expiresAt ?? null), contactEmail: email ?? null, contactPhone: phone ?? null });
   return NextResponse.json({ ok: true, id: businessId }, { status: 201 });
 }

@@ -11,7 +11,7 @@ type Ctx = { params: Promise<{ id: string }> };
 const uuid = z.string().uuid();
 const patch = z.object({
   plan: z.string().min(1).max(40).optional(),
-  status: z.enum(["active", "suspended"]).optional(),
+  status: z.enum(["active", "cancelled"]).optional(),
   expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
   contactEmail: contactEmail.optional(),
   contactPhone: contactPhone.optional(),

@@ -109,7 +109,7 @@ export type BusinessSummary = {
   status: SubscriptionStatus;
   expiresAt: string | null;
   /** What actually applies now: "expired" when the date has passed. */
-  state: "active" | "suspended" | "expired";
+  state: "active" | "cancelled" | "expired";
   /** Accounts that can sign in. */
   users: number;
   maxUsers: number | null;
@@ -165,8 +165,8 @@ export async function setSubscription(businessId: string, patch: SubscriptionPat
   if (patch.contactPhone !== undefined) { args.push(patch.contactPhone); sets.push(`contact_phone = $${args.length}`); }
   if (!sets.length) return (await pool().query("SELECT 1 FROM businesses WHERE id = $1", [businessId])).rowCount === 1;
   const r = await pool().query(`UPDATE businesses SET ${sets.join(", ")} WHERE id = $1`, args);
-  // A suspended business is signed out everywhere straight away.
-  if (patch.status === "suspended") await pool().query("DELETE FROM sessions WHERE business_id = $1", [businessId]);
+  // A cancelled business is signed out everywhere straight away.
+  if (patch.status === "cancelled") await pool().query("DELETE FROM sessions WHERE business_id = $1", [businessId]);
   return r.rowCount === 1;
 }
 
@@ -197,4 +197,25 @@ export async function deleteBusiness(businessId: string, confirmUsername: string
   await pool().query("DELETE FROM businesses WHERE id = $1", [businessId]); // tables, logins and sessions cascade
   globalThis.__posibleCache?.delete(businessId);
   return "deleted";
+}
+
+/**
+ * Renews a subscription for `months` and switches it back on. An active subscription is extended from its end date (so
+ * renewing early never loses days); a cancelled or lapsed one starts counting from today. Returns the new end date, or
+ * null for an unknown business.
+ */
+export async function renewSubscription(businessId: string, months: number): Promise<string | null> {
+  await ready();
+  const r = await pool().query<{ subscription_expires_at: Date }>(
+    `UPDATE businesses
+        SET subscription_expires_at = (CASE WHEN subscription_status = 'active' THEN GREATEST(now(), COALESCE(subscription_expires_at, now())) ELSE now() END) + $2 * interval '1 month',
+            subscription_status = 'active'
+      WHERE id = $1
+  RETURNING subscription_expires_at`, [businessId, months]);
+  return r.rows[0]?.subscription_expires_at.toISOString() ?? null;
+}
+
+/** Ends a subscription: nobody in the business can sign in until it is renewed, and everyone is signed out now. */
+export async function cancelSubscription(businessId: string): Promise<boolean> {
+  return setSubscription(businessId, { status: "cancelled" });
 }

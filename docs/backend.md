@@ -92,9 +92,9 @@ throttled per address) and keeps its own sessions in `platform_sessions` under a
 admin cookie never opens a business and a business cookie never opens `/api/admin/*`. The admin endpoints
 (`app/api/admin/*`) can list businesses, create one with its owner sign-in, and change a business's package, on/off switch
 and end date. The list is computed in SQL as totals only (`COUNT` of accounts that can sign in, `SUM(pg_column_size)` of the
-records, the last audit-log time); no record content is selected, and there is no impersonation. Packages live in the `plans` table (name, user limit, monthly price; editable from the console). Subscription state is checked at sign-in and on every request (`authenticate`), suspending deletes
+records, the last audit-log time); no record content is selected, and there is no impersonation. Packages live in the `plans` table (name, user limit, monthly price; editable from the console). Subscription state is checked at sign-in and on every request (`authenticate`), cancelling deletes
 the business's sessions, and `crud:users` create / re-enable is refused at the plan's user limit (`assertUserQuota` in
-`rpc.ts`). Migration 2 adds `plan`, `subscription_status`, `subscription_expires_at` and `platform_sessions`; migration 3 adds `plans`, migration 4 the optional `contact_email` / `contact_phone` (international format) of a business.
+`rpc.ts`). Migration 2 adds `plan`, `subscription_status`, `subscription_expires_at` and `platform_sessions`; migration 3 adds `plans`, migration 4 the optional `contact_email` / `contact_phone` (international format) of a business, and migration 5 renames the status "suspended" to "cancelled". Renewing (`POST /api/admin/businesses/:id/renew`) extends an active term from its end date or restarts a cancelled/lapsed one from today; cancelling (`…/cancel`) signs everyone out.
 The console can also replace a business owner's password (never read it) and delete a business after its owner's username is typed (everything cascades).
 
 ## Tests

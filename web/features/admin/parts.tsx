@@ -10,7 +10,7 @@ import { STATE_LABEL, type Business } from "./api";
 
 const STATE_STYLE = {
   active: "border-transparent bg-success-soft text-success-foreground",
-  suspended: "border-transparent bg-danger-soft text-danger-foreground",
+  cancelled: "border-transparent bg-danger-soft text-danger-foreground",
   expired: "border-transparent bg-warning-soft text-warning-foreground",
 } as const;
 

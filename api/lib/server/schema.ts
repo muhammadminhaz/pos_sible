@@ -124,4 +124,14 @@ ALTER TABLE businesses ADD CONSTRAINT businesses_plan_fk FOREIGN KEY (plan) REFE
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS contact_email text, ADD COLUMN IF NOT EXISTS contact_phone text;
 `,
   },
+  {
+    id: 5,
+    name: "cancelled subscriptions",
+    sql: `
+-- "suspended" becomes "cancelled": the platform owner ends a subscription; renewing brings it back.
+ALTER TABLE businesses DROP CONSTRAINT IF EXISTS businesses_subscription_status_check;
+UPDATE businesses SET subscription_status = 'cancelled' WHERE subscription_status = 'suspended';
+ALTER TABLE businesses ADD CONSTRAINT businesses_subscription_status_check CHECK (subscription_status IN ('active', 'cancelled'));
+`,
+  },
 ];

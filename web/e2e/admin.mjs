@@ -1,5 +1,5 @@
 // The platform owner's console against the Postgres stack: sign in with the env credentials, open a business, see
-// only totals, suspend it, reset its password, and delete it by typing its username.
+// only totals, cancel and renew its subscription, reset its password, and delete it by typing its username.
 // Usage: both servers running (see README, section B), then E2E_URL=http://localhost:3111 npm run e2e:admin
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright-core";
@@ -83,30 +83,39 @@ await signIn("zeta-owner-pass");
 await shop.waitForURL(/\/home/);
 check(true, "the new business owner signs in");
 
-// …until the subscription is switched off.
+// …until the subscription is cancelled.
 await admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Businesses" }).click();
-const again = admin.locator("tr", { hasText: name });
-await again.getByRole("button", { name: /Actions for/ }).click();
-await admin.getByRole("menuitem", { name: "Manage subscription" }).click();
-await admin.getByLabel("Subscription is on").click();
-await admin.getByRole("button", { name: "Save" }).click();
-await admin.locator("tr", { hasText: name }).getByText("Suspended").waitFor();
+await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
+await admin.getByRole("menuitem", { name: "Cancel subscription" }).click();
+await admin.getByRole("alertdialog").getByRole("button", { name: "Cancel subscription" }).click();
+await admin.locator("tr", { hasText: name }).getByText("Cancelled").waitFor();
 await shop.reload();
 await shop.waitForURL(/\/login/, { timeout: 15000 });
-check(true, "a live session ends when the subscription is switched off");
+check(true, "a live session ends when the subscription is cancelled");
 await signIn("zeta-owner-pass");
-await shop.getByText(/switched off/i).waitFor({ timeout: 8000 });
-check(true, "sign-in explains the account is switched off");
+const msg = shop.getByText(/renew your subscription/i);
+await msg.waitFor({ timeout: 8000 });
+check(/administrator/i.test(await msg.innerText()) && /cancelled/i.test(await msg.innerText()), "sign-in says the subscription is cancelled and to renew and contact the administrator");
+
+// Renewing brings it back without picking a date.
+await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
+await admin.getByRole("menuitem", { name: "Renew subscription" }).click();
+await admin.getByLabel("Renew for").click();
+await admin.getByRole("option", { name: "3 months" }).click();
+check(/New end date/.test(await admin.getByRole("dialog").innerText()), "renewing previews the new end date");
+await admin.getByRole("button", { name: "Renew subscription" }).click();
+await admin.locator("tr", { hasText: name }).getByText("Active").waitFor();
+await signIn("zeta-owner-pass");
+await shop.waitForURL(/\/home/);
+check(true, "after renewing, the owner can sign in again");
 
 // A new password can be set (never read); the old one stops working.
 await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
-await admin.getByRole("menuitem", { name: "Manage subscription" }).click();
-await admin.getByLabel("Subscription is on").click();
+await admin.getByRole("menuitem", { name: "Manage account" }).click();
 await admin.getByLabel("Set a new password for the owner").fill("brand-new-pass-1");
 await admin.getByRole("button", { name: "Set password" }).click();
 await admin.getByText(/New password set/).waitFor();
-await admin.getByRole("button", { name: "Save" }).click();
-await admin.locator("tr", { hasText: name }).getByText("Active").waitFor();
+await admin.getByRole("button", { name: "Close" }).first().click();
 await signIn("zeta-owner-pass");
 await shop.getByText(/username or password/i).waitFor({ timeout: 8000 });
 check(true, "the old password no longer works");

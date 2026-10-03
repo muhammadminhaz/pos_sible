@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { EyeIcon, EyeOffIcon, Loader2Icon, MoreHorizontalIcon, PlusIcon, SearchIcon, SettingsIcon, Trash2Icon } from "lucide-react";
+import { BanIcon, EyeIcon, EyeOffIcon, Loader2Icon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, SearchIcon, SettingsIcon, Trash2Icon } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { toast } from "sonner";
-import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -13,11 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Flag, isPhoneOk, PhoneInput } from "@/components/shared/PhoneInput";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminHeader, useAdmin } from "./AdminShell";
-import { call, day, endOfDay, formatBytes, formatMoney, toDateValue, type Business, type Plan } from "./api";
-import { DatePicker } from "./DatePicker";
+import { call, day, formatBytes, formatMoney, TERMS, type Business, type Plan } from "./api";
 import { StateBadge } from "./parts";
 
 const planText = (p: Plan) => `${p.label} · ${p.maxUsers === null ? "unlimited users" : `up to ${p.maxUsers} users`} · ${formatMoney(p.priceMonthly)}/month`;
@@ -45,6 +43,18 @@ function Contact({ email, phone }: { email: string | null; phone: string | null 
   );
 }
 
+function TermSelect({ id, value, onChange, withNone }: { id: string; value: string; onChange: (v: string) => void; withNone?: boolean }) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger id={id} className="w-full"><SelectValue /></SelectTrigger>
+      <SelectContent>
+        {TERMS.map((t) => <SelectItem key={t.months} value={String(t.months)}>{t.label}</SelectItem>)}
+        {withNone && <SelectItem value="none">No end date</SelectItem>}
+      </SelectContent>
+    </Select>
+  );
+}
+
 function PasswordField({ id, name, value, onChange, label, autoComplete }: { id: string; name?: string; value: string; onChange: (v: string) => void; label: string; autoComplete?: string }) {
   const [show, setShow] = useState(false);
   return (
@@ -64,6 +74,8 @@ export function BusinessesPage() {
   const [adding, setAdding] = useState(false);
   const [managing, setManaging] = useState<Business | null>(null);
   const [deleting, setDeleting] = useState<Business | null>(null);
+  const [renewing, setRenewing] = useState<Business | null>(null);
+  const [cancelling, setCancelling] = useState<Business | null>(null);
   const term = q.trim().toLowerCase();
   const rows = (businesses ?? []).filter((b) => !term || b.name.toLowerCase().includes(term) || (b.ownerUsername ?? "").toLowerCase().includes(term));
 
@@ -112,7 +124,9 @@ export function BusinessesPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button size="icon-sm" variant="ghost" aria-label={`Actions for ${b.name}`}><MoreHorizontalIcon /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => setManaging(b)}><SettingsIcon />Manage subscription</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setManaging(b)}><SettingsIcon />Manage account</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setRenewing(b)}><RefreshCwIcon />Renew subscription</DropdownMenuItem>
+                      {b.state !== "cancelled" && <DropdownMenuItem variant="destructive" onSelect={() => setCancelling(b)}><BanIcon />Cancel subscription</DropdownMenuItem>}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem variant="destructive" onSelect={() => setDeleting(b)}><Trash2Icon />Delete business</DropdownMenuItem>
                     </DropdownMenuContent>
@@ -128,8 +142,12 @@ export function BusinessesPage() {
         <DialogContent className="sm:max-w-md">{adding && <AddForm plans={plans} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
       </Dialog>
       <Dialog open={managing !== null} onOpenChange={(o) => !o && setManaging(null)}>
-        <DialogContent className="sm:max-w-md">{managing && <ManageForm key={managing.id} business={managing} plans={plans} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} />}</DialogContent>
+        <DialogContent className="sm:max-w-md">{managing && <ManageForm key={managing.id} business={managing} plans={plans} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onRenew={() => { setRenewing(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
       </Dialog>
+      <Dialog open={renewing !== null} onOpenChange={(o) => !o && setRenewing(null)}>
+        <DialogContent className="sm:max-w-sm">{renewing && <RenewForm key={renewing.id} business={renewing} onClose={() => setRenewing(null)} onDone={async () => { setRenewing(null); await reload(); }} />}</DialogContent>
+      </Dialog>
+      <CancelDialog business={cancelling} onClose={() => setCancelling(null)} onDone={async () => { setCancelling(null); await reload(); }} />
       <DeleteDialog business={deleting} onClose={() => setDeleting(null)} onDone={async () => { setDeleting(null); await reload(); }} />
     </>
   );
@@ -142,7 +160,7 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [plan, setPlan] = useState(plans.find((p) => p.id === "standard")?.id ?? plans[0]?.id ?? "");
-  const [ends, setEnds] = useState("");
+  const [term, setTerm] = useState("1");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -150,7 +168,7 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password, email, phone, plan, expiresAt: ends ? endOfDay(ends) : null }) }).catch(() => null);
+    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password, email, phone, plan, months: term === "none" ? null : Number(term) }) }).catch(() => null);
     setBusy(false);
     if (res?.ok) {
       toast.success("Business account created");
@@ -173,7 +191,7 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
       <div className="grid gap-1.5"><Label htmlFor="b-email">Email (optional)</Label><Input id="b-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
       <div className="grid gap-1.5"><Label htmlFor="b-phone">Phone (optional)</Label><PhoneInput id="b-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
       <div className="grid gap-1.5"><Label htmlFor="b-plan">Package</Label><PlanSelect id="b-plan" plans={plans} value={plan} onChange={setPlan} /></div>
-      <div className="grid gap-1.5"><Label htmlFor="b-ends">Subscription ends (optional)</Label><DatePicker id="b-ends" value={ends} onChange={setEnds} placeholder="No end date" /></div>
+      <div className="grid gap-1.5"><Label htmlFor="b-term">Subscription term</Label><TermSelect id="b-term" value={term} onChange={setTerm} withNone /></div>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
         <Button type="submit" disabled={busy || !plan || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Create business</Button>
@@ -182,10 +200,8 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
   );
 }
 
-function ManageForm({ business, plans, onClose, onDone }: { business: Business; plans: Plan[]; onClose: () => void; onDone: () => void }) {
+function ManageForm({ business, plans, onClose, onDone, onRenew, onCancel }: { business: Business; plans: Plan[]; onClose: () => void; onDone: () => void; onRenew: () => void; onCancel: () => void }) {
   const [plan, setPlan] = useState(business.plan);
-  const [enabled, setEnabled] = useState(business.status === "active");
-  const [ends, setEnds] = useState(toDateValue(business.expiresAt));
   const [email, setEmail] = useState(business.contactEmail ?? "");
   const [phone, setPhone] = useState(business.contactPhone ?? "");
   const [busy, setBusy] = useState(false);
@@ -195,10 +211,10 @@ function ManageForm({ business, plans, onClose, onDone }: { business: Business; 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ plan, status: enabled ? "active" : "suspended", expiresAt: ends ? endOfDay(ends) : null, contactEmail: email, contactPhone: phone }) }).catch(() => null);
+    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ plan, contactEmail: email, contactPhone: phone }) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) return void toast.error("Couldn't save the change.");
-    toast.success("Subscription updated");
+    toast.success("Account updated");
     onDone();
   };
 
@@ -213,24 +229,31 @@ function ManageForm({ business, plans, onClose, onDone }: { business: Business; 
 
   return (
     <div className="grid gap-4">
+      <DialogHeader>
+        <DialogTitle>{business.name}</DialogTitle>
+        <DialogDescription>{business.ownerUsername ? `Username ${business.ownerUsername} · ` : ""}{business.users} user{business.users === 1 ? "" : "s"} · {formatBytes(business.storageBytes)} stored</DialogDescription>
+      </DialogHeader>
+
+      <div className="grid gap-3 rounded-lg border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="grid gap-0.5">
+            <span className="text-sm font-medium">Subscription</span>
+            <span className="text-xs text-muted-foreground">{business.state === "cancelled" ? "Cancelled. Nobody in this business can sign in." : business.expiresAt ? `${business.state === "expired" ? "Ended" : "Ends"} ${day(business.expiresAt)}` : "No end date"}</span>
+          </div>
+          <StateBadge state={business.state} />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" onClick={onRenew}><RefreshCwIcon />Renew</Button>
+          {business.state !== "cancelled" && <Button type="button" variant="destructive" onClick={onCancel}><BanIcon />Cancel subscription</Button>}
+        </div>
+      </div>
+
       <form onSubmit={save} className="grid gap-4">
-        <DialogHeader>
-          <DialogTitle>{business.name}</DialogTitle>
-          <DialogDescription>{business.ownerUsername ? `Username ${business.ownerUsername} · ` : ""}{business.users} user{business.users === 1 ? "" : "s"} · {formatBytes(business.storageBytes)} stored</DialogDescription>
-        </DialogHeader>
         <div className="grid gap-1.5"><Label htmlFor="m-plan">Package</Label><PlanSelect id="m-plan" plans={plans} value={plan} onChange={setPlan} /></div>
-        <div className="grid gap-1.5"><Label htmlFor="m-ends">Subscription ends</Label><DatePicker id="m-ends" value={ends} onChange={setEnds} placeholder="No end date" /></div>
         <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
         <div className="grid gap-1.5"><Label htmlFor="m-phone">Phone</Label><PhoneInput id="m-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
-        <div className="flex items-start justify-between gap-4">
-          <div className="grid gap-0.5">
-            <Label htmlFor="m-on">Subscription is on</Label>
-            <p className="text-xs text-muted-foreground">Switching it off signs everyone in this business out and blocks sign-in.</p>
-          </div>
-          <Switch id="m-on" checked={enabled} onCheckedChange={setEnabled} />
-        </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={onClose}>Close</Button>
           <Button type="submit" disabled={busy || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Save</Button>
         </DialogFooter>
       </form>
@@ -241,6 +264,68 @@ function ManageForm({ business, plans, onClose, onDone }: { business: Business; 
         <Button type="button" variant="outline" className="justify-self-start" disabled={resetting || newPassword.length < 8} onClick={reset}>{resetting && <Loader2Icon className="animate-spin" />}Set password</Button>
       </div>
     </div>
+  );
+}
+
+function RenewForm({ business, onClose, onDone }: { business: Business; onClose: () => void; onDone: () => void }) {
+  const [term, setTerm] = useState("1");
+  const [busy, setBusy] = useState(false);
+  const months = Number(term);
+  // Mirrors the server: an active subscription is extended from its end date, anything else starts today.
+  const from = business.state === "active" && business.expiresAt && new Date(business.expiresAt) > new Date() ? new Date(business.expiresAt) : new Date();
+  const until = new Date(from);
+  until.setMonth(until.getMonth() + months);
+
+  const renew = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const res = await call(`businesses/${business.id}/renew`, { method: "POST", body: JSON.stringify({ months }) }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok) return void toast.error("Couldn't renew the subscription.");
+    toast.success(`${business.name} is renewed until ${day((await res.json()).expiresAt)}`);
+    onDone();
+  };
+
+  return (
+    <form onSubmit={renew} className="grid gap-4">
+      <DialogHeader>
+        <DialogTitle>Renew {business.name}</DialogTitle>
+        <DialogDescription>{business.state === "active" ? "Adds time to the current term." : "Switches the subscription back on, counting from today."} Everyone in the business can sign in again.</DialogDescription>
+      </DialogHeader>
+      <div className="grid gap-1.5"><Label htmlFor="r-term">Renew for</Label><TermSelect id="r-term" value={term} onChange={setTerm} /></div>
+      <p className="text-sm text-muted-foreground">New end date: <span className="font-medium text-foreground">{day(until.toISOString())}</span></p>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+        <Button type="submit" disabled={busy}>{busy && <Loader2Icon className="animate-spin" />}Renew subscription</Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function CancelDialog({ business, onClose, onDone }: { business: Business | null; onClose: () => void; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const cancel = async () => {
+    if (!business) return;
+    setBusy(true);
+    const res = await call(`businesses/${business.id}/cancel`, { method: "POST" }).catch(() => null);
+    setBusy(false);
+    if (!res?.ok) return void toast.error("Couldn't cancel the subscription.");
+    toast.success(`${business.name}'s subscription is cancelled`);
+    onDone();
+  };
+  return (
+    <AlertDialog open={business !== null} onOpenChange={(o) => !o && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel {business?.name}&apos;s subscription?</AlertDialogTitle>
+          <AlertDialogDescription>Everyone in this business is signed out now and cannot sign in until you renew. Their data is kept.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep subscription</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" disabled={busy} onClick={(e) => { e.preventDefault(); void cancel(); }}>{busy && <Loader2Icon className="animate-spin" />}Cancel subscription</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

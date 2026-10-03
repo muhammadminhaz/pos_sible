@@ -51,8 +51,8 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 **Platform owner console (`/admin`)**
 - For the person who sells the software. Sign in with `ADMIN_USERNAME` / `ADMIN_PASSWORD` (set in the API's environment and `docker-compose.yml`; defaults `minhaz` / `11111111`; set your own before going live).
 - A sidebar with **Dashboard** (totals, who needs attention, package mix, biggest storage), **Businesses**, **Users** (accounts per business against its limit), **Subscriptions** (edit each package's name, user limit and monthly price) and **Revenue** (monthly revenue and yearly run rate estimated from active subscriptions, by package, renewals due, new businesses per month).
-- **Add a business** with a name, a username, a password and a package, plus an optional email, phone number (searchable country-code dropdown with flags, validated per country) and end date. **Manage** switches it on or off, changes the package or end date, and can **set a new password** for the owner (passwords can be replaced, never viewed; the owner is signed out). **Delete** removes a business and all its data for good, after you type its username.
-- A switched-off or expired business cannot sign in and any open session ends on its next request. The package's user limit is enforced by the server.
+- **Add a business** with a name, a username, a password and a package, plus an optional email, phone number (searchable country-code dropdown with flags, validated per country) and end date. **Renew** a subscription for 1, 3, 6 or 12 months (an active one is extended from its end date, a cancelled or lapsed one counts from today) instead of typing dates; **Cancel** a subscription to stop everyone in that business from using the software (they are signed out at once and the sign-in page tells them to renew and contact their administrator; renewing brings them back). **Manage** also changes the package and contact details, and can **set a new password** for the owner (passwords can be replaced, never viewed; the owner is signed out). **Delete** removes a business and all its data for good, after you type its username.
+- A cancelled or expired business cannot sign in (the message says to renew the subscription and contact the administrator) and any open session ends on its next request. The package's user limit is enforced by the server.
 - You see each business's package, user count and storage only: no products, customers, sales or staff, and there is no way to sign in as a business. Businesses are fully isolated from each other (every query is scoped to the signed-in user's business).
 
 **Platform**
@@ -153,7 +153,7 @@ npm run build
 npm run e2e                             # every route, EN/light + BN/dark + tablet, axe accessibility
 npm run e2e:onboarding                  # first-run wizard and checklist
 npm run e2e:team                        # two users, who-did-what columns, role permission grid
-npm run e2e:admin                       # (API mode) /admin: add, suspend, reset password, delete, isolation
+npm run e2e:admin                       # (API mode) /admin: add, cancel, renew, reset password, delete, isolation
 
 # api/
 npm run typecheck

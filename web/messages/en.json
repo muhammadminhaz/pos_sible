@@ -208,8 +208,8 @@
     "demoHint": "Demo: admin / 112233 or cashier / 112233",
     "forbiddenTitle": "You don't have access",
     "forbiddenBody": "Ask an administrator to grant the permission for this page.",
-    "suspended": "This account is switched off. Please contact your provider.",
-    "expired": "This subscription has ended. Please contact your provider to renew it."
+    "expired": "Your subscription has expired. Please renew your subscription and contact your administrator to regain access.",
+    "cancelled": "Your subscription has been cancelled. Please renew your subscription and contact your administrator to regain access."
   },
   "header": {
     "storageFailed": "Changes can't be saved in this browser.",

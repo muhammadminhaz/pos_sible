@@ -1,7 +1,7 @@
 export type Plan = { id: string; label: string; maxUsers: number | null; priceMonthly: number };
 export type Business = {
   id: string; name: string; createdAt: string; ownerUsername: string | null; contactEmail: string | null; contactPhone: string | null; plan: string; planLabel: string; priceMonthly: number;
-  status: "active" | "suspended"; expiresAt: string | null; state: "active" | "suspended" | "expired";
+  status: "active" | "cancelled"; expiresAt: string | null; state: "active" | "cancelled" | "expired";
   users: number; maxUsers: number | null; storageBytes: number; lastActiveAt: string | null;
 };
 export type Me = { username: string; plans: Plan[] };
@@ -25,7 +25,15 @@ export const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateStri
 export const toDateValue = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-CA") : "");
 export const endOfDay = (date: string) => new Date(`${date}T23:59:59`).toISOString();
 
-export const STATE_LABEL = { active: "Active", suspended: "Suspended", expired: "Expired" } as const;
+export const STATE_LABEL = { active: "Active", cancelled: "Cancelled", expired: "Expired" } as const;
+
+/** Terms a subscription can be renewed (or started) for. */
+export const TERMS = [
+  { months: 1, label: "1 month" },
+  { months: 3, label: "3 months" },
+  { months: 6, label: "6 months" },
+  { months: 12, label: "12 months" },
+] as const;
 
 /** Money a business brings in per month right now: only paying (active, not lapsed) subscriptions count. */
 export const monthlyRevenue = (b: Business) => (b.state === "active" ? b.priceMonthly : 0);

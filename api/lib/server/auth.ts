@@ -37,7 +37,7 @@ const recordFail = (key: string) => {
   else f.n++;
 };
 
-export type LoginResult = { ok: true; token: string; maxAge: number | null; principal: Principal } | { ok: false; reason: "invalid" | "throttled" | "suspended" | "expired" };
+export type LoginResult = { ok: true; token: string; maxAge: number | null; principal: Principal } | { ok: false; reason: "invalid" | "throttled" | "cancelled" | "expired" };
 
 export async function login(username: string, password: string, remember: boolean, ip: string): Promise<LoginResult> {
   await ready();
@@ -57,7 +57,7 @@ export async function login(username: string, password: string, remember: boolea
   const role = loaded.db.roles.find((r) => r.id === user.roleId);
   if (!role) return { ok: false, reason: "invalid" };
   // Only someone who knows the right password learns that the subscription is the problem.
-  const sub = (await pool().query<{ plan: string; subscription_status: "active" | "suspended"; subscription_expires_at: Date | null }>("SELECT plan, subscription_status, subscription_expires_at FROM businesses WHERE id = $1", [row.business_id])).rows[0];
+  const sub = (await pool().query<{ plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null }>("SELECT plan, subscription_status, subscription_expires_at FROM businesses WHERE id = $1", [row.business_id])).rows[0];
   const state = subscriptionState(sub.subscription_status, sub.subscription_expires_at);
   if (state !== "active") return { ok: false, reason: state };
 
@@ -77,7 +77,7 @@ export async function authenticate(req: NextRequest | { cookies: { get(name: str
   const token = req.cookies.get(COOKIE)?.value;
   if (!token) return null;
   await ready();
-  const s = (await pool().query<{ business_id: string; user_id: string; plan: string; subscription_status: "active" | "suspended"; subscription_expires_at: Date | null }>(
+  const s = (await pool().query<{ business_id: string; user_id: string; plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null }>(
     `SELECT s.business_id, s.user_id, b.plan, b.subscription_status, b.subscription_expires_at
        FROM sessions s JOIN businesses b ON b.id = s.business_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`, [sha(token)])).rows[0];
