@@ -39,7 +39,7 @@ export type AnalyticsOverview = {
   receivables: number; payables: number;
 };
 
-function headline(d: DB, f: ReportFilter): Headline {
+export function headline(d: DB, f: ReportFilter): Headline {
   let sales = 0, cogs = 0, expenses = 0, purchases = 0, orders = 0;
   for (const t of d.transactions) {
     if (!inScope(t, f)) continue;

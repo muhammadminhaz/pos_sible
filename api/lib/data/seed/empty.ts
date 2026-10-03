@@ -17,7 +17,7 @@ export function createEmptySeed(opts: { today?: string } = {}): DB {
     ...demo,
     // Catalogue, stock and history belong to the demo shop.
     products: [], variations: [], stockLots: [], transactions: [], accountTxns: [], cashRegisters: [],
-    discounts: [], notifications: [], importBatches: [], bookings: [], backups: [],
+    discounts: [], notifications: [], importBatches: [], bookings: [], backups: [], goals: [],
     brands: [], categories: [], warranties: [], variationTemplates: [], technicians: [],
     contacts: demo.contacts.filter((c) => c.id === WALK_IN).map((c) => ({ ...c, points: 0, openingBalance: 0, advanceBalance: 0 })),
     locations: [{ ...location, invoiceSchemeId: scheme.id }],

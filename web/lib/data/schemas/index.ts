@@ -13,7 +13,7 @@ import type {
 } from "./catalog";
 import type { Contact, CustomerGroup, Technician } from "./contacts";
 import type {
-  Backup, BarcodeSetting, Booking, ImportBatch, InvoiceLayout, InvoiceScheme, Notification, Printer,
+  Backup, BarcodeSetting, Booking, Goal, ImportBatch, InvoiceLayout, InvoiceScheme, Notification, Printer,
 } from "./misc";
 import type { Location, Role, User } from "./org";
 import type { Settings } from "./settings";
@@ -51,6 +51,7 @@ export type Tables = {
   notifications: Notification[];
   bookings: Booking[];
   backups: Backup[];
+  goals: Goal[];
 };
 
 export type TableName = keyof Tables;

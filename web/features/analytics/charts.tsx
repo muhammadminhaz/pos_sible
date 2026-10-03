@@ -140,6 +140,29 @@ export function ComboChart({ data, xKey, bar, line, label, height = 280, format 
   return <Chart options={options} label={label} rows={data} xKey={xKey} series={[bar, line]} format={fmt} height={height} />;
 }
 
+/** Running total so far as a filled area, carried on to the period end as a dashed forecast line. */
+export function ForecastChart({ data, xKey, actual, projected, label, height = 240, format }: Omit<Common, "data"> & { data: Record<string, string | number | null>[]; actual: Series; projected: Series }) {
+  const f = useFormat();
+  const fmt = format ?? f.money;
+  const options = useMemo(() => (th: Theme, _h: number, reduced: boolean): Highcharts.Options => {
+    const base = baseOptions(th, reduced);
+    const pick = (k: string) => data.map((r) => (r[k] === null || r[k] === undefined ? null : Number(r[k])));
+    return {
+      ...base,
+      legend: { ...base.legend, enabled: false },
+      xAxis: { ...base.xAxis, categories: data.map((r) => dayLabel(f)(String(r[xKey]))), tickInterval: Math.ceil(data.length / 8) },
+      yAxis: { ...base.yAxis, labels: { ...(base.yAxis as Highcharts.YAxisOptions).labels, formatter() { return f.compact(Number(this.value)); } } },
+      tooltip: { ...base.tooltip, pointFormatter() { return `<span style="color:${this.color}">●</span> ${this.series.name}: <b>${fmt(Number(this.y))}</b><br/>`; } },
+      series: [
+        { type: "areaspline", name: actual.label, data: pick(actual.key), color: rgba(th.series[0]), lineWidth: 2.5, marker: { enabled: false },
+          fillColor: { linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 }, stops: [[0, rgba(th.series[0], 0.28)], [1, rgba(th.series[0], 0)]] } },
+        { type: "spline", name: projected.label, data: pick(projected.key), color: rgba(th.series[0], 0.75), dashStyle: "Dash", lineWidth: 2, marker: { enabled: false } },
+      ],
+    };
+  }, [data, xKey, actual, projected, f, fmt]);
+  return <Chart options={options} label={label} rows={data as Row[]} xKey={xKey} series={[actual, projected]} format={fmt} height={height} />;
+}
+
 /** Revenue bars with a cumulative-share line: how few products carry most of the sales. */
 export function ParetoChart({ data, xKey, bar, line, label, height = 300 }: Common & { bar: Series; line: Series }) {
   const f = useFormat();

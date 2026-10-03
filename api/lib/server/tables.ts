@@ -5,7 +5,7 @@ export const TABLE_NAMES = [
   "locations", "roles", "users", "contacts", "customerGroups", "technicians", "units", "categories", "brands", "warranties",
   "priceGroups", "variationTemplates", "taxRates", "products", "variations", "stockLots", "discounts", "transactions",
   "accountTypes", "accounts", "accountTxns", "expenseCategories", "cashRegisters", "invoiceSchemes", "invoiceLayouts",
-  "barcodeSettings", "printers", "importBatches", "notifications", "bookings", "backups",
+  "barcodeSettings", "printers", "importBatches", "notifications", "bookings", "backups", "goals",
 ] as const satisfies readonly (keyof Tables)[];
 
 type Missing = Exclude<keyof Tables, (typeof TABLE_NAMES)[number]>;

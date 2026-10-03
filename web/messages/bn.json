@@ -174,7 +174,10 @@
     "analyticsProducts": "পণ্য",
     "analyticsCustomers": "ক্রেতা",
     "analyticsInventory": "ইনভেন্টরি",
-    "analyticsExpenses": "খরচ"
+    "analyticsExpenses": "খরচ",
+    "possible": "প্রবৃদ্ধি",
+    "opportunities": "সুযোগ",
+    "goals": "লক্ষ্য"
   },
   "modules": {
     "catalog": "ক্যাটালগ",
@@ -516,7 +519,9 @@
       "outOfStock": "স্টক নেই",
       "lowStock": "স্টক কম",
       "chooseVariation": "একটি ভ্যারিয়েশন বাছুন",
-      "empty": "এখানে কোনো পণ্য নেই"
+      "empty": "এখানে কোনো পণ্য নেই",
+      "scrollLeft": "বামে সরান",
+      "scrollRight": "ডানে সরান"
     },
     "actions": {
       "quotation": "কোটেশন",
@@ -2125,5 +2130,144 @@
     "resetLayout": "লেআউট রিসেট",
     "layoutReset": "লেআউট ডিফল্টে ফিরেছে",
     "resizeHint": "আকার বদলাতে টানুন"
+  },
+  "possible": {
+    "opportunitiesTitle": "সুযোগ",
+    "opportunitiesDescription": "এই মাস কোথায় যাচ্ছে, আর আপনার নিজের হিসাব অনুযায়ী এখন কী করলে লাভ।",
+    "forecastLabel": "এই মাসে বিক্রি হতে পারে",
+    "soFar": "এ পর্যন্ত {amount}, {days, plural, =0 {আজ মাসের শেষ দিন} other {আর # দিন বাকি}}",
+    "lastMonth": "গত মাসে: {amount}",
+    "actual": "এ পর্যন্ত বিক্রি",
+    "projected": "পূর্বাভাস",
+    "forecastChart": "এই মাসের বিক্রি ও মাস শেষের পূর্বাভাস",
+    "forecastHow": "বাকি প্রতিটি দিনের হিসাব গত চার সপ্তাহের একই বারের গড় থেকে।",
+    "nextMoves": "এরপর যা সম্ভব",
+    "totalPossible": "{count, plural, other {# টি পদক্ষেপে}} {amount} সম্ভব",
+    "possibleAmount": "+{amount} সম্ভব",
+    "freeUp": "{amount} ছাড়ানো যাবে",
+    "toCollect": "{amount} আদায় বাকি",
+    "tip": "জেনে রাখুন",
+    "op": {
+      "restock": {
+        "title": "{date} এর মধ্যে {product} আবার আনুন",
+        "body": "এখনকার গতিতে {days, plural, =0 {এক দিনের মধ্যেই} other {# দিনে}} শেষ হয়ে যাবে। আরও প্রায় {qty} টি আনলে {amount} এর বিক্রি হাতছাড়া হবে না।",
+        "action": "ক্রয় যোগ করুন"
+      },
+      "winBack": {
+        "title": "{count, plural, other {# জন}} নিয়মিত ক্রেতাকে ফিরিয়ে আনুন",
+        "body": "{names} আগে প্রায়ই কিনতেন, কিন্তু {days}+ দিন আসেননি। প্রত্যেকে একবার এলেই প্রায় {amount}।",
+        "action": "ক্রেতা দেখুন"
+      },
+      "collect": {
+        "title": "এক মাসের বেশি পুরনো {amount} বকেয়া আদায় করুন",
+        "body": "{count, plural, other {# জন}} ক্রেতার ৩০ দিনের বেশি পুরনো বিল বাকি, শুরুতে {names}।",
+        "action": "কে বাকি রেখেছেন দেখুন"
+      },
+      "clearStock": {
+        "title": "পড়ে থাকা {amount} এর স্টক নগদে ফেরান",
+        "body": "{count, plural, other {# টি}} পণ্য {days} দিনে বিক্রি হয়নি, সবচেয়ে বেশি {top}। একটু ছাড় দিলে বিক্রি শুরু হতে পারে।",
+        "action": "ছাড় তৈরি করুন"
+      },
+      "price": {
+        "title": "{product} এর দাম {raise}% বাড়ান",
+        "body": "ভালো বিক্রি হয়, কিন্তু লাভ থাকে মাত্র {margin}%। একই বিক্রিতে {raise}% বাড়ালে মাসে প্রায় {amount} বেশি।",
+        "action": "দাম হালনাগাদ করুন"
+      },
+      "peak": {
+        "title": "{weekday} {hour} এর দিকে সবচেয়ে বেশি বিক্রি",
+        "body": "ওই সময় বেশি চলা পণ্য মজুত রাখুন আর কাউন্টারে কাউকে রাখুন।",
+        "action": "বিক্রির ধারা দেখুন"
+      }
+    },
+    "noneTitle": "এখন জরুরি কিছু নেই",
+    "noneHint": "স্টক, বকেয়া আর ক্রেতা সব ঠিক আছে। এই মাস কতদূর যেতে পারে দেখতে একটি লক্ষ্য ঠিক করুন।",
+    "setGoal": "লক্ষ্য ঠিক করুন",
+    "errorTitle": "সুযোগগুলো হিসাব করা গেল না",
+    "errorHint": "আপনার তথ্য নিরাপদ আছে। সংযোগ দেখে আবার চেষ্টা করুন।",
+    "goalsTitle": "লক্ষ্য",
+    "goalsDescription": "কী অর্জন করতে চান ঠিক করুন, তারপর প্রতিদিন দেখুন ঠিক গতিতে আছেন কি না।",
+    "newGoal": "নতুন লক্ষ্য",
+    "editGoal": "লক্ষ্য সম্পাদনা",
+    "metric": {
+      "sales": "বিক্রি",
+      "grossProfit": "মোট লাভ",
+      "netProfit": "নিট লাভ",
+      "orders": "অর্ডার",
+      "aov": "গড় বিক্রি",
+      "newCustomers": "নতুন ক্রেতা",
+      "activeCustomers": "ক্রেতা সংখ্যা",
+      "expenses": "খরচ"
+    },
+    "metricHint": {
+      "sales": "ফেরত বাদে, কর ছাড়া নিট বিক্রি",
+      "grossProfit": "বিক্রি থেকে পণ্যের দাম বাদে",
+      "netProfit": "মোট লাভ থেকে খরচ বাদে",
+      "orders": "সম্পন্ন বিক্রি",
+      "aov": "গড়ে একটি বিক্রির মূল্য",
+      "newCustomers": "যারা প্রথমবার কিনছেন",
+      "activeCustomers": "কতজন আলাদা ক্রেতা কিনেছেন",
+      "expenses": "খরচ একটি সীমার মধ্যে রাখুন"
+    },
+    "period": {
+      "month": "এই মাস",
+      "quarter": "এই প্রান্তিক",
+      "year": "এই বছর"
+    },
+    "periodWord": {
+      "month": "মাসে",
+      "quarter": "প্রান্তিকে",
+      "year": "বছরে"
+    },
+    "of": "{target} এর মধ্যে",
+    "limit": "সীমা {target}",
+    "status": {
+      "achieved": "সম্ভব হয়েছে",
+      "ahead": "ঠিক গতিতে",
+      "behind": "গতি কম",
+      "over": "সীমা ছাড়িয়েছে"
+    },
+    "ceilingStatus": {
+      "ahead": "সীমার মধ্যে",
+      "behind": "সীমা ছাড়াতে পারে",
+      "over": "সীমা ছাড়িয়েছে"
+    },
+    "projection": "এই গতিতে হবে {amount}",
+    "needPerDay": "এখন থেকে দিনে {amount} হলেই পৌঁছে যাবেন",
+    "leftToSpend": "আরও {amount} খরচ করা যাবে",
+    "reached": "{days, plural, =0 {শেষ দিনে} other {# দিন হাতে রেখে}} অর্জিত",
+    "previous": "গত {period}: {amount}",
+    "paceMarker": "সমান গতিতে আজ যেখানে থাকার কথা",
+    "progressLabel": "লক্ষ্যের {pct}%",
+    "actions": "লক্ষ্যের অপশন",
+    "form": {
+      "what": "কী বাড়াতে চান?",
+      "when": "কত সময়ে?",
+      "target": "লক্ষ্যমাত্রা",
+      "targetHint": "গত {period} হয়েছিল {amount}।",
+      "targetHintCeiling": "গত {period} খরচ হয়েছিল {amount}।",
+      "note": "কেন জরুরি (ঐচ্ছিক)",
+      "notePlaceholder": "যেমন: দ্বিতীয় দোকানের জন্য জমানো",
+      "picks": "দ্রুত বেছে নিন",
+      "same": "গতবারের সমান",
+      "plus": "+{pct}%",
+      "minus": "-{pct}%",
+      "create": "লক্ষ্য ঠিক করুন",
+      "save": "লক্ষ্য সংরক্ষণ"
+    },
+    "targetError": "শূন্যের বেশি একটি লক্ষ্য দিন।",
+    "created": "লক্ষ্য ঠিক হলো। আপনি পারবেন।",
+    "saved": "লক্ষ্য হালনাগাদ হয়েছে",
+    "deleted": "লক্ষ্য সরানো হয়েছে",
+    "deleteTitle": "এই লক্ষ্য সরাবেন?",
+    "deleteBody": "অগ্রগতি আপনার বিক্রি থেকেই হিসাব হয়, তাই আর কিছু হারাবে না।",
+    "goalsEmptyTitle": "কী হলে এই মাসটা দারুণ হবে?",
+    "goalsEmptyHint": "একটি সংখ্যা ঠিক করুন। আমরা প্রতিদিন আপনার বিক্রি থেকে হিসাব রাখব আর জানাব ঠিক গতিতে আছেন কি না।",
+    "starters": {
+      "sales": "গত মাসের বিক্রি ছাড়িয়ে যান",
+      "newCustomers": "আরও নতুন ক্রেতা আনুন",
+      "expenses": "খরচ নিয়ন্ত্রণে রাখুন"
+    },
+    "goalsErrorTitle": "লক্ষ্যগুলো আনা গেল না",
+    "celebrate": "আপনার {metric} লক্ষ্য পূরণ হয়েছে!"
   }
 }

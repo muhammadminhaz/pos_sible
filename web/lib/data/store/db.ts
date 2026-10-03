@@ -75,5 +75,7 @@ export async function hydrateDB(): Promise<void> {
   const loaded = useDB.getState().db!;
   const roles = upgradeRoles(loaded.roles);
   if (roles.some((r, i) => r !== loaded.roles[i])) useDB.setState({ db: { ...loaded, roles } });
+  // Saved before Goals existed: start with none rather than reseeding the shop.
+  if (!useDB.getState().db!.goals) useDB.setState({ db: { ...useDB.getState().db!, goals: [] } });
   useDB.setState({ hydrated: true });
 }

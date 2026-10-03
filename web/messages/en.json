@@ -174,7 +174,10 @@
     "analyticsProducts": "Products",
     "analyticsCustomers": "Customers",
     "analyticsInventory": "Inventory",
-    "analyticsExpenses": "Expenses"
+    "analyticsExpenses": "Expenses",
+    "possible": "Growth",
+    "opportunities": "Opportunities",
+    "goals": "Goals"
   },
   "modules": {
     "catalog": "Catalog",
@@ -516,7 +519,9 @@
       "outOfStock": "Out of stock",
       "lowStock": "Low stock",
       "chooseVariation": "Choose a variation",
-      "empty": "No products here"
+      "empty": "No products here",
+      "scrollLeft": "Scroll left",
+      "scrollRight": "Scroll right"
     },
     "actions": {
       "quotation": "Quotation",
@@ -2125,5 +2130,144 @@
     "resetLayout": "Reset layout",
     "layoutReset": "Layout reset to default",
     "resizeHint": "Drag to resize"
+  },
+  "possible": {
+    "opportunitiesTitle": "Opportunities",
+    "opportunitiesDescription": "Where this month is heading, and the moves your own numbers say are worth making.",
+    "forecastLabel": "This month is heading for",
+    "soFar": "{amount} in so far, {days, plural, =0 {last day of the month} one {# day to go} other {# days to go}}",
+    "lastMonth": "Last month: {amount}",
+    "actual": "Sales so far",
+    "projected": "Forecast",
+    "forecastChart": "Sales this month so far, and the forecast to month end",
+    "forecastHow": "Each day left is forecast from the same weekday over the last four weeks.",
+    "nextMoves": "What's possible next",
+    "totalPossible": "{amount} is possible across {count, plural, one {# move} other {# moves}}",
+    "possibleAmount": "+{amount} possible",
+    "freeUp": "{amount} to free up",
+    "toCollect": "{amount} to collect",
+    "tip": "Good to know",
+    "op": {
+      "restock": {
+        "title": "Restock {product} by {date}",
+        "body": "At today's pace it runs out in {days, plural, =0 {under a day} one {# day} other {# days}}. Ordering about {qty} more keeps {amount} of sales on the shelf.",
+        "action": "Add purchase"
+      },
+      "winBack": {
+        "title": "Bring back {count, plural, one {# regular} other {# regulars}}",
+        "body": "{names} used to buy often but haven't come in for {days}+ days. One visit each is worth about {amount}.",
+        "action": "See customers"
+      },
+      "collect": {
+        "title": "Collect {amount} owed for over a month",
+        "body": "{count, plural, one {# customer has} other {# customers have}} bills unpaid for more than 30 days, starting with {names}.",
+        "action": "See who owes"
+      },
+      "clearStock": {
+        "title": "Turn {amount} of idle stock back into cash",
+        "body": "{count, plural, one {# product hasn't} other {# products haven't}} sold in {days} days, led by {top}. A discount can get it moving.",
+        "action": "Create discount"
+      },
+      "price": {
+        "title": "Raise {product} by {raise}%",
+        "body": "It sells well but keeps only {margin}% as profit. A {raise}% rise at the same volume adds about {amount} a month.",
+        "action": "Update price"
+      },
+      "peak": {
+        "title": "{weekday} around {hour} is your busiest hour",
+        "body": "Keep your best sellers stocked and someone free at the counter then.",
+        "action": "See sales patterns"
+      }
+    },
+    "noneTitle": "Nothing urgent right now",
+    "noneHint": "Stock, dues and customers all look healthy. Set a goal to see how far this month can go.",
+    "setGoal": "Set a goal",
+    "errorTitle": "We couldn't work out your opportunities",
+    "errorHint": "Your data is safe. Check your connection and try again.",
+    "goalsTitle": "Goals",
+    "goalsDescription": "Choose what you're aiming for, then see each day whether you're on pace.",
+    "newGoal": "New goal",
+    "editGoal": "Edit goal",
+    "metric": {
+      "sales": "Sales",
+      "grossProfit": "Gross profit",
+      "netProfit": "Net profit",
+      "orders": "Orders",
+      "aov": "Average sale",
+      "newCustomers": "New customers",
+      "activeCustomers": "Customers served",
+      "expenses": "Expenses"
+    },
+    "metricHint": {
+      "sales": "Net sales after returns, before tax",
+      "grossProfit": "Sales minus what the goods cost you",
+      "netProfit": "Gross profit minus expenses",
+      "orders": "Completed sales",
+      "aov": "What one sale is worth on average",
+      "newCustomers": "People buying from you for the first time",
+      "activeCustomers": "Different customers who bought",
+      "expenses": "Keep spending under a limit"
+    },
+    "period": {
+      "month": "This month",
+      "quarter": "This quarter",
+      "year": "This year"
+    },
+    "periodWord": {
+      "month": "month",
+      "quarter": "quarter",
+      "year": "year"
+    },
+    "of": "of {target}",
+    "limit": "limit {target}",
+    "status": {
+      "achieved": "Possible unlocked",
+      "ahead": "On pace",
+      "behind": "Behind pace",
+      "over": "Over the limit"
+    },
+    "ceilingStatus": {
+      "ahead": "Within limit",
+      "behind": "Heading over",
+      "over": "Over the limit"
+    },
+    "projection": "At this pace you'll reach {amount}",
+    "needPerDay": "{amount} a day from here gets you there",
+    "leftToSpend": "{amount} left to spend",
+    "reached": "Reached with {days, plural, =0 {no days} one {# day} other {# days}} to spare",
+    "previous": "Last {period}: {amount}",
+    "paceMarker": "Where you'd be today on an even pace",
+    "progressLabel": "{pct}% of the goal",
+    "actions": "Goal actions",
+    "form": {
+      "what": "What do you want to grow?",
+      "when": "Over what period?",
+      "target": "Target",
+      "targetHint": "Last {period} you made {amount}.",
+      "targetHintCeiling": "Last {period} you spent {amount}.",
+      "note": "Why it matters (optional)",
+      "notePlaceholder": "For example: saving for my second shop",
+      "picks": "Quick picks",
+      "same": "Same as last {period}",
+      "plus": "+{pct}%",
+      "minus": "-{pct}%",
+      "create": "Set goal",
+      "save": "Save goal"
+    },
+    "targetError": "Enter a target above zero.",
+    "created": "Goal set. You've got this.",
+    "saved": "Goal updated",
+    "deleted": "Goal removed",
+    "deleteTitle": "Remove this goal?",
+    "deleteBody": "Progress is worked out from your sales, so nothing else is lost.",
+    "goalsEmptyTitle": "What would make this a great month?",
+    "goalsEmptyHint": "Pick a number to aim for. We'll track it from your sales every day and tell you if you're on pace.",
+    "starters": {
+      "sales": "Beat last month's sales",
+      "newCustomers": "Win more new customers",
+      "expenses": "Keep expenses in check"
+    },
+    "goalsErrorTitle": "We couldn't load your goals",
+    "celebrate": "You reached your {metric} goal!"
   }
 }

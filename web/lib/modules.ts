@@ -23,6 +23,7 @@ export function moduleForPath(pathname: string): ModuleKey | null {
 const LICENSED: [string, string][] = [
   ["/pos", "pos"], ["/sales", "sales"], ["/purchases", "purchases"], ["/stock", "stock"],
   ["/expenses", "expenses"], ["/accounts", "accounts"], ["/reports", "reports"],
+  ["/opportunities", "reports"], ["/goals", "reports"],
 ];
 
 /** `licensed` is the list the business subscribes to; null means unknown or the local demo, so everything is on. */

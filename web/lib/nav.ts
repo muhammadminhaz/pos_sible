@@ -10,6 +10,7 @@ import {
   SettingsIcon,
   ShoppingBagIcon,
   ShoppingCartIcon,
+  SparklesIcon,
   UsersIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -30,6 +31,14 @@ export const NAV: NavGroup[] = [
       { key: "analyticsCustomers", href: "/analytics/customers", permission: "report.view" },
       { key: "analyticsInventory", href: "/analytics/inventory", permission: "report.view" },
       { key: "analyticsExpenses", href: "/analytics/expenses", permission: "report.view" },
+    ],
+  },
+  {
+    key: "possible",
+    icon: SparklesIcon,
+    items: [
+      { key: "opportunities", href: "/opportunities", permission: "report.view", keywords: ["forecast", "suggestions", "insights"] },
+      { key: "goals", href: "/goals", permission: "report.view", keywords: ["targets", "milestones"] },
     ],
   },
   {

@@ -28,6 +28,7 @@ import "@/lib/data/services/reports/analytics";
 import "@/lib/data/services/reports/contacts";
 import "@/lib/data/services/reports/dashboard";
 import "@/lib/data/services/reports/money";
+import "@/lib/data/services/reports/possible";
 import "@/lib/data/services/reports/products";
 import "@/lib/data/services/reports/stock";
 import "@/lib/data/services/returns";
@@ -52,6 +53,8 @@ import { TABLE_NAMES } from "./tables";
 const GATES: Record<string, string[]> = {
   moneyReports: ["report.view", "report.profit_loss"],
   analyticsReports: ["report.view"],
+  possibleReports: ["report.view"],
+  goalsService: ["report.view"],
   stockReports: ["report.view", "report.stock"],
   productReports: ["report.view"],
   contactReports: ["report.view"],

@@ -31,6 +31,8 @@ export const SERVICE_MODULES: Record<string, ModuleId[]> = {
   ledgerReportsService: ["accounts"],
   moneyReports: ["reports"],
   analyticsReports: ["reports"],
+  possibleReports: ["reports"],
+  goalsService: ["reports"],
   stockReports: ["reports"],
   productReports: ["reports"],
   contactReports: ["reports"],

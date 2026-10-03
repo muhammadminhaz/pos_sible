@@ -110,3 +110,18 @@ export type Booking = z.infer<typeof booking>;
 
 export const backup = base.extend({ name: z.string(), size: z.number(), payload: z.string() });
 export type Backup = z.infer<typeof backup>;
+
+/** What a goal can measure. `expenses` is a ceiling: the goal is met by staying under it. */
+export const GOAL_METRICS = ["sales", "grossProfit", "netProfit", "orders", "aov", "newCustomers", "activeCustomers", "expenses"] as const;
+export type GoalMetric = (typeof GOAL_METRICS)[number];
+export const GOAL_PERIODS = ["month", "quarter", "year"] as const;
+export type GoalPeriod = (typeof GOAL_PERIODS)[number];
+
+export const goal = base.extend({
+  metric: z.enum(GOAL_METRICS),
+  target: z.number().positive().max(1e12),
+  period: z.enum(GOAL_PERIODS),
+  /** The shopkeeper's own words for why it matters ("my second shop"). */
+  note: z.string().trim().max(80).default(""),
+});
+export type Goal = z.infer<typeof goal>;

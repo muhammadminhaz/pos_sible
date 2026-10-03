@@ -75,6 +75,8 @@ export const ROUTES = {
   "/analytics/customers": { title: "analyticsCustomers", module: "reports", permission: "report.view" },
   "/analytics/inventory": { title: "analyticsInventory", module: "reports", permission: "report.view" },
   "/analytics/expenses": { title: "analyticsExpenses", module: "reports", permission: "report.view" },
+  "/opportunities": { title: "opportunities", module: "reports", permission: "report.view" },
+  "/goals": { title: "goals", module: "reports", permission: "report.view" },
   "/reports/profit-loss": { title: "profitLoss", module: "reports", permission: "report.profit_loss" },
   "/reports/purchase-sale": { title: "purchaseSale", module: "reports", permission: "report.view" },
   "/reports/tax": { title: "taxReport", module: "reports", permission: "report.view" },

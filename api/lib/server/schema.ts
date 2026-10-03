@@ -174,4 +174,19 @@ ALTER TABLE logins ADD PRIMARY KEY (business_id, username);
 CREATE UNIQUE INDEX IF NOT EXISTS logins_owner_name ON logins (username) WHERE user_id = 'user_admin';
 `,
   },
+  {
+    id: 8,
+    name: "business goals",
+    sql: `
+CREATE TABLE IF NOT EXISTS goals (
+  seq bigserial,
+  business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  id text NOT NULL,
+  data jsonb NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (business_id, id)
+);
+CREATE INDEX IF NOT EXISTS goals_order ON goals (business_id, seq);
+`,
+  },
 ];

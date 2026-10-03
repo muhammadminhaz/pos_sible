@@ -9,6 +9,18 @@ import { defaultSettings } from "./settings";
 export const SEED_VERSION = 4;
 const HISTORY_DAYS = 180;
 
+/** Two goals a little above the demo shop's recent pace, so the Goals tab opens with something to look at. */
+function demoGoals(txns: DB["transactions"], today: string, createdAt: string): DB["goals"] {
+  const since = format(subDays(new Date(`${today}T00:00:00`), 30), "yyyy-MM-dd");
+  const recent = txns.filter((t) => t.type === "sell" && t.status === "final" && t.date.slice(0, 10) > since);
+  const sales = recent.reduce((s, t) => s + t.totals.total, 0);
+  const stamp = { createdAt, createdBy: null, note: "" };
+  return [
+    { id: "goal_sales", metric: "sales", period: "month", target: Math.max(10_000, Math.ceil((sales * 1.15) / 10_000) * 10_000), ...stamp },
+    { id: "goal_orders", metric: "orders", period: "month", target: Math.max(10, Math.ceil((recent.length * 1.1) / 10) * 10), ...stamp },
+  ];
+}
+
 export function createSeed(opts: { seed?: number; today?: string; days?: number } = {}): DB {
   const today = opts.today ?? format(new Date(), "yyyy-MM-dd");
   const days = opts.days ?? HISTORY_DAYS;
@@ -41,6 +53,7 @@ export function createSeed(opts: { seed?: number; today?: string; days?: number 
     importBatches: [],
     bookings: [],
     backups: [],
+    goals: demoGoals(history.transactions, today, createdAt),
     settings,
     meta: { version: SEED_VERSION, seededAt: today, counters: history.counters },
   };
