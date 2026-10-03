@@ -12,7 +12,7 @@ pos_sible runs in two modes. The backend is its own project in `api/`, deployed 
 ## Quick start
 
 ```bash
-cd api && POS_SEED_DEMO=true docker compose up -d --build   # API on :3001 + Postgres (migrations run on first request)
+cd api && cp .env.example .env && docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   # API on :3001 + Postgres (migrations run on first request)
 cd web && cp .env.example .env.local && npm run dev:api     # UI on :3000, /api/* proxied to :3001
 ```
 
