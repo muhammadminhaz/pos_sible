@@ -454,6 +454,9 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   scrollbar-color: transparent transparent;
   transition: scrollbar-color 0.5s ease;
 }
+/* Rows that scroll sideways with their own arrows: no scrollbar track at all, so nothing is reserved under them. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 [data-scrolling] {
   scrollbar-color: var(--primary) transparent;
   transition-duration: 0.15s;

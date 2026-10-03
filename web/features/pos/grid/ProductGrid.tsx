@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PackageIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, PackageIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,88 @@ const PAGE = 40;
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+}
+
+/**
+ * A row of chips that scrolls sideways. Round arrows appear at whichever edge has more to show (the main way for mouse
+ * users); swiping on touch, dragging with a mouse and the wheel work too. The edges fade where chips run off.
+ */
+function ChipRow({ label, children }: { label: string; children: React.ReactNode }) {
+  const t = useTranslations("pos.grid");
+  const ref = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ left: false, right: false });
+  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+  const swallowClick = useRef(false);
+
+  const update = () => {
+    const el = ref.current;
+    if (el) setEdge({ left: el.scrollLeft > 1, right: Math.ceil(el.scrollLeft + el.clientWidth) < el.scrollWidth - 1 });
+  };
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // Observing fires once on attach, which also sets the initial state.
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => ro.disconnect();
+  }, []);
+
+  const go = (dir: -1 | 1) => {
+    const el = ref.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.7, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
+  const end = () => {
+    if (drag.current?.moved) {
+      swallowClick.current = true;
+      setTimeout(() => (swallowClick.current = false), 0);
+    }
+    drag.current = null;
+  };
+  const fade = `linear-gradient(to right, ${edge.left ? "transparent, #000 3rem" : "#000, #000 0"}, ${edge.right ? "#000 calc(100% - 3rem), transparent" : "#000 100%, #000"})`;
+  const arrow = (dir: -1 | 1) => (
+    <button
+      type="button"
+      aria-label={t(dir < 0 ? "scrollLeft" : "scrollRight")}
+      onClick={() => go(dir)}
+      className={cn(
+        "absolute top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full border bg-card text-foreground shadow-md transition hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:scale-95 motion-reduce:transition-none",
+        dir < 0 ? "left-1" : "right-1",
+      )}
+    >
+      {dir < 0 ? <ChevronLeftIcon className="size-4" aria-hidden /> : <ChevronRightIcon className="size-4" aria-hidden />}
+    </button>
+  );
+
+  return (
+    <div className="relative -mx-3 min-w-0">
+      <div
+        ref={ref}
+        role="group"
+        aria-label={label}
+        style={{ WebkitMaskImage: fade, maskImage: fade }}
+        className="flex cursor-grab touch-pan-x gap-2 no-scrollbar overflow-x-auto overscroll-x-contain px-3 active:cursor-grabbing"
+        onScroll={update}
+        onWheel={(e) => { if (e.deltaY && !e.deltaX) e.currentTarget.scrollLeft += e.deltaY; }}
+        onPointerDown={(e) => { if (e.pointerType === "mouse") drag.current = { x: e.clientX, left: e.currentTarget.scrollLeft, moved: false }; }}
+        onPointerMove={(e) => {
+          const d = drag.current;
+          if (!d) return;
+          const dx = e.clientX - d.x;
+          if (Math.abs(dx) > 4) d.moved = true;
+          if (d.moved) e.currentTarget.scrollLeft = d.left - dx;
+        }}
+        onPointerUp={end}
+        onPointerCancel={end}
+        onPointerLeave={end}
+        onClickCapture={(e) => { if (swallowClick.current) { e.stopPropagation(); e.preventDefault(); } }}
+      >
+        {children}
+      </div>
+      {edge.left && arrow(-1)}
+      {edge.right && arrow(1)}
+    </div>
+  );
 }
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -138,24 +220,24 @@ export function ProductGrid({ locationId }: { locationId: string }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="grid gap-2 border-b bg-card/60 p-3">
+      <div className="grid gap-2.5 border-b bg-card/60 p-3">
         <div className="flex gap-2">
           <Chip active={!featured} onClick={filter(() => setFeatured(false))}>{t("all")}</Chip>
           <Chip active={featured} onClick={filter(() => setFeatured(true))}>{t("featured")}</Chip>
         </div>
-        <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label={t("allCategories")}>
+        <ChipRow label={t("allCategories")}>
           <Chip active={!categoryId} onClick={filter(() => setCategoryId(undefined))}>{t("allCategories")}</Chip>
           {categories.map((c) => (
             <Chip key={c.id} active={categoryId === c.id} onClick={filter(() => setCategoryId(c.id))}>{c.name}</Chip>
           ))}
-        </div>
+        </ChipRow>
         {brands.length > 0 && (
-          <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label={t("allBrands")}>
+          <ChipRow label={t("allBrands")}>
             <Chip active={!brandId} onClick={filter(() => setBrandId(undefined))}>{t("allBrands")}</Chip>
             {brands.map((b) => (
               <Chip key={b.id} active={brandId === b.id} onClick={filter(() => setBrandId(b.id))}>{b.name}</Chip>
             ))}
-          </div>
+          </ChipRow>
         )}
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-3">
