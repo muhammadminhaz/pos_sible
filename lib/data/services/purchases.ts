@@ -4,7 +4,8 @@ import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
 import { accountTxn, stockLot, transaction, type DB, type Payment, type PaymentMethod, type Transaction } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
-import { paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
+import { todayISO } from "@/lib/dates";
+import { effectivePaymentStatus, paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
 import { marginFromPrices } from "@/lib/domain/pricing";
 import { lineTotals, orderTotals, type DiscountInput } from "@/lib/domain/totals";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
@@ -161,12 +162,14 @@ export const purchasesService = {
     await delay();
     const d = getDB();
     const contacts = new Map(d.contacts.map((c) => [c.id, c.name]));
+    const today = todayISO(d.settings.business.timeZone);
+    const statusOf = (t: Transaction): PaymentStatus => effectivePaymentStatus(t, today);
     const rows = d.transactions
       .filter((t) => t.type === "purchase")
       .filter((t) => !f.locationId || t.locationId === f.locationId)
       .filter((t) => !f.contactId || t.contactId === f.contactId)
       .filter((t) => !f.status || t.status === f.status)
-      .filter((t) => !f.paymentStatus || t.paymentStatus === f.paymentStatus)
+      .filter((t) => !f.paymentStatus || statusOf(t) === f.paymentStatus)
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
       .filter((t) => matches(f.search, t.refNo, contacts.get(t.contactId ?? "")))
@@ -176,7 +179,7 @@ export const purchasesService = {
         const u = d.users.find((x) => x.id === t.createdBy);
         return {
           id: t.id, date: t.date, refNo: t.refNo, locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "", supplierName: contacts.get(t.contactId ?? "") ?? "",
-          status: t.status as PurchaseStatus, paymentStatus: t.paymentStatus, total: t.totals.total, paid: s.paid, due: s.due, addedBy: u ? `${u.firstName} ${u.lastName}`.trim() : "",
+          status: t.status as PurchaseStatus, paymentStatus: statusOf(t), total: t.totals.total, paid: s.paid, due: s.due, addedBy: u ? `${u.firstName} ${u.lastName}`.trim() : "",
         };
       });
     const sum = (k: "total" | "paid" | "due") => roundMoney(rows.reduce((s, r) => s + r[k], 0));

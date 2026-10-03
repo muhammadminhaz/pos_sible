@@ -288,6 +288,52 @@
     "chooseLocationsHint": "Applies to {count, plural, one {# selected product} other {# selected products}}.",
     "noStock": "Stock not managed"
   },
+  "alerts": {
+    "overdueSales": {
+      "title": "{count, plural, one {# invoice is} other {# invoices are}} overdue at {location}",
+      "body": "{amount} is past its pay term. Follow up with the customers."
+    },
+    "supplierOverdue": {
+      "title": "{count, plural, one {# supplier bill is} other {# supplier bills are}} overdue at {location}",
+      "body": "{amount} owed to suppliers is past its pay term."
+    },
+    "outOfStock": {
+      "title": "{count, plural, one {# product is} other {# products are}} out of stock at {location}",
+      "body": "Starting with {example}. Reorder to keep selling."
+    },
+    "lowStock": {
+      "title": "{count, plural, one {# product is} other {# products are}} low on stock at {location}",
+      "body": "Starting with {example}. Check the stock report before it runs out."
+    },
+    "expired": {
+      "title": "{count, plural, one {# lot has} other {# lots have}} expired at {location}",
+      "body": "Starting with {example}. Remove expired stock so it cannot be sold."
+    },
+    "expiringSoon": {
+      "title": "{count, plural, one {# lot expires} other {# lots expire}} within {days} days at {location}",
+      "body": "Starting with {example}. Sell or discount it first."
+    },
+    "registerOpen": {
+      "title": "Cash register at {location} was left open",
+      "body": "{user} opened it on {since} and it has not been closed. Count the cash and close it."
+    },
+    "creditLimit": {
+      "title": "{count, plural, one {# customer is} other {# customers are}} over the credit limit",
+      "body": "{name} owes {amount} against a limit of {limit}."
+    },
+    "suspendedStale": {
+      "title": "{count, plural, one {# held sale was} other {# held sales were}} left from an earlier day at {location}",
+      "body": "Resume or cancel them so they are not forgotten."
+    },
+    "transferStuck": {
+      "title": "Transfer {ref} has been waiting {days} days",
+      "body": "{from} to {to}. Confirm receipt or follow up."
+    },
+    "undelivered": {
+      "title": "{count, plural, one {# order has} other {# orders have}} not been delivered after {days} days at {location}",
+      "body": "Check the shipments list and update the delivery status."
+    }
+  },
   "dashboard": {
     "title": "Welcome back, {name}",
     "description": "Here's how your business is doing.",

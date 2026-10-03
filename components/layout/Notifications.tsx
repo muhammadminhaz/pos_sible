@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Notification } from "@/lib/data/schemas";
 import { useNotificationMutations, useNotifications } from "@/lib/data/hooks/notifications";
+import { useFormat } from "@/lib/i18n/format";
 
 const DOT: Record<Notification["kind"], string> = {
   info: "bg-info",
@@ -20,8 +21,23 @@ const DOT: Record<Notification["kind"], string> = {
   danger: "bg-danger",
 };
 
+/** Generated alerts are worded here, in the viewer's language, from the type and numbers stored with them. */
+function useAlertText() {
+  const t = useTranslations("alerts");
+  const f = useFormat();
+  return (n: Notification): { title: string; body: string } => {
+    if (!n.type || !t.has(`${n.type}.title`)) return { title: n.title, body: n.body };
+    const p = n.params ?? {};
+    const values: Record<string, string | number> = { ...p, countText: f.number(Number(p.count ?? 0)), daysText: f.number(Number(p.days ?? 0)) };
+    for (const k of ["amount", "limit"]) if (k in p) values[k] = f.money(Number(p[k]));
+    if ("since" in p) values.since = f.date(String(p.since));
+    return { title: t(`${n.type}.title`, values), body: t(`${n.type}.body`, values) };
+  };
+}
+
 export function Notifications() {
   const t = useTranslations("header");
+  const text = useAlertText();
   const locale = useLocale();
   const { data } = useNotifications();
   const { markAllRead, markRead } = useNotificationMutations();
@@ -53,12 +69,13 @@ export function Notifications() {
           <ScrollArea className="max-h-96">
             <ul className="divide-y">
               {data.items.map((n) => {
+                const { title, body: detail } = text(n);
                 const body = (
                   <div className="flex gap-3 px-4 py-3 transition-colors hover:bg-muted/60">
                     <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.readAt ? "bg-transparent" : DOT[n.kind])} />
                     <div className="min-w-0 flex-1">
-                      <p className={cn("text-sm", !n.readAt && "font-medium")}>{n.title}</p>
-                      {n.body && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.body}</p>}
+                      <p className={cn("text-sm", !n.readAt && "font-medium")}>{title}</p>
+                      {detail && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{detail}</p>}
                       <p className="mt-1 text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(n.createdAt), {
                           addSuffix: true,

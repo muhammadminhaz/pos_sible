@@ -6,7 +6,8 @@ import {
 import { accountTxn, transaction, type ShippingStatus, type DB, type InvoiceLayout, type Location, type Payment, type PaymentMethod, type Transaction } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
-import { paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
+import { todayISO } from "@/lib/dates";
+import { effectivePaymentStatus, paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
 import { nextInvoiceNo } from "@/lib/domain/refs";
 import { isValidRedeem, maxRedeemable, pointsEarned, reservedPoints } from "@/lib/domain/rewards";
 import { allocate, available } from "@/lib/domain/stock";
@@ -284,6 +285,9 @@ export const salesService = {
     const locations = new Map(d.locations.map((l) => [l.id, l.name]));
     const users = new Map(d.users.map((u) => [u.id, `${u.firstName} ${u.lastName}`.trim()]));
     const kindStatus = f.kind === "drafts" ? ["draft"] : f.kind === "quotations" ? ["quotation"] : null;
+    const today = todayISO(d.settings.business.timeZone);
+    // A final invoice's stored status is fixed at save time; its pay term may have passed since.
+    const statusOf = (t: Transaction): PaymentStatus => (t.status === "final" ? effectivePaymentStatus(t, today) : t.paymentStatus);
     const rows = d.transactions
       .filter((t) => t.type === "sell" && t.status !== "suspended")
       .filter((t) => !kindStatus || kindStatus.includes(t.status))
@@ -296,7 +300,7 @@ export const salesService = {
       .filter((t) => !f.subscription || t.recurring != null)
       .filter((t) => !f.deliveryPersonId || t.shipping.deliveryPersonId === f.deliveryPersonId)
       .filter((t) => !f.shipped || t.shipping.status != null)
-      .filter((t) => !f.paymentStatus || t.paymentStatus === f.paymentStatus)
+      .filter((t) => !f.paymentStatus || statusOf(t) === f.paymentStatus)
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
       .filter((t) => matches(f.search, t.refNo, contacts.get(t.contactId ?? "")?.name, contacts.get(t.contactId ?? "")?.mobile))
@@ -310,7 +314,7 @@ export const salesService = {
       );
       return {
         id: t.id, refNo: t.refNo, date: t.date, status: t.status, contactName: c?.name ?? "", mobile: c?.mobile ?? "",
-        locationName: locations.get(t.locationId) ?? "", paymentStatus: t.paymentStatus,
+        locationName: locations.get(t.locationId) ?? "", paymentStatus: statusOf(t),
         methods: [...new Set(t.payments.filter((p) => !p.isReturn).map((p) => p.method))], total: t.totals.total, paid: sum.paid,
         due: t.status === "final" ? sum.due : 0, returnDue, shippingStatus: t.shipping.status, deliveryPerson: users.get(t.shipping.deliveryPersonId ?? "") ?? "", itemsCount: t.totals.itemsCount,
         addedBy: users.get(t.createdBy ?? "") ?? "", note: t.notes, staffNote: t.staffNote, recurring: t.recurring != null, channel: t.channel,

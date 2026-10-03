@@ -36,3 +36,11 @@ export function paymentStatus(args: {
   }
   return args.paid > 0 ? "partial" : "due";
 }
+
+/** Status as of `today`: the stored value is fixed when the invoice is saved, so it cannot notice a pay term passing later. */
+export function effectivePaymentStatus(
+  t: { totals: { total: number }; payments: { amount: number; isReturn?: boolean }[]; date: string; payTerm?: PayTerm | null },
+  today: string,
+): PaymentStatus {
+  return paymentStatus({ total: t.totals.total, paid: paymentSummary(t.totals.total, t.payments).paid, date: t.date, payTerm: t.payTerm, today });
+}

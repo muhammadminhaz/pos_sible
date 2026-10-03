@@ -288,6 +288,52 @@
     "chooseLocationsHint": "নির্বাচিত {count}টি পণ্যে প্রযোজ্য।",
     "noStock": "স্টক ট্র্যাক করা হয় না"
   },
+  "alerts": {
+    "overdueSales": {
+      "title": "{location}-এ {countText}টি ইনভয়েসের মেয়াদ পেরিয়েছে",
+      "body": "{amount} পরিশোধের সময় পেরিয়ে গেছে। গ্রাহকদের সাথে যোগাযোগ করুন।"
+    },
+    "supplierOverdue": {
+      "title": "{location}-এ সরবরাহকারীর {countText}টি বিল বকেয়া",
+      "body": "সরবরাহকারীদের কাছে {amount} পরিশোধের সময় পেরিয়ে গেছে।"
+    },
+    "outOfStock": {
+      "title": "{location}-এ {countText}টি পণ্যের স্টক শেষ",
+      "body": "শুরু {example} দিয়ে। বিক্রি চালু রাখতে পুনরায় অর্ডার করুন।"
+    },
+    "lowStock": {
+      "title": "{location}-এ {countText}টি পণ্যের স্টক কম",
+      "body": "শুরু {example} দিয়ে। শেষ হওয়ার আগে স্টক রিপোর্ট দেখুন।"
+    },
+    "expired": {
+      "title": "{location}-এ {countText}টি লটের মেয়াদ শেষ",
+      "body": "শুরু {example} দিয়ে। মেয়াদোত্তীর্ণ পণ্য সরিয়ে ফেলুন যাতে বিক্রি না হয়।"
+    },
+    "expiringSoon": {
+      "title": "{location}-এ {countText}টি লটের মেয়াদ {daysText} দিনের মধ্যে শেষ হবে",
+      "body": "শুরু {example} দিয়ে। এগুলো আগে বিক্রি করুন বা ছাড় দিন।"
+    },
+    "registerOpen": {
+      "title": "{location}-এর ক্যাশ রেজিস্টার খোলা রয়ে গেছে",
+      "body": "{user} এটি {since} তারিখে খুলেছেন, এখনও বন্ধ হয়নি। নগদ গুনে বন্ধ করুন।"
+    },
+    "creditLimit": {
+      "title": "{countText} জন গ্রাহক ক্রেডিট সীমা ছাড়িয়েছেন",
+      "body": "{name}-এর কাছে {amount} পাওনা, সীমা {limit}।"
+    },
+    "suspendedStale": {
+      "title": "{location}-এ আগের দিনের {countText}টি স্থগিত বিক্রয় পড়ে আছে",
+      "body": "চালু করুন বা বাতিল করুন যাতে ভুলে না যান।"
+    },
+    "transferStuck": {
+      "title": "ট্রান্সফার {ref} {daysText} দিন ধরে অপেক্ষায়",
+      "body": "{from} থেকে {to}। প্রাপ্তি নিশ্চিত করুন বা খোঁজ নিন।"
+    },
+    "undelivered": {
+      "title": "{location}-এ {countText}টি অর্ডার {daysText} দিন পরেও পৌঁছায়নি",
+      "body": "শিপমেন্ট তালিকা দেখে ডেলিভারির অবস্থা আপডেট করুন।"
+    }
+  },
   "dashboard": {
     "title": "স্বাগতম, {name}",
     "description": "আপনার ব্যবসার বর্তমান অবস্থা।",
