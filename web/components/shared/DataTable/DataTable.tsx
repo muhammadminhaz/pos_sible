@@ -179,8 +179,9 @@ export function DataTable<T>({
         }),
       ),
     );
-    downloadCSV(exportFileName(exportName ?? tableId, appSettings?.business.name), toCSV(records));
-    toast.success(t("common.exportCsv"), { description: `${rows.length}` });
+    const file = `${exportFileName(exportName ?? tableId, appSettings?.business.name)}.csv`;
+    downloadCSV(file, toCSV(records));
+    toast.success(t("common.exportDone"), { description: t("common.exportDoneBody", { count: rows.length, file }) });
   };
 
   const selected = Object.values(selectedRows);

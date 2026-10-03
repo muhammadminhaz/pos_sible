@@ -51,7 +51,7 @@ export function Toaster() {
       role="region"
       aria-live="polite"
       aria-label="Notifications"
-      className="pointer-events-none fixed right-4 bottom-4 z-[100000] flex w-[min(356px,calc(100vw-2rem))] flex-col items-end pb-[env(safe-area-inset-bottom)] sm:right-8 sm:bottom-8"
+      className="pointer-events-none fixed right-4 bottom-4 z-[100000] flex w-[min(380px,calc(100vw-2rem))] flex-col items-end pb-[env(safe-area-inset-bottom)] sm:right-8 sm:bottom-8"
       style={{ pointerEvents: "none" }}
     >
       {items.map((n) => {
@@ -67,9 +67,10 @@ export function Toaster() {
               onAction={n.action?.onClick}
               duration={durationFor(n.kind, n)}
               fuseColor={token}
-              background="var(--popover)"
+              background={`color-mix(in srgb, ${token} 9%, var(--popover))`}
               color="var(--popover-foreground)"
               closeButton
+              width={380}
               closeLabel={t("close")}
               onClose={() => remove(n.id)}
             />

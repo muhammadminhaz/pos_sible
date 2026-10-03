@@ -348,3 +348,13 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
     scroll-behavior: auto !important;
   }
 }
+
+/* Loading sweep along the top edge while a route is on its way (app/(app)/loading.tsx). */
+@keyframes route-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+.route-sweep { animation: route-sweep 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .route-sweep { animation: none; width: 100%; opacity: 0.5; }
+}
