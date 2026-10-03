@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -48,20 +49,19 @@ function useActive() {
 function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () => void }) {
   const t = useTranslations("nav");
   const active = useActive();
-  const openGroups = useUI((s) => s.openGroups);
-  const setOpenGroups = useUI((s) => s.setOpenGroups);
+  const activeGroup = active.group?.key;
 
-  // Accordion: opening a group folds the rest. A group counts as open when its stored flag differs from
-  // "contains the active page", so to land on the wanted state we store the flag only where they disagree.
-  const isOpen = (key: string) => openGroups.includes(key) !== (active.group?.key === key);
-  const toggleGroup = (key: string) => {
-    const willOpen = !isOpen(key);
-    setOpenGroups(
-      groups
-        .filter((g) => g.items && (g.key === key ? willOpen : false) !== (active.group?.key === g.key))
-        .map((g) => g.key),
-    );
-  };
+  // Which groups are open. Clicking a page never touches this: the group you land in is simply added the moment it
+  // becomes the active one, so nothing closes or re-opens while you navigate.
+  const [open, setOpen] = useState<string[]>(() => (activeGroup ? [activeGroup] : []));
+  const [seenGroup, setSeenGroup] = useState(activeGroup);
+  if (activeGroup !== seenGroup) {
+    setSeenGroup(activeGroup);
+    if (activeGroup && !open.includes(activeGroup)) setOpen([...open, activeGroup]);
+  }
+  const isOpen = (key: string) => open.includes(key);
+  // Accordion on purpose: opening a group by hand folds the others; closing just closes it.
+  const toggleGroup = (key: string) => setOpen(open.includes(key) ? open.filter((k) => k !== key) : [key]);
 
   const sections: BranchedSection[] = groups.map((g) => ({
     key: g.key, label: t(g.key), icon: g.icon, href: g.href,
@@ -72,15 +72,11 @@ function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: 
     <div className="px-3 py-2">
       <BranchedNav
         sections={sections}
-        activeSection={active.group?.key}
+        activeSection={activeGroup}
         activeKid={active.item?.key}
         isOpen={isOpen}
         onToggle={toggleGroup}
-        // The page we land on makes its group "open" by itself; a leftover manual-open flag would flip it shut.
-        onNavigate={() => {
-          setOpenGroups([]);
-          onNavigate?.();
-        }}
+        onNavigate={() => onNavigate?.()}
       />
     </div>
   );
