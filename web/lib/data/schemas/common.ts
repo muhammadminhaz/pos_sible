@@ -9,6 +9,9 @@ export const base = z.object({
   id,
   createdAt: isoDate,
   createdBy: z.string().nullable(),
+  /** Stamped by `commit()` on every change, so older rows simply don't have them yet. */
+  updatedAt: isoDate.nullish(),
+  updatedBy: z.string().nullish(),
 });
 
 export const payTerm = z.object({ number: z.number().int().nonnegative(), type: z.enum(["days", "months"]) });

@@ -57,7 +57,7 @@ export function TransfersList() {
     { id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined }, cell: ({ row }) => (
       <RowActions items={[
         { label: t("common.view"), icon: EyeIcon, href: `/stock/transfers/${row.original.id}` },
-        { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !can("stock_transfer.create") },
+        { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !can("stock_transfer.delete") },
       ]} />) },
   ];
   const locs = (lookups?.locations ?? []).map((l) => ({ value: l.id, label: l.name }));
@@ -169,7 +169,7 @@ export function TransferDetail({ id }: { id: string }) {
       <PageHeader
         title={<span className="flex flex-wrap items-center gap-3">{tr.refNo}<StatusBadge status={tr.status} /></span>}
         description={<span className="inline-flex items-center gap-2">{tr.fromName}<ArrowRightIcon className="size-4" />{tr.toName} · {f.dateTime(tr.date)}</span>}
-        actions={can("stock_transfer.create") && next && <Button onClick={advance} disabled={updateStatus.isPending}>{t(next === "in_transit" ? "ops.markInTransit" : "ops.markCompleted")}</Button>}
+        actions={can("stock_transfer.update") && next && <Button onClick={advance} disabled={updateStatus.isPending}>{t(next === "in_transit" ? "ops.markInTransit" : "ops.markCompleted")}</Button>}
       />
       <ol className="flex items-center gap-2 rounded-xl border bg-card p-4 text-sm">
         {STEPS.map((s, i) => (

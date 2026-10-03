@@ -83,7 +83,7 @@ export function AdjustmentsList() {
     { id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined }, cell: ({ row }) => (
       <RowActions items={[
         { label: t("common.view"), icon: EyeIcon, onClick: () => setView(row.original.id) },
-        { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !can("stock_adjustment.create") },
+        { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !can("stock_adjustment.delete") },
       ]} />) },
   ];
   const defs: FilterDef[] = [

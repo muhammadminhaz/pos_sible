@@ -22,6 +22,7 @@ import { methodLabel } from "@/lib/pos/methods";
 import { ContactFormDialog } from "./ContactForm";
 import { PayDueDialog } from "./PayDueDialog";
 import { ScrollFade } from "@/components/ui/scroll-fade";
+import { AuditFooter } from "@/components/shared/AuditFooter";
 
 function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -44,7 +45,8 @@ export function ContactDetail({ id }: { id: string }) {
   const [pay, setPay] = useState<string | null>(null);
   if (isError) return <EmptyState title={t("errors.notFound")} />;
   if (!c) return <Skeleton className="h-96" />;
-  const write = can(c.type === "supplier" ? "contacts.supplier" : "contacts.customer");
+  const write = c.type === "both" ? can("customer.update") && can("supplier.update") : can(`${c.type}.update`);
+  const canPay = c.type === "supplier" ? can("purchase.payments") : can("sell.payments");
   const labels = settings?.customLabels.payments ?? [];
   const group = lookups?.customerGroups.find((g) => g.id === c.customerGroupId)?.name;
   const users = (lookups?.users ?? []).filter((u) => c.assignedTo.includes(u.id)).map((u) => `${u.firstName} ${u.lastName}`.trim()).join(", ");
@@ -58,7 +60,7 @@ export function ContactDetail({ id }: { id: string }) {
         actions={write && !c.isDefault && (
           <>
             <Button variant="outline" onClick={() => setEdit(c.id)}><PencilIcon />{t("common.edit")}</Button>
-            {c.due > 0 && <Button onClick={() => setPay(c.id)}><CoinsIcon />{t("ops.payDue")}</Button>}
+            {c.due > 0 && canPay && <Button onClick={() => setPay(c.id)}><CoinsIcon />{t("ops.payDue")}</Button>}
           </>
         )}
       />
@@ -68,6 +70,8 @@ export function ContactDetail({ id }: { id: string }) {
         <StatCard label={t(c.type === "supplier" ? "ops.purchaseDue" : "ops.sellDue")} value={<Money value={owes} />} />
         <StatCard label={t("ops.balanceDue")} value={<Money value={c.due} />} />
       </div>
+
+      <AuditFooter record={c} />
 
       <Section title={t("catalog.details")}>
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

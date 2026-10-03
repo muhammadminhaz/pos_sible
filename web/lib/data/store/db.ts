@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { DB } from "@/lib/data/schemas";
 import { createSeed, SEED_VERSION } from "@/lib/data/seed";
+import { upgradeRoles } from "@/lib/auth/permissions";
+import { stampChanges } from "./audit";
 import { dbStorage } from "./storage";
 
 type DBState = { db: DB | null; hydrated: boolean };
@@ -25,6 +27,15 @@ export const useDB = create<DBState>()(
   }),
 );
 
+/**
+ * Who is acting and what time it is, for the "updated by / at" stamps. The browser session and the clock helper
+ * register themselves here (they import this file, so it can't import them).
+ */
+export const actor: { userId: () => string | null; now: () => string } = {
+  userId: () => dataContext.current()?.userId ?? null,
+  now: () => new Date().toISOString().slice(0, 19),
+};
+
 export function getDB(): DB {
   const ctx = dataContext.current();
   if (ctx) return ctx.db;
@@ -37,8 +48,10 @@ export function getDB(): DB {
 
 /** Copy → mutate → set. Every write goes through here so subscribers always see a new reference. */
 export function commit(mutator: (draft: DB) => void): void {
-  const draft = structuredClone(getDB());
+  const before = getDB();
+  const draft = structuredClone(before);
   mutator(draft);
+  stampChanges(before, draft, actor.userId(), actor.now());
   const ctx = dataContext.current();
   if (ctx) {
     ctx.db = draft;
@@ -59,5 +72,8 @@ export function resetDB(db?: DB): void {
 export async function hydrateDB(): Promise<void> {
   await useDB.persist.rehydrate();
   if (!useDB.getState().db) useDB.setState({ db: createSeed() });
+  const loaded = useDB.getState().db!;
+  const roles = upgradeRoles(loaded.roles);
+  if (roles.some((r, i) => r !== loaded.roles[i])) useDB.setState({ db: { ...loaded, roles } });
   useDB.setState({ hydrated: true });
 }

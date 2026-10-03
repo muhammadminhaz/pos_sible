@@ -7,11 +7,11 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
 import { lineTotals, orderTotals, type DiscountInput } from "@/lib/domain/totals";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type ReturnFilters = ListQuery & { locationId?: string; contactId?: string; from?: string; to?: string; createdBy?: string };
-export type ReturnRow = {
+export type ReturnRow = AuditRow & {
   id: string; date: string; refNo: string; parentId: string | null; parentRef: string; contactName: string; locationName: string;
   paymentStatus: PaymentStatus; total: number; due: number; addedBy: string;
 };
@@ -36,6 +36,7 @@ export const returnsService = service("returnsService", {
       .map((t): ReturnRow => {
         const u = d.users.find((x) => x.id === t.createdBy);
         return {
+          ...auditIds(t),
           id: t.id, date: t.date, refNo: t.refNo, parentId: t.parentId, parentRef: parents.get(t.parentId ?? "") ?? "",
           contactName: contacts.get(t.contactId ?? "") ?? "", locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "",
           paymentStatus: t.paymentStatus, total: t.totals.total, due: paymentSummary(t.totals.total, t.payments).due,

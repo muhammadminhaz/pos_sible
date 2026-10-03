@@ -18,6 +18,7 @@ import { useFormat } from "@/lib/i18n/format";
 import { OpeningStockDialog } from "./OpeningStockDialog";
 import { Section } from "./formParts";
 import { ScrollFade } from "@/components/ui/scroll-fade";
+import { AuditFooter } from "@/components/shared/AuditFooter";
 
 function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -58,6 +59,8 @@ export function ProductDetail({ id }: { id: string }) {
           </>
         }
       />
+
+      <AuditFooter record={p} />
 
       <Section title={t("catalog.details")}>
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

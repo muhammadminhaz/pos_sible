@@ -102,6 +102,34 @@ describe.runIf(up)("Postgres backend", () => {
     }
   });
 
+  it("several people share one business, and every change records who made it", async () => {
+    const mk = async (roleId: string, tag: string) => {
+      const username = `${tag}${Date.now().toString(36)}`;
+      await ok(admin, "crud:users", "create", { username, firstName: tag, lastName: "Shop", email: "", roleId, password: "pass-word1", locationIds: [], isActive: true, allowLogin: true, prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 });
+      const r = await auth.login(username, "pass-word1", true, `ip-${tag}`);
+      if (!r.ok) throw new Error("login failed");
+      return { businessId: biz, userId: r.principal.userId, role: r.principal.role };
+    };
+    const manager = await mk("role_manager", "mgr");
+    const cashier = await mk("role_cashier", "csh");
+
+    // The admin creates a brand; the manager renames it; the stamps tell the two apart.
+    const brand = await ok(admin, "crud:brands", "create", { name: "Acme", description: "" });
+    expect(brand.createdBy).toBe(admin.userId);
+    await ok(manager, "crud:brands", "update", brand.id, { name: "Acme Ltd" });
+    const after = await ok(admin, "crud:brands", "get", brand.id);
+    expect(after).toMatchObject({ createdBy: admin.userId, updatedBy: manager.userId });
+    expect(after.updatedAt).toBeTruthy();
+
+    // The manager may add and change, but this role was never given delete; a cashier gets none of it.
+    expect(await call(manager, "crud:brands", "remove", brand.id)).toMatchObject({ ok: false, error: { name: "ForbiddenError" } });
+    expect(await call(cashier, "crud:brands", "update", brand.id, { name: "Nope" })).toMatchObject({ ok: false, error: { name: "ForbiddenError" } });
+    // And nobody can promote themselves.
+    const mgrRole = (await ok(admin, "crud:roles", "all")).find((r: { id: string }) => r.id === "role_manager");
+    expect(await call(manager, "crud:roles", "update", mgrRole.id, { permissions: ["*"] })).toMatchObject({ ok: false });
+    expect((await ok(admin, "crud:brands", "get", brand.id)).name).toBe("Acme Ltd");
+  });
+
   it("deactivating a user ends their session straight away", async () => {
     const name = `temp${Date.now().toString(36)}`;
     const created = await ok(admin, "crud:users", "create", { username: name, firstName: "Temp", lastName: "", email: "", roleId: "role_cashier", password: "temp-pass1", locationIds: [], isActive: true, allowLogin: true, prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 });

@@ -1,4 +1,4 @@
-import { dataContext } from "@/lib/data/store/db";
+import { actor, dataContext } from "@/lib/data/store/db";
 import { nextRef } from "@/lib/domain/refs";
 import { EditWindowExpiredError } from "@/lib/data/errors";
 import type { DB } from "@/lib/data/schemas";
@@ -60,6 +60,8 @@ export const nowISO = () => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 };
 
+actor.now = nowISO;
+
 /** Next reference number for a prefix; call inside `commit` so the counter is saved with the record. */
 export function takeRef(draft: DB, prefix: string, date: string = nowISO()): string {
   const n = (draft.meta.counters[prefix] ?? 0) + 1;
@@ -79,3 +81,9 @@ export function assertEditWindow(d: DB, date: string): void {
   const days = d.settings.business.transactionEditDays;
   if (days > 0 && daysSince(date) > days) throw new EditWindowExpiredError();
 }
+
+/** The "who touched this" fields of a record, as list rows carry them (see `useAuditColumns`). */
+export function auditIds(r: { createdAt?: string | null; createdBy?: string | null; updatedAt?: string | null; updatedBy?: string | null }) {
+  return { audit: { createdBy: r.createdBy ?? null, createdAt: r.createdAt ?? null, updatedBy: r.updatedBy ?? null, updatedAt: r.updatedAt ?? null } };
+}
+export type AuditRow = ReturnType<typeof auditIds>;

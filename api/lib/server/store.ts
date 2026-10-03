@@ -1,3 +1,4 @@
+import { upgradeRoles } from "@/lib/auth/permissions";
 import type { PoolClient } from "pg";
 import { ValidationError } from "@/lib/data/errors";
 import type { DB, Settings } from "@/lib/data/schemas";
@@ -53,7 +54,10 @@ export async function loadBusiness(businessId: string): Promise<Loaded> {
     const db = { settings: biz.settings, meta: biz.meta } as DB;
     for (const t of TABLE_NAMES) (db as unknown as Record<string, unknown[]>)[t] = [];
     for (const r of rows) (db as unknown as Record<string, unknown[]>)[r.tbl].push(r.data);
-    const loaded: Loaded = { db: deepFreeze(db), version: Number(biz.version), snapshot: takeSnapshot(db) };
+    // Roles saved before the finer permissions existed are upgraded in memory; the next write saves them.
+    const snapshot = takeSnapshot(db);
+    db.roles = upgradeRoles(db.roles);
+    const loaded: Loaded = { db: deepFreeze(db), version: Number(biz.version), snapshot };
     cache().set(businessId, loaded);
     return loaded;
   } catch (e) {

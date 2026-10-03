@@ -72,6 +72,12 @@ browser ── POST /api/rpc {service, method, args} ──▶ route handler (ap
   hashed, `HttpOnly` + `SameSite=Lax` (+ `Secure` in production) cookie, origin check on every POST, 5 wrong passwords
   per user and address per 15 minutes, constant-work login so usernames can't be probed. A user's `isActive`/`allowLogin`
   and role are re-checked on every request, so deactivating someone or changing a role takes effect immediately.
+* **Who did what.** `commit()` compares the database before and after every change and stamps each new or changed row
+  with `createdBy` / `updatedBy` (the signed-in user) and `updatedAt`, so the four fields exist on every record without
+  any service having to remember. Roles carry a `permVersion`; older roles are upgraded when a business is loaded so
+  they keep exactly what they could do (see `upgradeRole` in `lib/auth/permissions.ts`).
+* **Granting.** Create / update / delete are separate permissions. Editing roles or users can never hand out more than
+  the editor's own role holds, and a less powerful user cannot change a more powerful role or user.
 * **Authorization.** Every write checks its permission inside the service (`assertCan`). In addition, each service is
   gated by the permissions of the screens that use it, the generic table endpoint only reaches reference tables, and
   nothing outside the allow-list is callable.

@@ -26,6 +26,8 @@ export const role = base.extend({
   permissions: z.array(z.string()),
   isServiceStaff: z.boolean().default(false),
   locationIds: z.array(z.string()).default([]), // empty = all
+  /** Which permission list this role was written against; see `upgradeRoles`. Missing means the first one. */
+  permVersion: z.number().optional(),
 });
 export type Role = z.infer<typeof role>;
 

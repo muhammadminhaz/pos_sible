@@ -8,10 +8,10 @@ import { paymentKind } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { accountBalance, assertPostable, pushAccountTxn } from "./_ledger";
 import { crud } from "./catalog";
-import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult } from "./_util";
+import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
 
 export type AccountInput = Pick<Account, "name" | "typeId" | "number" | "note" | "details" | "openingBalance" | "allowOverdraft"> & { id?: string };
-export type AccountRow = {
+export type AccountRow = AuditRow & {
   id: string; name: string; typeId: string | null; typeName: string; subTypeName: string; number: string; note: string; details: Account["details"];
   balance: number; status: Account["status"]; allowOverdraft: boolean; addedBy: string;
 };
@@ -42,6 +42,7 @@ function row(d: DB, a: Account): AccountRow {
   const type = d.accountTypes.find((x) => x.id === a.typeId);
   const parent = type?.parentId ? d.accountTypes.find((x) => x.id === type.parentId) : undefined;
   return {
+    ...auditIds(a),
     id: a.id, name: a.name, typeId: a.typeId, typeName: (parent ?? type)?.name ?? "", subTypeName: parent ? (type?.name ?? "") : "", number: a.number, note: a.note, details: a.details,
     balance: accountBalance(d, a.id), status: a.status, allowOverdraft: a.allowOverdraft, addedBy: userName(d, a.createdBy),
   };
@@ -96,7 +97,7 @@ export const accountsService = service("accountsService", {
 
   async save(input: AccountInput): Promise<{ id: string }> {
     await delay();
-    assertCan("account.manage");
+    assertCan(input.id ? "account.update" : "account.create");
     let id = input.id ?? "";
     commit((d) => {
       validateInput(d, input);
@@ -124,7 +125,7 @@ export const accountsService = service("accountsService", {
 
   async close(id: string): Promise<void> {
     await delay();
-    assertCan("account.manage");
+    assertCan("account.update");
     commit((d) => {
       const a = find(d, id);
       if (accountBalance(d, id) !== 0) throw new ValidationError({ balance: "not_zero" });
@@ -134,7 +135,7 @@ export const accountsService = service("accountsService", {
 
   async reopen(id: string): Promise<void> {
     await delay();
-    assertCan("account.manage");
+    assertCan("account.update");
     commit((d) => void (find(d, id).status = "active"));
   },
 

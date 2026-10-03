@@ -1,5 +1,6 @@
 "use client";
 
+import { crudPerm } from "@/lib/auth/permissions";
 import { TagsIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { CrudPage, type CrudConfig } from "@/features/catalog/CrudPage";
@@ -11,7 +12,7 @@ export function ExpenseCategoriesPage() {
   const cats = lookups?.expenseCategories ?? [];
   const parentName = (id: string | null) => cats.find((c) => c.id === id)?.name ?? "";
   const cfg: CrudConfig<"expenseCategories"> = {
-    table: "expenseCategories", title: t("nav.expenseCategories"), description: t("finance.categoriesDescription"), icon: TagsIcon, permission: "expense.update",
+    table: "expenseCategories", title: t("nav.expenseCategories"), description: t("finance.categoriesDescription"), icon: TagsIcon, permission: crudPerm("expense"),
     addLabel: t("finance.addCategory"), editLabel: t("finance.editCategory"), emptyTitle: t("finance.noCategories"),
     columns: [
       { key: "name", label: t("catalog.name") },

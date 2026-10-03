@@ -11,7 +11,7 @@ export function AccountTypes() {
   const types = lookups?.accountTypes ?? [];
   const parentName = (id: string | null) => types.find((x) => x.id === id)?.name ?? "";
   const cfg: CrudConfig<"accountTypes"> = {
-    table: "accountTypes", title: t("finance.tabTypes"), description: t("finance.typesDescription"), icon: LandmarkIcon, permission: "account.manage", embedded: true,
+    table: "accountTypes", title: t("finance.tabTypes"), description: t("finance.typesDescription"), icon: LandmarkIcon, permission: { create: "account.create", update: "account.update", delete: "account.update" }, embedded: true,
     addLabel: t("finance.addAccountType"), editLabel: t("finance.editAccountType"), emptyTitle: t("finance.noAccountTypes"),
     columns: [
       { key: "name", label: t("catalog.name") },

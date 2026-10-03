@@ -9,7 +9,7 @@ import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
 import { assertPostable, defaultAccountId, pushAccountTxn } from "./_ledger";
-import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
 
 export type NewExpense = { locationId: string; categoryId: string; amount: number; method: PaymentMethod; note?: string };
 export type Recurring = NonNullable<Transaction["recurring"]>;
@@ -27,7 +27,7 @@ export type ExpenseFilters = ListQuery & {
   locationId?: string; categoryId?: string; subCategoryId?: string; contactId?: string; userId?: string;
   paymentStatus?: PaymentStatus; from?: string; to?: string;
 };
-export type ExpenseRow = {
+export type ExpenseRow = AuditRow & {
   id: string; date: string; refNo: string; locationName: string; categoryName: string; subCategoryName: string; paymentStatus: PaymentStatus;
   /** Signed: refunds are negative. */
   tax: number; total: number; paid: number; due: number;
@@ -149,6 +149,7 @@ export const expensesService = service("expensesService", {
         const s = paymentSummary(t.totals.total, t.payments);
         const k = expenseSign(t);
         return {
+          ...auditIds(t),
           id: t.id, date: t.date, refNo: t.refNo, locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "",
           categoryName: cats.get(t.expenseCategoryId ?? "") ?? "", subCategoryName: cats.get(t.expenseSubCategoryId ?? "") ?? "", paymentStatus: t.paymentStatus,
           tax: signed(k, t.totals.orderTax), total: signed(k, t.totals.total), paid: signed(k, s.paid), due: signed(k, s.due),

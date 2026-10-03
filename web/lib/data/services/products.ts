@@ -333,6 +333,7 @@ export const productsService = service("productsService", {
 
   async setActive(ids: string[], active: boolean): Promise<void> {
     await delay();
+    assertCan("product.update");
     commit((d) => {
       for (const p of d.products) if (ids.includes(p.id)) p.active = active;
     });
@@ -340,6 +341,7 @@ export const productsService = service("productsService", {
 
   async remove(ids: string[]): Promise<void> {
     await delay();
+    assertCan("product.delete");
     const db = getDB();
     const used = db.transactions.find((t) => t.lines.some((l) => ids.includes(l.productId)));
     if (used) {
@@ -355,6 +357,7 @@ export const productsService = service("productsService", {
 
   async setLocations(ids: string[], locationIds: string[], mode: "add" | "remove"): Promise<void> {
     await delay();
+    assertCan("product.update");
     commit((d) => {
       for (const p of d.products) {
         if (!ids.includes(p.id)) continue;

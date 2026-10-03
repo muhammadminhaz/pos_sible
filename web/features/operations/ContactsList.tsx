@@ -33,8 +33,10 @@ export function ContactsList({ kind }: { kind: Kind }) {
   const router = useRouter();
   const can = useCan();
   const { data: lookups } = useLookups();
-  const permission = kind === "customer" ? "contacts.customer" : "contacts.supplier";
-  const write = can(permission);
+  const canAdd = can(`${kind}.create`);
+  const canEdit = can(`${kind}.update`);
+  const canRemove = can(`${kind}.delete`);
+  const canPay = can(kind === "customer" ? "sell.payments" : "purchase.payments");
   const [url, setUrl, resetUrl] = useUrlFilters<UrlFilters>([...KEYS]);
   const [query, setQuery] = useTableQuery(`contacts-${kind}`);
   const filters: ContactFilters = {
@@ -81,15 +83,15 @@ export function ContactsList({ kind }: { kind: Kind }) {
       return (
         <RowActions items={[
           { label: t("common.view"), icon: EyeIcon, href: `/contacts/${c.id}` },
-          { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(c.id), hidden: !write || c.isDefault },
-          { label: t("ops.payDue"), icon: CoinsIcon, onClick: () => setPay(c.id), hidden: !write || c.isDefault || c.due <= 0 },
-          { label: c.active ? t("common.deactivate") : t("common.activate"), icon: c.active ? PowerOffIcon : PowerIcon, onClick: () => toggle(c), hidden: !write || c.isDefault },
-          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(c), hidden: !write || c.isDefault },
+          { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(c.id), hidden: !canEdit || c.isDefault },
+          { label: t("ops.payDue"), icon: CoinsIcon, onClick: () => setPay(c.id), hidden: !canPay || c.isDefault || c.due <= 0 },
+          { label: c.active ? t("common.deactivate") : t("common.activate"), icon: c.active ? PowerOffIcon : PowerIcon, onClick: () => toggle(c), hidden: !canEdit || c.isDefault },
+          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(c), hidden: !canRemove || c.isDefault },
         ]} />
       );
     } },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [t, f, kind, write]);
+  ], [t, f, kind, canEdit, canPay, canRemove]);
 
   const named = (xs: { id: string; name: string }[]) => xs.map((x) => ({ value: x.id, label: x.name }));
   const defs: FilterDef[] = [
@@ -110,7 +112,7 @@ export function ContactsList({ kind }: { kind: Kind }) {
     <>
       <PageHeader
         title={t(kind === "customer" ? "nav.customers" : "nav.suppliers")} description={t(kind === "customer" ? "ops.customersDescription" : "ops.suppliersDescription")}
-        actions={write && <Button onClick={() => setEdit("new")}><PlusIcon />{t(kind === "customer" ? "ops.addCustomer" : "ops.addSupplier")}</Button>}
+        actions={canAdd && <Button onClick={() => setEdit("new")}><PlusIcon />{t(kind === "customer" ? "ops.addCustomer" : "ops.addSupplier")}</Button>}
       />
       <div className="mb-4">
         <FilterBar defs={defs} value={url} onChange={(p) => { setUrl(p); setQuery({ page: 0 }); }} onReset={() => { resetUrl(); setQuery({ page: 0 }); }} />

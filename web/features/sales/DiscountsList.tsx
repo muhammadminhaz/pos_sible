@@ -118,7 +118,9 @@ export function DiscountsList() {
   const { setActive, remove } = useDiscountMutations();
   const [edit, setEdit] = useState<DiscountRow | "new" | null>(null);
   const [del, setDel] = useState<DiscountRow | null>(null);
-  const manage = can("discount.manage");
+  const canAdd = can("discount.create");
+  const canEdit = can("discount.update");
+  const canRemove = can("discount.delete");
 
   const text = (id: keyof DiscountRow, label: string): ColumnDef<DiscountRow> => ({ id, accessorKey: id, header: label, meta: { label }, cell: ({ getValue }) => getValue<string>() || "—" });
   const date = (id: "startsAt" | "endsAt", label: string): ColumnDef<DiscountRow> => ({ id, accessorKey: id, header: label, meta: { label, className: "whitespace-nowrap" }, cell: ({ row }) => <span className="tabular">{f.date(row.original[id])}</span> });
@@ -136,15 +138,15 @@ export function DiscountsList() {
     { id: "active", accessorKey: "active", header: t("common.status"), meta: { label: t("common.status"), csv: (r) => (r.active ? t("common.active") : t("common.inactive")) }, cell: ({ row }) => <Badge variant={row.original.active ? "secondary" : "outline"}>{row.original.active ? t("common.active") : t("common.inactive")}</Badge> },
     { id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined }, cell: ({ row }) => (
       <RowActions items={[
-        { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(row.original), hidden: !manage },
-        { label: row.original.active ? t("common.deactivate") : t("common.activate"), icon: row.original.active ? PowerOffIcon : PowerIcon, onClick: () => toggle([row.original], !row.original.active), hidden: !manage },
-        { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !manage },
+        { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(row.original), hidden: !canEdit },
+        { label: row.original.active ? t("common.deactivate") : t("common.activate"), icon: row.original.active ? PowerOffIcon : PowerIcon, onClick: () => toggle([row.original], !row.original.active), hidden: !canEdit },
+        { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !canRemove },
       ]} />) },
   ];
   return (
     <>
-      <PageHeader title={t("nav.discounts")} description={t("sales.discountsDescription")} actions={manage && <Button onClick={() => setEdit("new")}><PlusIcon />{t("sales.newDiscount")}</Button>} />
-      <DataTable tableId="sales-discounts" columns={columns} data={list.data?.rows ?? []} total={list.data?.total ?? 0} loading={list.isFetching} query={query} onQueryChange={setQuery} exportName="discounts" selectable={manage}
+      <PageHeader title={t("nav.discounts")} description={t("sales.discountsDescription")} actions={canAdd && <Button onClick={() => setEdit("new")}><PlusIcon />{t("sales.newDiscount")}</Button>} />
+      <DataTable tableId="sales-discounts" columns={columns} data={list.data?.rows ?? []} total={list.data?.total ?? 0} loading={list.isFetching} query={query} onQueryChange={setQuery} exportName="discounts" selectable={canEdit}
         bulkActions={(rows, clear) => (
           <>
             <Button variant="ghost" size="sm" onClick={async () => { await toggle(rows, false); clear(); }}><PowerOffIcon />{t("sales.deactivateSelected")}</Button>

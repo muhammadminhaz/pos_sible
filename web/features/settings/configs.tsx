@@ -1,5 +1,6 @@
 "use client";
 
+import { crudPerm } from "@/lib/auth/permissions";
 import { BarcodeIcon, BuildingIcon, FileTextIcon, PercentIcon, PrinterIcon, ReceiptIcon, UsersIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
@@ -206,7 +207,7 @@ export function UsersPage() {
   const t = useTranslations();
   const { data } = useLookups();
   const cfg: CrudConfig<"users"> = {
-    table: "users", permission: "user.create", title: t("nav.users"), description: t("settings.usersDescription"), icon: UsersIcon,
+    table: "users", permission: crudPerm("user"), title: t("nav.users"), description: t("settings.usersDescription"), icon: UsersIcon,
     addLabel: t("settings.addUser"), editLabel: t("settings.editUser"), emptyTitle: t("settings.noUsers"),
     columns: [
       { key: "username", label: t("settings.f.username") },

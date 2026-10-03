@@ -104,10 +104,10 @@ export type LedgerEntry = {
   method?: PaymentMethod;
 };
 
-const TYPE_PERMISSION = { supplier: "contacts.supplier", customer: "contacts.customer" } as const;
-const canSee = (type: Contact["type"], write: (p: string) => void) => {
-  if (type !== "customer") write(TYPE_PERMISSION.supplier);
-  if (type !== "supplier") write(TYPE_PERMISSION.customer);
+/** A "both" contact is a customer and a supplier, so changing it takes the permission for each side. */
+const assertContact = (type: Contact["type"], action: "create" | "update" | "delete") => {
+  if (type !== "customer") assertCan(`supplier.${action}`);
+  if (type !== "supplier") assertCan(`customer.${action}`);
 };
 
 function checkContact(d: DB, input: ContactInput) {
@@ -158,6 +158,7 @@ export const contactsService = service("contactsService", {
 
   async setActive(ids: string[], active: boolean): Promise<void> {
     await delay();
+    for (const c of getDB().contacts) if (ids.includes(c.id)) assertContact(c.type, "update");
     commit((d) => {
       for (const c of d.contacts) if (ids.includes(c.id) && !c.isDefault) c.active = active;
     });
@@ -165,6 +166,7 @@ export const contactsService = service("contactsService", {
 
   async createCustomer(input: NewCustomer): Promise<Contact> {
     await delay();
+    assertCan("customer.create");
     const name = input.name.trim();
     const mobile = input.mobile.trim();
     const fields: Record<string, string> = {};
@@ -194,7 +196,9 @@ export const contactsService = service("contactsService", {
   /** Full create/edit. Needs the permission for every side the contact is on. */
   async save(input: ContactInput): Promise<{ id: string }> {
     await delay();
-    canSee(input.type, assertCan);
+    assertContact(input.type, input.id ? "update" : "create");
+    const existing = input.id ? getDB().contacts.find((c) => c.id === input.id) : undefined;
+    if (existing) assertContact(existing.type, "update");
     let id = input.id ?? "";
     commit((d) => {
       checkContact(d, input);
@@ -223,7 +227,7 @@ export const contactsService = service("contactsService", {
     for (const id of ids) {
       const c = d.contacts.find((x) => x.id === id);
       if (!c) throw new NotFoundError("Contact");
-      canSee(c.type, assertCan);
+      assertContact(c.type, "delete");
       if (c.isDefault) throw new AppError("The walk-in customer can't be deleted", "default_contact");
       if (d.transactions.some((t) => t.contactId === id)) throw new AppError(`${c.name} has transactions`, "contact_in_use");
     }

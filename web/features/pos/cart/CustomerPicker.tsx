@@ -76,7 +76,7 @@ export function CustomerPicker({ locationId }: { locationId: string }) {
           {current.points > 0 && <Badge variant="secondary">{t("pos.customer.points", { points: f.number(current.points) })}</Badge>}
         </div>
       )}
-      {can("contacts.customer") && (
+      {can("customer.create") && (
         <Button variant="outline" size="icon-lg" aria-label={t("pos.customer.add")} onClick={() => show("addCustomer")}>
           <UserPlusIcon />
         </Button>

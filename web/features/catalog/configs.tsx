@@ -1,5 +1,6 @@
 "use client";
 
+import { crudPerm } from "@/lib/auth/permissions";
 import { BadgeCheckIcon, LayersIcon, RulerIcon, ShieldCheckIcon, TagIcon, TagsIcon, UsersIcon, WrenchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
@@ -145,7 +146,7 @@ export function CustomerGroupsPage() {
   const t = useTranslations();
   const { data: lookups } = useLookups();
   const cfg: CrudConfig<"customerGroups"> = {
-    table: "customerGroups", title: t("nav.customerGroups"), description: t("ops.groupsDescription"), icon: UsersIcon, permission: "contacts.customer",
+    table: "customerGroups", title: t("nav.customerGroups"), description: t("ops.groupsDescription"), icon: UsersIcon, permission: crudPerm("customer"),
     addLabel: t("ops.addGroup"), editLabel: t("ops.editGroup"), emptyTitle: t("ops.noGroups"),
     columns: [
       { key: "name", label: t("catalog.name") },
@@ -174,7 +175,7 @@ export function CustomerGroupsPage() {
 export function TechniciansPage() {
   const t = useTranslations();
   const cfg: CrudConfig<"technicians"> = {
-    table: "technicians", title: t("nav.technicians"), description: t("ops.techniciansDescription"), icon: WrenchIcon, permission: "contacts.customer",
+    table: "technicians", title: t("nav.technicians"), description: t("ops.techniciansDescription"), icon: WrenchIcon, permission: crudPerm("customer"),
     addLabel: t("ops.addTechnician"), editLabel: t("ops.editTechnician"), emptyTitle: t("ops.noTechnicians"),
     columns: [{ key: "name", label: t("catalog.name") }],
     fields: [text(t, "name", { required: true })],

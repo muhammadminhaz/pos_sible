@@ -33,7 +33,7 @@ export const discountsService = service("discountsService", {
 
   async save(data: DiscountInputData): Promise<string> {
     await delay();
-    assertCan("discount.manage");
+    assertCan(data.id ? "discount.update" : "discount.create");
     if (data.endsAt < data.startsAt) throw new ValidationError({ endsAt: "before_start" });
     if (data.type === "percentage" && data.amount > 100) throw new ValidationError({ amount: "max_100" });
     if (!data.productIds.length && !data.brandId && !data.categoryId) throw new ValidationError({ scope: "required" });
@@ -53,7 +53,7 @@ export const discountsService = service("discountsService", {
 
   async setActive(ids: string[], active: boolean): Promise<void> {
     await delay();
-    assertCan("discount.manage");
+    assertCan("discount.update");
     commit((d) => {
       for (const x of d.discounts) if (ids.includes(x.id)) x.active = active;
     });
@@ -61,7 +61,7 @@ export const discountsService = service("discountsService", {
 
   async remove(ids: string[]): Promise<void> {
     await delay();
-    assertCan("discount.manage");
+    assertCan("discount.delete");
     commit((d) => {
       d.discounts = d.discounts.filter((x) => !ids.includes(x.id));
     });

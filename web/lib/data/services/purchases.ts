@@ -9,7 +9,7 @@ import { todayISO } from "@/lib/dates";
 import { effectivePaymentStatus, paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
 import { marginFromPrices } from "@/lib/domain/pricing";
 import { lineTotals, orderTotals, type DiscountInput } from "@/lib/domain/totals";
-import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type PurchaseStatus = "received" | "pending" | "ordered";
@@ -34,7 +34,7 @@ export type PurchaseInput = {
 };
 
 export type PurchaseFilters = ListQuery & { locationId?: string; contactId?: string; status?: PurchaseStatus; paymentStatus?: PaymentStatus; from?: string; to?: string };
-export type PurchaseRow = {
+export type PurchaseRow = AuditRow & {
   id: string; date: string; refNo: string; locationName: string; supplierName: string; status: PurchaseStatus; paymentStatus: PaymentStatus;
   total: number; paid: number; due: number; addedBy: string;
 };
@@ -180,6 +180,7 @@ export const purchasesService = service("purchasesService", {
         const s = paymentSummary(t.totals.total, t.payments);
         const u = d.users.find((x) => x.id === t.createdBy);
         return {
+          ...auditIds(t),
           id: t.id, date: t.date, refNo: t.refNo, locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "", supplierName: contacts.get(t.contactId ?? "") ?? "",
           status: t.status as PurchaseStatus, paymentStatus: statusOf(t), total: t.totals.total, paid: s.paid, due: s.due, addedBy: u ? `${u.firstName} ${u.lastName}`.trim() : "",
         };

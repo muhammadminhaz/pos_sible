@@ -17,6 +17,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DataTable, RowActions, useTableQuery } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { crudPerm, permissionFor, type WritePermission } from "@/lib/auth/permissions";
 import { useCan } from "@/lib/auth/useCan";
 import { useCrud } from "@/lib/data/hooks/catalog";
 import type { Row, TableName } from "@/lib/data/schemas";
@@ -60,7 +61,7 @@ export type CrudConfig<N extends TableName> = {
   columns: ColumnDescriptor<Row<N> & { id: string }>[];
   fields: FieldDef[];
   /** Permission for the add / edit / delete controls. */
-  permission?: string;
+  permission?: WritePermission;
   /** Merged under the form values when creating (fields the form doesn't show). */
   defaults?: Values;
   /** Rows the user may not delete (e.g. the default scheme). */
@@ -235,7 +236,10 @@ export function CrudPage<N extends TableName>({ cfg }: { cfg: CrudConfig<N> }) {
   const { list, remove } = useCrud(cfg.table, { search: query.search || undefined, page: query.page, pageSize: query.pageSize, sort: query.sort });
   const [edit, setEdit] = useState<R | "new" | null>(null);
   const [del, setDel] = useState<R | null>(null);
-  const write = can(cfg.permission ?? "product.update");
+  const perm = cfg.permission ?? crudPerm("catalog");
+  const canAdd = can(permissionFor(perm, "create"));
+  const canEdit = can(permissionFor(perm, "update"));
+  const canRemove = can(permissionFor(perm, "delete"));
 
   const columns: ColumnDef<R>[] = [
     ...cfg.columns.map((c): ColumnDef<R> => ({
@@ -249,8 +253,8 @@ export function CrudPage<N extends TableName>({ cfg }: { cfg: CrudConfig<N> }) {
       id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined },
       cell: ({ row }) => (
         <RowActions items={[
-          { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(row.original), hidden: !write },
-          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !write || cfg.canDelete?.(row.original) === false },
+          { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(row.original), hidden: !canEdit },
+          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !canRemove || cfg.canDelete?.(row.original) === false },
         ]} />
       ),
     },
@@ -259,9 +263,9 @@ export function CrudPage<N extends TableName>({ cfg }: { cfg: CrudConfig<N> }) {
   return (
     <>
       {cfg.embedded ? (
-        write && <div className="mb-4 flex justify-end"><Button onClick={() => setEdit("new")}><PlusIcon />{cfg.addLabel}</Button></div>
+        canAdd && <div className="mb-4 flex justify-end"><Button onClick={() => setEdit("new")}><PlusIcon />{cfg.addLabel}</Button></div>
       ) : (
-        <PageHeader title={cfg.title} description={cfg.description} actions={write && <Button onClick={() => setEdit("new")}><PlusIcon />{cfg.addLabel}</Button>} />
+        <PageHeader title={cfg.title} description={cfg.description} actions={canAdd && <Button onClick={() => setEdit("new")}><PlusIcon />{cfg.addLabel}</Button>} />
       )}
       <DataTable
         tableId={`catalog-${cfg.table}`} columns={columns} data={(list.data?.rows ?? []) as R[]} total={list.data?.total ?? 0}

@@ -26,6 +26,7 @@ import { methodLabel } from "@/lib/pos/methods";
 import { PurchaseSheet } from "./PurchaseSheet";
 import { PurchaseStatusDialog } from "./StatusDialog";
 import { ScrollFade } from "@/components/ui/scroll-fade";
+import { AuditFooter } from "@/components/shared/AuditFooter";
 
 export function PurchaseDetail({ id }: { id: string }) {
   const t = useTranslations();
@@ -57,6 +58,7 @@ export function PurchaseDetail({ id }: { id: string }) {
           </>
         }
       />
+      <AuditFooter record={p} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label={t("common.total")} value={<Money value={p.totals.total} />} />
         <StatCard label={t("ops.paid")} value={<Money value={p.paid} />} />

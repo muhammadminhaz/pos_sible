@@ -43,6 +43,11 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 **Settings and admin**
 - Business settings (16 tabs: business, tax, product, contact, sale, POS, purchases, payment, dashboard, system, prefixes, reward points, modules, custom labels, email, SMS), locations, invoice schemes and layouts (live preview), barcode sheets, receipt printers, tax rates, **users and roles** with a permission matrix, backup/restore (JSON), module switches, profile (password, photo, bank details), calendar. Every setting takes effect immediately.
 
+**Teams, roles and accountability**
+- **Many people, one shop.** Add staff under Settings → Users; each signs in with their own username and password (or use *Switch user* in the account menu on a shared till). Works in both modes; in API mode every sign-in is a server session.
+- **Created by / created at / updated by / updated at on every record** (products, contacts, sales, purchases, expenses, accounts, discounts, stock transfers and adjustments, settings lists, users, roles…). They are stamped automatically in one place, so no screen can forget or forge them. Switch them on in any table's *Columns* menu; detail pages show them too, and they export to CSV.
+- **Role-based access** with a View / Create / Update / Delete grid per area (customers, suppliers, products, categories/brands/units, purchases, sales, discounts, stock transfers and adjustments, expenses, accounts, users, roles…), plus extras such as *take payments*, *edit price at POS*, *close register*. Enforced in the services (so also on the server), and buttons hide when you can't use them. Nobody can grant more than their own role holds, or edit a more powerful role or user. Roles saved before the finer permissions existed keep exactly what they could do.
+
 **Platform**
 - English and Bangla (digits, units, AM/PM), light/dark themes, accent colours, command palette (⌘K), notifications, installable PWA, accessible (axe-checked), reduced-motion friendly micro animations.
 - **First-run onboarding**: choose sample data or an empty shop, enter business details; a self-ticking "Get started" checklist.
@@ -137,6 +142,7 @@ npm run build
 # with a built app running (npm start):
 npm run e2e                             # every route, EN/light + BN/dark + tablet, axe accessibility
 npm run e2e:onboarding                  # first-run wizard and checklist
+npm run e2e:team                        # two users, who-did-what columns, role permission grid
 
 # api/
 npm run typecheck

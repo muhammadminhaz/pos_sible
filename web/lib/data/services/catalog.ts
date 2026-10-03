@@ -3,8 +3,9 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
 import type { DB, Row, TableName } from "@/lib/data/schemas";
 import { assertCan } from "@/lib/auth/assertCan";
+import { crudPerm, permissionFor, type CrudAction, type WritePermission } from "@/lib/auth/permissions";
 import { passwordHasher } from "@/lib/auth/password";
-import { activeUserId } from "@/lib/auth/session";
+import { activeUserId, currentUser } from "@/lib/auth/session";
 import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult } from "./_util";
 
 export type CrudService<T extends { id: string }> = {
@@ -18,7 +19,8 @@ export type CrudService<T extends { id: string }> = {
 
 /** Per-table rules: who may write, what a row must satisfy, and what stops a delete. */
 type Rules = {
-  permission?: string;
+  /** One permission for every write, or one per action. */
+  permission?: WritePermission;
   /** Throws if `row` (the merged result of a create/update) is invalid. `id` is set on update. */
   check?: (db: DB, row: Record<string, unknown>, id?: string) => void;
   /** Returns an error code if something still points at the row. */
@@ -36,11 +38,23 @@ function hasAnotherAdmin(db: DB, except: { userId?: string; roleId?: string }): 
   );
 }
 
+
+/**
+ * Nobody can hand out more than they hold: without this, anyone allowed to edit roles or users could promote
+ * themselves to full access. Full-access users are unrestricted; with nobody signed in (tests, seed scripts) the check is off.
+ */
+function assertWithinOwn(perms: string[] | undefined, field: string) {
+  const me = currentUser();
+  if (!me || me.role.permissions.includes("*")) return;
+  const mine = new Set(me.role.permissions);
+  if (!perms || perms.includes("*") || perms.some((p) => !mine.has(p))) throw new ValidationError({ [field]: "exceeds_own" });
+}
+
 const used = (code: string, hit: boolean) => (hit ? code : null);
 
 const RULES: Partial<Record<TableName, Rules>> = {
   units: {
-    permission: "product.update",
+    permission: crudPerm("catalog"),
     check: (db, row, id) => {
       const base = row.baseUnitId as string | null;
       const mult = row.multiplier as number | null;
@@ -62,7 +76,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
       ),
   },
   categories: {
-    permission: "product.update",
+    permission: crudPerm("catalog"),
     check: (db, row, id) => {
       const parentId = row.parentId as string | null;
       if (!parentId) return;
@@ -76,7 +90,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
         : used("category_in_use", db.products.some((p) => p.categoryId === id || p.subCategoryId === id) || db.discounts.some((x) => x.categoryId === id)),
   },
   expenseCategories: {
-    permission: "expense.update",
+    permission: crudPerm("expense"),
     check: (db, row, id) => {
       const parentId = row.parentId as string | null;
       const was = id ? db.expenseCategories.find((c) => c.id === id) : undefined;
@@ -99,7 +113,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
     },
   },
   accountTypes: {
-    permission: "account.manage",
+    permission: { create: "account.create", update: "account.update", delete: "account.update" },
     check: (db, row, id) => {
       const parentId = row.parentId as string | null;
       if (!parentId) return;
@@ -111,15 +125,15 @@ const RULES: Partial<Record<TableName, Rules>> = {
       db.accountTypes.some((t) => t.parentId === id) ? "category_has_children" : used("account_type_in_use", db.accounts.some((a) => a.typeId === id)),
   },
   brands: {
-    permission: "product.update",
+    permission: crudPerm("catalog"),
     inUse: (db, id) => used("brand_in_use", db.products.some((p) => p.brandId === id) || db.discounts.some((x) => x.brandId === id)),
   },
   warranties: {
-    permission: "product.update",
+    permission: crudPerm("catalog"),
     inUse: (db, id) => used("warranty_in_use", db.products.some((p) => p.warrantyId === id)),
   },
   priceGroups: {
-    permission: "product.update",
+    permission: crudPerm("catalog"),
     inUse: (db, id) =>
       used(
         "price_group_in_use",
@@ -127,7 +141,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
       ),
   },
   variationTemplates: {
-    permission: "product.update",
+    permission: crudPerm("catalog"),
     check: (_db, row) => {
       const values = (row.values as string[]).map((v) => v.trim().toLowerCase());
       if (values.some((v) => !v)) throw new ValidationError({ values: "empty_value" });
@@ -136,7 +150,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
     inUse: (db, id) => used("variation_in_use", db.products.some((p) => p.variationTemplateId === id)),
   },
   customerGroups: {
-    permission: "contacts.customer",
+    permission: crudPerm("customer"),
     check: (_db, row) => {
       if (row.calcType === "selling_price_group" && !row.priceGroupId) throw new ValidationError({ priceGroupId: "required" });
       if (row.calcType === "percentage" && (typeof row.amount !== "number" || row.amount < -100 || row.amount > 100)) throw new ValidationError({ amount: "range" });
@@ -144,7 +158,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
     inUse: (db, id) => used("customer_group_in_use", db.contacts.some((c) => c.customerGroupId === id)),
   },
   technicians: {
-    permission: "contacts.customer",
+    permission: crudPerm("customer"),
     inUse: (db, id) => used("technician_in_use", db.transactions.some((t) => t.technicianId === id)),
   },
   taxRates: {
@@ -182,24 +196,29 @@ const RULES: Partial<Record<TableName, Rules>> = {
     inUse: (db, id) => used("location_in_use", db.transactions.some((t) => t.locationId === id)),
   },
   roles: {
-    permission: "role.create",
+    permission: crudPerm("role"),
     check: (db, row, id) => {
       const name = (row.name as string)?.trim();
       if (!name) throw new ValidationError({ name: "required" });
       if (db.roles.some((r) => r.id !== id && r.name.toLowerCase() === name.toLowerCase())) throw new ValidationError({ name: "duplicate" });
       const perms = row.permissions as string[];
+      assertWithinOwn(perms, "permissions");
+      if (id) assertWithinOwn(db.roles.find((r) => r.id === id)?.permissions, "permissions");
       if (id && !perms.includes("*") && !hasAnotherAdmin(db, { roleId: id })) throw new ValidationError({ permissions: "last_admin" });
     },
     inUse: (db, id) => used("role_in_use", db.users.some((u) => u.roleId === id)),
   },
   users: {
-    permission: "user.create",
+    permission: crudPerm("user"),
     prepare: (row) => (typeof row.password === "string" && row.password ? { ...row, password: passwordHasher.hash(row.password) } : row),
     check: (db, row, id) => {
       const name = (row.username as string)?.trim();
       if (!name) throw new ValidationError({ username: "required" });
       if (db.users.some((u) => u.id !== id && u.username.toLowerCase() === name.toLowerCase())) throw new ValidationError({ username: "duplicate" });
+      assertWithinOwn(db.roles.find((r) => r.id === row.roleId)?.permissions, "roleId");
       if (id) {
+        const target = db.users.find((u) => u.id === id);
+        if (target && target.id !== activeUserId()) assertWithinOwn(db.roles.find((r) => r.id === target.roleId)?.permissions, "roleId");
         const active = row.isActive !== false;
         if (!active && id === activeUserId()) throw new ValidationError({ isActive: "self" });
         const before = db.users.find((u) => u.id === id);
@@ -221,7 +240,9 @@ const RULES: Partial<Record<TableName, Rules>> = {
 /** Generic CRUD over one table. Search looks at `name`, `code`, and `shortName` when present. */
 function crudLocal<N extends TableName, T extends Row<N> & { id: string } = Row<N>>(table: N): CrudService<T> {
   const rules: Rules = RULES[table] ?? {};
-  const guard = () => rules.permission && assertCan(rules.permission);
+  const guard = (action: CrudAction) => {
+    if (rules.permission) assertCan(permissionFor(rules.permission, action));
+  };
   const rows = () => getDB()[table] as unknown as T[];
   const find = (id: string) => {
     const row = rows().find((r) => r.id === id);
@@ -247,7 +268,7 @@ function crudLocal<N extends TableName, T extends Row<N> & { id: string } = Row<
     },
     async create(input) {
       await delay();
-      guard();
+      guard("create");
       rules.check?.(getDB(), input as Record<string, unknown>);
       const data = (rules.prepare ? rules.prepare(input as Record<string, unknown>) : input) as typeof input;
       const row = { ...data, id: uid(table.slice(0, 3)), createdAt: nowISO(), createdBy: activeUserId() } as unknown as T;
@@ -256,7 +277,7 @@ function crudLocal<N extends TableName, T extends Row<N> & { id: string } = Row<
     },
     async update(id, incoming) {
       await delay();
-      guard();
+      guard("update");
       rules.check?.(getDB(), { ...find(id), ...incoming }, id);
       const patch = (rules.prepare ? rules.prepare(incoming as Record<string, unknown>) : incoming) as typeof incoming;
       let next!: T;
@@ -272,7 +293,7 @@ function crudLocal<N extends TableName, T extends Row<N> & { id: string } = Row<
     },
     async remove(id) {
       await delay();
-      guard();
+      guard("delete");
       find(id);
       const code = rules.inUse?.(getDB(), id);
       if (code) throw new AppError("This record is still in use.", code);

@@ -7,11 +7,11 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
 import { lineTotals, orderTotals } from "@/lib/domain/totals";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type PurchaseReturnFilters = ListQuery & { locationId?: string; contactId?: string; from?: string; to?: string };
-export type PurchaseReturnRow = {
+export type PurchaseReturnRow = AuditRow & {
   id: string; date: string; refNo: string; parentId: string | null; parentRef: string; supplierName: string; locationName: string;
   paymentStatus: PaymentStatus; total: number; due: number;
 };
@@ -33,6 +33,7 @@ export const purchaseReturnsService = service("purchaseReturnsService", {
       .filter((t) => matches(f.search, t.refNo, parents.get(t.parentId ?? ""), contacts.get(t.contactId ?? "")))
       .sort((a, b) => b.date.localeCompare(a.date))
       .map((t): PurchaseReturnRow => ({
+        ...auditIds(t),
         id: t.id, date: t.date, refNo: t.refNo, parentId: t.parentId, parentRef: parents.get(t.parentId ?? "") ?? "", supplierName: contacts.get(t.contactId ?? "") ?? "",
         locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "", paymentStatus: t.paymentStatus, total: t.totals.total, due: paymentSummary(t.totals.total, t.payments).due,
       }));

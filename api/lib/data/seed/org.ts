@@ -1,3 +1,4 @@
+import { PERM_VERSION } from "@/lib/auth/permissions";
 import {
   account, accountType, barcodeSetting, contact, customerGroup, discount, expenseCategory, invoiceLayout,
   invoiceScheme, location, printer, role, technician, user,
@@ -24,13 +25,14 @@ const DEFAULT_ACCOUNTS = {
 };
 
 export const MANAGER_PERMISSIONS = [
-  "dashboard.view", "contacts.supplier", "contacts.customer", "customer_group.view", "product.view", "product.create",
+  "dashboard.view", "contacts.supplier", "supplier.create", "supplier.update", "contacts.customer", "customer.create", "customer.update",
+  "customer_group.view", "product.view", "product.create", "catalog.create", "catalog.update",
   "product.update", "product.delete", "purchase.view", "purchase.create", "sell.view", "sell.create", "sell.update", "sell.payments",
   "sell_return.view", "sales_order.view", "draft.view", "quotation.view", "shipment.view", "discount.view",
   "pos.access", "stock_transfer.view", "stock_adjustment.view", "expense.view", "expense.create", "account.view",
   "report.view", "settings.barcode", "settings.printer",
 ];
-export const CASHIER_PERMISSIONS = ["dashboard.view", "contacts.customer", "product.view", "sell.view", "sell.create", "pos.access"];
+export const CASHIER_PERMISSIONS = ["dashboard.view", "contacts.customer", "customer.create", "product.view", "sell.view", "sell.create", "pos.access"];
 
 export type Org = {
   locations: Location[];
@@ -69,9 +71,9 @@ export function createOrg(r: Rng, createdAt: string): Org {
   ];
 
   const roles = [
-    mk(role, { ...base, id: ROLE.admin, name: "Admin", permissions: ["*"] }),
-    mk(role, { ...base, id: ROLE.manager, name: "Manager", permissions: MANAGER_PERMISSIONS }),
-    mk(role, { ...base, id: ROLE.cashier, name: "Cashier", permissions: CASHIER_PERMISSIONS }),
+    mk(role, { ...base, id: ROLE.admin, name: "Admin", permissions: ["*"], permVersion: PERM_VERSION }),
+    mk(role, { ...base, id: ROLE.manager, name: "Manager", permissions: MANAGER_PERMISSIONS, permVersion: PERM_VERSION }),
+    mk(role, { ...base, id: ROLE.cashier, name: "Cashier", permissions: CASHIER_PERMISSIONS, permVersion: PERM_VERSION }),
   ];
 
   const staff: [string, string, string, string, string[], boolean, number][] = [

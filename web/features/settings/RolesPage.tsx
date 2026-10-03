@@ -18,17 +18,11 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { clientPage } from "./clientTable";
 import { catalogErrorMessage } from "@/features/catalog/catalogError";
 import { useCan } from "@/lib/auth/useCan";
-import { PERMISSIONS } from "@/lib/auth/permissions";
+import { modulePermissions, PERM_VERSION, PERMISSION_MODULES } from "@/lib/auth/permissions";
 import { useCrud } from "@/lib/data/hooks/catalog";
 import type { Role } from "@/lib/data/schemas";
 
-/** Permissions grouped by what's before the dot ("sell.view" → "sell"). */
-export const PERMISSION_GROUPS: Record<string, string[]> = PERMISSIONS.reduce<Record<string, string[]>>((acc, p) => {
-  const g = p.includes(".") ? p.split(".")[0] : "general";
-  (acc[g] ??= []).push(p);
-  return acc;
-}, {});
-
+const ACTIONS = ["view", "create", "update", "delete"] as const;
 const humanize = (p: string) => p.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 function RoleForm({ row, onClose }: { row: (Role & { id: string }) | null; onClose: () => void }) {
@@ -42,7 +36,7 @@ function RoleForm({ row, onClose }: { row: (Role & { id: string }) | null; onClo
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const data = { name: name.trim(), permissions: perms, isServiceStaff: row?.isServiceStaff ?? false, locationIds: row?.locationIds ?? [] };
+      const data = { name: name.trim(), permissions: perms, permVersion: PERM_VERSION, isServiceStaff: row?.isServiceStaff ?? false, locationIds: row?.locationIds ?? [] };
       if (row) await update.mutateAsync({ id: row.id, patch: data });
       else await create.mutateAsync(data);
       toast.success(t("common.saved"));
@@ -64,29 +58,57 @@ function RoleForm({ row, onClose }: { row: (Role & { id: string }) | null; onClo
         {t("settings.fullAccess")}
       </Label>
       {!all && (
-        <div className="grid max-h-[50vh] gap-3 overflow-y-auto rounded-lg border p-3 sm:grid-cols-2">
-          {Object.entries(PERMISSION_GROUPS).map(([g, list]) => {
-            const every = list.every((p) => perms.includes(p));
-            return (
-              <fieldset key={g} className="grid content-start gap-1.5">
-                <legend className="mb-1 flex items-center gap-2 text-sm font-semibold">
-                  <Checkbox
-                    aria-label={`${humanize(g)} — ${t("common.all")}`} checked={every}
-                    onCheckedChange={(c) => setPerms(c ? [...new Set([...perms, ...list])] : perms.filter((p) => !list.includes(p)))}
-                  />
-                  {humanize(g)}
-                </legend>
-                {list.map((p) => (
-                  <Label key={p} className="gap-2 ps-6 text-sm font-normal">
-                    <Checkbox checked={perms.includes(p)} onCheckedChange={(c) => toggle(p, !!c)} />
-                    {humanize(p.includes(".") ? p.split(".").slice(1).join(".") : p)}
-                  </Label>
-                ))}
-              </fieldset>
-            );
-          })}
+        <div className="max-h-[52vh] overflow-auto rounded-lg border">
+          <table className="w-full text-sm">
+            <caption className="sr-only">{t("settings.permissions")}</caption>
+            <thead className="sticky top-0 bg-muted/80 text-xs backdrop-blur">
+              <tr>
+                <th scope="col" className="px-3 py-2 text-start font-medium">{t("settings.permModule")}</th>
+                {ACTIONS.map((a) => <th key={a} scope="col" className="w-16 px-2 py-2 text-center font-medium">{t(`settings.permActions.${a}`)}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {PERMISSION_MODULES.map((m) => {
+                const group = modulePermissions(m);
+                const every = group.every((p) => perms.includes(p));
+                const name = t(`settings.permModules.${m.id}`);
+                return (
+                  <tr key={m.id} className="border-t align-top">
+                    <th scope="row" className="px-3 py-2 text-start font-medium">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          aria-label={`${name} — ${t("common.all")}`} checked={every}
+                          onCheckedChange={(c) => setPerms(c ? [...new Set([...perms, ...group])] : perms.filter((p) => !group.includes(p as never)))}
+                        />
+                        {name}
+                      </div>
+                      {m.extras && (
+                        <div className="mt-1.5 grid gap-1 ps-6">
+                          {m.extras.map((p) => (
+                            <Label key={p} className="gap-2 text-xs font-normal text-muted-foreground">
+                              <Checkbox checked={perms.includes(p)} onCheckedChange={(c) => toggle(p, !!c)} />
+                              {humanize(p)}
+                            </Label>
+                          ))}
+                        </div>
+                      )}
+                    </th>
+                    {ACTIONS.map((a) => {
+                      const p = m[a];
+                      return (
+                        <td key={a} className="px-2 py-2 text-center">
+                          {p && <Checkbox aria-label={`${name} — ${t(`settings.permActions.${a}`)}`} checked={perms.includes(p)} onCheckedChange={(c) => toggle(p, !!c)} />}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
+      {!all && <p className="text-xs text-muted-foreground">{t("settings.permNote")}</p>}
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
         <Button type="submit" disabled={create.isPending || update.isPending}>{t("common.save")}</Button>
@@ -102,7 +124,9 @@ export function RolesPage() {
   const [query, setQuery] = useTableQuery("settings-roles");
   const [edit, setEdit] = useState<(Role & { id: string }) | "new" | null>(null);
   const [del, setDel] = useState<(Role & { id: string }) | null>(null);
-  const write = can("role.create");
+  const canAdd = can("role.create");
+  const canEdit = can("role.update");
+  const canRemove = can("role.delete");
   const page = clientPage((list.data?.rows ?? []) as (Role & { id: string })[], query, (r) => [r.name]);
   const count = (r: Role) => (r.permissions.includes("*") ? t("settings.fullAccess") : t("settings.permissionCount", { count: r.permissions.length }));
 
@@ -113,8 +137,8 @@ export function RolesPage() {
       id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined },
       cell: ({ row }) => (
         <RowActions items={[
-          { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(row.original), hidden: !write },
-          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !write },
+          { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(row.original), hidden: !canEdit },
+          { label: t("common.delete"), icon: Trash2Icon, destructive: true, onClick: () => setDel(row.original), hidden: !canRemove },
         ]} />
       ),
     },
@@ -122,7 +146,7 @@ export function RolesPage() {
 
   return (
     <>
-      <PageHeader title={t("nav.roles")} description={t("settings.rolesDescription")} actions={write && <Button onClick={() => setEdit("new")}><PlusIcon />{t("settings.addRole")}</Button>} />
+      <PageHeader title={t("nav.roles")} description={t("settings.rolesDescription")} actions={canAdd && <Button onClick={() => setEdit("new")}><PlusIcon />{t("settings.addRole")}</Button>} />
       <DataTable
         tableId="settings-roles" columns={columns} data={page.rows} total={page.total} loading={list.isFetching} query={query} onQueryChange={setQuery} exportName="roles"
         empty={<EmptyState icon={ShieldIcon} title={t("settings.noRoles")} />}

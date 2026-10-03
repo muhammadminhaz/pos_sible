@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOutIcon, UserIcon } from "lucide-react";
+import { LogOutIcon, UserIcon, UsersIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -25,6 +25,11 @@ export function UserMenu() {
   const logout = useSession((s) => s.logout);
   if (!current) return null;
   const { user, role } = current;
+  const signOut = async () => {
+    if (API_MODE) await signOutOnServer();
+    else logout();
+    router.replace("/login");
+  };
   const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
   const initials = `${user.firstName[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase();
 
@@ -52,15 +57,12 @@ export function UserMenu() {
             {t("nav.profile")}
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem onSelect={signOut}>
+          <UsersIcon />
+          {t("auth.switchUser")}
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={async () => {
-            if (API_MODE) await signOutOnServer();
-            else logout();
-            router.replace("/login");
-          }}
-        >
+        <DropdownMenuItem variant="destructive" onSelect={signOut}>
           <LogOutIcon />
           {t("auth.signOut")}
         </DropdownMenuItem>

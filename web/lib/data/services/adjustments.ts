@@ -6,7 +6,7 @@ import { transaction } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { orderTotals } from "@/lib/domain/totals";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
 import { putBack, takeStock } from "./_stock";
 
 export type AdjustmentInput = {
@@ -14,7 +14,7 @@ export type AdjustmentInput = {
   lines: { productId: string; variationId: string; qty: number }[];
 };
 export type AdjustmentFilters = ListQuery & { locationId?: string; type?: "normal" | "abnormal"; from?: string; to?: string };
-export type AdjustmentRow = {
+export type AdjustmentRow = AuditRow & {
   id: string; date: string; refNo: string; locationName: string; type: "normal" | "abnormal"; total: number; recovered: number; reason: string; addedBy: string; itemsCount: number;
 };
 export type AdjustmentDetail = AdjustmentRow & { lines: { id: string; name: string; sku: string; unitName: string; qty: number; unitCost: number; subtotal: number }[] };
@@ -34,6 +34,7 @@ export const adjustmentsService = service("adjustmentsService", {
       .map((t): AdjustmentRow => {
         const u = d.users.find((x) => x.id === t.createdBy);
         return {
+          ...auditIds(t),
           id: t.id, date: t.date, refNo: t.refNo, locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "", type: t.adjustmentType ?? "normal", total: t.totals.total,
           recovered: t.amountRecovered, reason: t.notes, addedBy: u ? `${u.firstName} ${u.lastName}`.trim() : "", itemsCount: t.totals.itemsCount,
         };
@@ -49,6 +50,7 @@ export const adjustmentsService = service("adjustmentsService", {
     if (!t) throw new NotFoundError("Adjustment");
     const u = d.users.find((x) => x.id === t.createdBy);
     return {
+      ...auditIds(t),
       id: t.id, date: t.date, refNo: t.refNo, locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "", type: t.adjustmentType ?? "normal", total: t.totals.total,
       recovered: t.amountRecovered, reason: t.notes, addedBy: u ? `${u.firstName} ${u.lastName}`.trim() : "", itemsCount: t.totals.itemsCount,
       lines: t.lines.map((l) => {
@@ -100,7 +102,7 @@ export const adjustmentsService = service("adjustmentsService", {
   /** Puts the stock back. */
   async remove(id: string): Promise<void> {
     await delay();
-    assertCan("stock_adjustment.create");
+    assertCan("stock_adjustment.delete");
     commit((d) => {
       const t = d.transactions.find((x) => x.id === id && x.type === "stock_adjustment");
       if (!t) throw new NotFoundError("Adjustment");

@@ -18,6 +18,7 @@ import { usePosDialogs } from "@/features/pos/dialogStore";
 import { ReceiptModal } from "@/features/pos/receipt/ReceiptModal";
 import { PaymentsDialog } from "./PaymentsDialog";
 import { ShippingDialog } from "./ShippingDialog";
+import { AuditFooter } from "@/components/shared/AuditFooter";
 
 export function SaleDetail({ id }: { id: string }) {
   const t = useTranslations();
@@ -82,6 +83,7 @@ export function SaleDetail({ id }: { id: string }) {
           </div>
         </div>
         <div className="grid content-start gap-4">
+          <AuditFooter record={s} />
           <div className="grid gap-1.5 rounded-xl border bg-card p-4">
             {row(t("sales.saleStatus"), <StatusBadge status={s.status} />)}
             {final && row(t("sales.paymentStatus"), <StatusBadge status={s.paymentStatus} />)}

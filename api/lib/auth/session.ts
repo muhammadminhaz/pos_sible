@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { dataContext, getDB } from "@/lib/data/store/db";
+import { actor, dataContext, getDB } from "@/lib/data/store/db";
 import { chooseSessionStore, sessionStorageChoice } from "@/lib/data/store/storage";
 import type { Role, User } from "@/lib/data/schemas";
 
@@ -34,6 +34,8 @@ export function activeUserId(): string | null {
   const ctx = dataContext.current();
   return ctx ? ctx.userId : useSession.getState().userId;
 }
+
+actor.userId = activeUserId;
 
 export function currentUser(): { user: User; role: Role } | null {
   const id = activeUserId();

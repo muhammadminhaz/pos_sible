@@ -17,7 +17,7 @@ import { cartTotals, paymentState } from "@/lib/pos/selectors";
 import { fulfilledQty, linkLines, syncOrders } from "./_orders";
 import { todayISO } from "@/lib/dates";
 import { expiryCutoff } from "./_stock";
-import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type SaleStatus = "final" | "draft" | "quotation" | "suspended";
@@ -51,7 +51,7 @@ export type SaleFilters = ListQuery & {
   kind?: "all" | "drafts" | "quotations"; locationId?: string; contactId?: string; paymentStatus?: PaymentStatus; from?: string; to?: string;
   createdBy?: string; agentId?: string; shippingStatus?: ShippingStatus; subscription?: boolean; channel?: "pos" | "web"; deliveryPersonId?: string; shipped?: boolean;
 };
-export type SaleListRow = {
+export type SaleListRow = AuditRow & {
   id: string; refNo: string; date: string; status: Transaction["status"]; contactName: string; mobile: string; locationName: string;
   paymentStatus: PaymentStatus; methods: PaymentMethod[]; total: number; paid: number; due: number; returnDue: number;
   shippingStatus: ShippingStatus | null; deliveryPerson: string; itemsCount: number; addedBy: string; note: string; staffNote: string; recurring: boolean; channel: "pos" | "web";
@@ -340,6 +340,7 @@ export const salesService = service("salesService", {
       .filter((t) => matches(f.search, t.refNo, contacts.get(t.contactId ?? "")?.name, contacts.get(t.contactId ?? "")?.mobile))
       .sort((a, b) => b.date.localeCompare(a.date));
     const toRow = (t: Transaction): SaleListRow => {
+      const audit = auditIds(t);
       const c = contacts.get(t.contactId ?? "");
       const sum = paymentSummary(t.totals.total, t.payments);
       const returnDue = roundMoney(
@@ -351,7 +352,7 @@ export const salesService = service("salesService", {
         locationName: locations.get(t.locationId) ?? "", paymentStatus: statusOf(t),
         methods: [...new Set(t.payments.filter((p) => !p.isReturn).map((p) => p.method))], total: t.totals.total, paid: sum.paid,
         due: t.status === "final" ? sum.due : 0, returnDue, shippingStatus: t.shipping.status, deliveryPerson: users.get(t.shipping.deliveryPersonId ?? "") ?? "", itemsCount: t.totals.itemsCount,
-        addedBy: users.get(t.createdBy ?? "") ?? "", note: t.notes, staffNote: t.staffNote, recurring: t.recurring != null, channel: t.channel,
+        addedBy: users.get(t.createdBy ?? "") ?? "", note: t.notes, staffNote: t.staffNote, recurring: t.recurring != null, channel: t.channel, ...audit,
       };
     };
     const all = rows.map(toRow);

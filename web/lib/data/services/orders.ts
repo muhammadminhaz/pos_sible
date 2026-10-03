@@ -7,11 +7,11 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { orderTotals } from "@/lib/domain/totals";
 import { lineTotals } from "@/lib/domain/totals";
 import { fulfilledQty, remainingQty } from "./_orders";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
 
 export type OrderStatus = "ordered" | "partial" | "completed";
 export type OrderFilters = ListQuery & { locationId?: string; contactId?: string; status?: OrderStatus; shippingStatus?: ShippingStatus; from?: string; to?: string };
-export type OrderRow = {
+export type OrderRow = AuditRow & {
   id: string; date: string; refNo: string; contactName: string; mobile: string; locationName: string; status: OrderStatus;
   shippingStatus: ShippingStatus | null; remainingQty: number; total: number; addedBy: string;
 };
@@ -42,6 +42,7 @@ export const ordersService = service("ordersService", {
         const c = d.contacts.find((x) => x.id === t.contactId);
         const u = d.users.find((x) => x.id === t.createdBy);
         return {
+          ...auditIds(t),
           id: t.id, date: t.date, refNo: t.refNo, contactName: c?.name ?? "", mobile: c?.mobile ?? "",
           locationName: d.locations.find((l) => l.id === t.locationId)?.name ?? "", status: t.status as OrderStatus,
           shippingStatus: t.shipping.status, remainingQty: remainingQty(d, t), total: t.totals.total, addedBy: u ? `${u.firstName} ${u.lastName}`.trim() : "",

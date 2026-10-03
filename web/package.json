@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "e2e": "node e2e/smoke.mjs",
     "e2e:onboarding": "node e2e/onboarding.mjs",
+    "e2e:team": "node e2e/team.mjs",
     "dev:api": "NEXT_PUBLIC_DATA_MODE=api next dev",
     "build:api": "NEXT_PUBLIC_DATA_MODE=api next build",
     "e2e:api": "node e2e/api.mjs"

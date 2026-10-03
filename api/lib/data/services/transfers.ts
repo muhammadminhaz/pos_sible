@@ -6,7 +6,7 @@ import { stockLot, transaction, type DB, type Transaction } from "@/lib/data/sch
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { orderTotals } from "@/lib/domain/totals";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
 import { putBack, takeStock } from "./_stock";
 
 export type TransferStatus = "pending" | "in_transit" | "completed";
@@ -15,7 +15,7 @@ export type TransferInput = {
   lines: { productId: string; variationId: string; qty: number }[]; shippingCharges: number; notes: string;
 };
 export type TransferFilters = ListQuery & { fromLocationId?: string; toLocationId?: string; status?: TransferStatus; from?: string; to?: string };
-export type TransferRow = {
+export type TransferRow = AuditRow & {
   id: string; date: string; refNo: string; fromName: string; toName: string; status: TransferStatus; shipping: number; total: number; itemsCount: number;
 };
 export type TransferDetail = Transaction & { fromName: string; toName: string; addedBy: string; lineNames: Record<string, { name: string; sku: string; unitName: string }> };
@@ -71,6 +71,7 @@ export const transfersService = service("transfersService", {
       .filter((t) => matches(f.search, t.refNo, loc.get(t.locationId), loc.get(t.transferLocationId ?? "")))
       .sort((a, b) => b.date.localeCompare(a.date))
       .map((t): TransferRow => ({
+        ...auditIds(t),
         id: t.id, date: t.date, refNo: t.refNo, fromName: loc.get(t.locationId) ?? "", toName: loc.get(t.transferLocationId ?? "") ?? "", status: t.status as TransferStatus,
         shipping: t.shipping.charges, total: t.totals.total, itemsCount: t.totals.itemsCount,
       }));
@@ -137,7 +138,7 @@ export const transfersService = service("transfersService", {
   /** Moves forward only: Pending → In transit → Completed. Cancelling is deleting. */
   async updateStatus(id: string, status: TransferStatus): Promise<void> {
     await delay();
-    assertCan("stock_transfer.create");
+    assertCan("stock_transfer.update");
     commit((d) => {
       const t = d.transactions.find((x) => x.id === id && x.type === "stock_transfer");
       if (!t) throw new NotFoundError("Transfer");
@@ -148,7 +149,7 @@ export const transfersService = service("transfersService", {
   /** Reverses whatever the transfer has done so far; refused once the arrived stock has been used. */
   async remove(id: string): Promise<void> {
     await delay();
-    assertCan("stock_transfer.create");
+    assertCan("stock_transfer.delete");
     commit((d) => {
       const t = d.transactions.find((x) => x.id === id && x.type === "stock_transfer");
       if (!t) throw new NotFoundError("Transfer");

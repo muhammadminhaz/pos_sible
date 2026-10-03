@@ -23,6 +23,7 @@ import { useSettings } from "@/lib/data/hooks/settings";
 import { useUI } from "@/lib/data/store/ui";
 import { EmptyState } from "../EmptyState";
 import { BulkBar } from "./BulkBar";
+import { AUDIT_COLUMN_IDS, useAuditColumns } from "./auditColumns";
 import { columnLabel } from "./ColumnMenu";
 import { downloadCSV, toCSV } from "./export";
 import { Pagination } from "./Pagination";
@@ -85,12 +86,16 @@ export function DataTable<T>({
   const [selection, setSelection] = useState<RowSelectionState>({});
   const [selectedRows, setSelectedRows] = useState<Record<string, T>>({});
 
-  const hidden = pref?.hidden ?? defaultHidden;
+  const auditColumns = useAuditColumns(data);
+  const hidden = pref?.hidden ?? (auditColumns.length ? [...defaultHidden, ...AUDIT_COLUMN_IDS] : defaultHidden);
   const columnVisibility = useMemo<VisibilityState>(() => Object.fromEntries(hidden.map((id) => [id, false])), [hidden]);
   const sorting: SortingState = query.sort ? [query.sort] : [];
 
   const allColumns = useMemo<ColumnDef<T, unknown>[]>(() => {
-    if (!selectable) return columns;
+    // The audit columns sit before the row-actions column, which stays last.
+    const at = columns.findIndex((c) => c.id === "actions");
+    const withAudit = auditColumns.length ? (at < 0 ? [...columns, ...auditColumns] : [...columns.slice(0, at), ...auditColumns, ...columns.slice(at)]) : columns;
+    if (!selectable) return withAudit;
     const select: ColumnDef<T, unknown> = {
       id: "__select",
       enableSorting: false,
@@ -112,8 +117,8 @@ export function DataTable<T>({
         />
       ),
     };
-    return [select, ...columns];
-  }, [columns, selectable, t]);
+    return [select, ...withAudit];
+  }, [columns, auditColumns, selectable, t]);
 
   const rowId = (r: T, i: number) => (getRowId ? getRowId(r) : ((r as { id?: string }).id ?? String(i)));
 

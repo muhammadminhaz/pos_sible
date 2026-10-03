@@ -28,6 +28,8 @@ export function AccountsList() {
   const router = useRouter();
   const can = useCan();
   const manage = can("account.manage");
+  const canAdd = can("account.create");
+  const canEdit = can("account.update");
   const [url, setUrl, resetUrl] = useUrlFilters<UrlFilters>(["status"]);
   const [query, setQuery] = useTableQuery("accounts");
   const status = (url.status as "active" | "closed" | undefined) ?? "active";
@@ -57,11 +59,11 @@ export function AccountsList() {
       return (
         <RowActions items={[
           { label: t("finance.book"), icon: BookOpenIcon, href: `/accounts/${a.id}` },
-          { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(a), hidden: !manage },
+          { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(a), hidden: !canEdit },
           { label: t("finance.transfer"), icon: ArrowLeftRightIcon, onClick: () => setMove({ kind: "transfer", accountId: a.id }), hidden: !manage || !open },
           { label: t("finance.deposit"), icon: ArrowDownToLineIcon, onClick: () => setMove({ kind: "deposit", accountId: a.id }), hidden: !manage || !open },
-          { label: t("finance.closeAccount"), icon: LockIcon, onClick: act(() => m.close.mutateAsync(a.id), "finance.accountClosed"), hidden: !manage || !open },
-          { label: t("finance.reopenAccount"), icon: LockOpenIcon, onClick: act(() => m.reopen.mutateAsync(a.id), "finance.accountReopened"), hidden: !manage || open },
+          { label: t("finance.closeAccount"), icon: LockIcon, onClick: act(() => m.close.mutateAsync(a.id), "finance.accountClosed"), hidden: !canEdit || !open },
+          { label: t("finance.reopenAccount"), icon: LockOpenIcon, onClick: act(() => m.reopen.mutateAsync(a.id), "finance.accountReopened"), hidden: !canEdit || open },
         ]} />
       );
     } },
@@ -82,7 +84,7 @@ export function AccountsList() {
         <TabsContent value="accounts">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <FilterBar defs={defs} value={url} onChange={(p) => { setUrl(p); setQuery({ page: 0 }); }} onReset={() => { resetUrl(); setQuery({ page: 0 }); }} />
-            {manage && <Button onClick={() => setEdit(null)}><PlusIcon />{t("finance.addAccount")}</Button>}
+            {canAdd && <Button onClick={() => setEdit(null)}><PlusIcon />{t("finance.addAccount")}</Button>}
           </div>
           <DataTable
             tableId="accounts" columns={columns} data={pageRows} total={all.length} loading={list.isFetching} query={query} onQueryChange={setQuery}
