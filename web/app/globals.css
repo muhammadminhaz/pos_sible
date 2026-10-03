@@ -257,6 +257,29 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
+/*
+ * Cards and panels reveal as they arrive: a fade and rise that sharpens out of a slight blur. Siblings stagger in
+ * reading order (explicit --i, or the position among siblings), and it plays once on mount. Fill is "backwards" so the
+ * card keeps its normal styles (and hover transforms) afterwards.
+ */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); filter: blur(5px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+.reveal {
+  animation: reveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, var(--n, 0)) * 70ms);
+}
+.reveal:nth-child(2) { --n: 1; }
+.reveal:nth-child(3) { --n: 2; }
+.reveal:nth-child(4) { --n: 3; }
+.reveal:nth-child(5) { --n: 4; }
+.reveal:nth-child(6) { --n: 5; }
+.reveal:nth-child(7) { --n: 6; }
+.reveal:nth-child(n + 8) { --n: 7; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { animation: none; }
+}
 @keyframes pop {
   0% { transform: scale(1); }
   40% { transform: scale(1.08); }
@@ -326,6 +349,38 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklch, var(--primary) 13%, transparent), transparent 70%);
 }
 [data-spotlight]:hover::before { opacity: 1; }
+/*
+ * Accent border that wakes on hover. A gradient ring fades in from the top-right and bottom-left corners: its colour
+ * is brightest at the corner and dissolves toward the leading edge, so nothing ever draws a hard line. --gr is how
+ * far the glow has travelled from each corner; hovering away lets it drain back the same way.
+ */
+@property --gr { syntax: "<length>"; inherits: false; initial-value: 0px; }
+.card-glow {
+  --glow-a: var(--primary);
+  --glow-b: color-mix(in oklch, var(--primary) 40%, oklch(0.78 0.15 215));
+  position: relative;
+}
+.card-glow::before,
+.card-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: inherit;
+  pointer-events: none;
+  /* The ring: the gradient shows only in the 2px between the padding box and the border box. */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  transition: --gr 2.6s cubic-bezier(0.45, 0.05, 0.3, 1);
+}
+.card-glow::before { background: radial-gradient(circle at 100% 0, var(--glow-a) 0, var(--glow-b) calc(var(--gr) * 0.62), transparent var(--gr)); }
+.card-glow::after { background: radial-gradient(circle at 0 100%, var(--glow-a) 0, var(--glow-b) calc(var(--gr) * 0.62), transparent var(--gr)); }
+.card-glow:hover::before, .card-glow:hover::after,
+.card-glow:focus-within::before, .card-glow:focus-within::after { --gr: 1500px; }
+@media (prefers-reduced-motion: reduce) {
+  .card-glow::before, .card-glow::after { transition-duration: 0.01s; }
+}
 /* Ticks and switches answer with a small pop. */
 [data-slot="checkbox"][data-state="checked"] { animation: pop 0.25s ease-out; }
 [data-slot="checkbox-indicator"] > svg { animation: tick 0.28s ease-out; }
@@ -347,4 +402,14 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Loading sweep along the top edge while a route is on its way (app/(app)/loading.tsx). */
+@keyframes route-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+.route-sweep { animation: route-sweep 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .route-sweep { animation: none; width: 100%; opacity: 0.5; }
 }

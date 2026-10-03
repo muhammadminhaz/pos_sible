@@ -75,6 +75,13 @@ export function BarChart({ data, xKey, yKey, label, height = 280, format, layout
       <div aria-hidden style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
           <RBarChart accessibilityLayer={false} data={data} layout={vertical ? "vertical" : "horizontal"} margin={{ top: 8, right: 8, bottom: 0, left: vertical ? 8 : 0 }}>
+            <defs>
+              {/* Subtle gradient along the bar: a lighter start deepening to the full colour at the tip. */}
+              <linearGradient id={`bar-${yKey}`} x1={vertical ? "0" : "0"} y1={vertical ? "0" : "1"} x2={vertical ? "1" : "0"} y2={vertical ? "0" : "0"}>
+                <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.55} />
+                <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={1} />
+              </linearGradient>
+            </defs>
             <CartesianGrid horizontal={!vertical} vertical={vertical} stroke="var(--border)" />
             {vertical ? (
               <>
@@ -88,7 +95,7 @@ export function BarChart({ data, xKey, yKey, label, height = 280, format, layout
               </>
             )}
             <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--muted)", opacity: 0.5 }} formatter={(v) => fmt(Number(v))} />
-            <Bar dataKey={yKey} fill="var(--chart-1)" minPointSize={3} radius={vertical ? [0, 4, 4, 0] : [4, 4, 0, 0]} />
+            <Bar dataKey={yKey} fill={`url(#bar-${yKey})`} minPointSize={3} radius={vertical ? [0, 4, 4, 0] : [4, 4, 0, 0]} />
           </RBarChart>
         </ResponsiveContainer>
       </div>
