@@ -1,7 +1,5 @@
 # pos_sible — Contacts, Purchases and Stock Implementation Plan (sub-project 5) — DONE
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax.
-
 **Goal:** Replace every placeholder under `/contacts`, `/purchases` and `/stock`.
 **Architecture:** Extend `contactsService`; add `purchasesService`, `purchaseReturnsService`, `transfersService`, `adjustmentsService` (all writing stock through lots, FIFO/LIFO via `lib/domain/stock.ts`). Reuse `DataTable`/`FilterBar`, the Sales payment dialog pattern and the `ImportWizard` from Catalog.
 **Branch:** `feat/operations`. Local merge only; no trailer; no push.

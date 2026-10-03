@@ -1,7 +1,5 @@
 # pos_sible Foundation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Build the foundation for the pos_sible frontend. It covers:
 - design tokens, fonts, and theming (light/dark)
 - EN/BN i18n
@@ -17,7 +15,7 @@
 
 **Tech Stack:** Next.js 16.3, React 19.2, Tailwind v4, shadcn/ui (Radix), @tanstack/react-table@8, @tanstack/react-query@5, react-hook-form@7 + zod@4, zustand@5, next-intl@4, next-themes, recharts@3, lucide-react, cmdk, sonner, date-fns@4, vitest.
 
-**Spec:** `docs/superpowers/specs/2026-09-27-possible-foundation-design.md`
+**Spec:** `docs/design/specs/2026-09-27-possible-foundation-design.md`
 
 ## Global Constraints
 - Read `node_modules/next/dist/docs/` before using any Next API. Middleware is now `proxy.ts`, and this plan uses no proxy.

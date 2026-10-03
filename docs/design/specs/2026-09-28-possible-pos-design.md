@@ -1,7 +1,7 @@
 # pos_sible — POS Screen Design (sub-project 2)
 
 - **Requirements:** the POS screen, cash register, bKash/Nagad buttons, shipping zones and technicians
-- **Builds on:** the foundation (`docs/superpowers/specs/2026-09-27-possible-foundation-design.md`)
+- **Builds on:** the foundation (`docs/design/specs/2026-09-27-possible-foundation-design.md`)
 - **Route:** `/pos` in the `(pos)` group: full screen, auth guard, permission `pos.access`
 
 ## 1. Goals and decisions

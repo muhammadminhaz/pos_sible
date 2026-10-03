@@ -1,7 +1,5 @@
 # pos_sible — Reports and Dashboard Implementation Plan (sub-project 7)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
-
 **Goal:** Finish the home dashboard and build all 18 report pages under `/reports/*`.
 **Architecture:** A `reportsService` of pure query functions over the DB (one per report, each returning typed rows + totals), a shared `ReportShell` (PageHeader, FilterBar with location/date defaults, print, CSV export, loading/empty states) and small chart wrappers around `recharts` (already installed). Reports are read-only, so no new write paths.
 **Branch:** `feat/reports`. Local merge only; no trailer; no push.

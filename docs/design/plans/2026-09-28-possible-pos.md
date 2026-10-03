@@ -1,14 +1,12 @@
 # POS Screen Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Replace the `/pos` placeholder with a full desktop cashier screen: register gate, scanner-friendly cart, product grid, split payments, suspend/draft/quotation, receipt printing, and register close. Everything runs on mock data.
 
 **Architecture:** Pure, unit-tested logic lives in `lib/pos/*`. The data services `pos`, `sales`, `registers`, `expenses`, and `contacts.createCustomer` read and write the Zustand DB through `commit()`, and TanStack Query hooks wrap them. A persisted Zustand store (`lib/pos/store.ts`) holds one cart per location. UI components in `features/pos/*` only talk to hooks and the cart store, never to `getDB()`.
 
 **Tech Stack:** Next.js 16.3.6 (App Router), React 19.2.8, TypeScript, Tailwind v4, shadcn/ui (Radix), Zustand + persist, TanStack Query 5, next-intl 4 (`NEXT_LOCALE` cookie, no i18n routing), zod 3, sonner, lucide-react, date-fns 4, vitest.
 
-**Spec:** `docs/superpowers/specs/2026-09-28-possible-pos-design.md`
+**Spec:** `docs/design/specs/2026-09-28-possible-pos-design.md`
 
 ## Global Constraints
 

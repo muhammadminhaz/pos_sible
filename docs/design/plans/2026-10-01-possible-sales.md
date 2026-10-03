@@ -1,11 +1,9 @@
 # pos_sible — Sales Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
-
 **Goal:** Replace every `/sales/*` placeholder with a working screen on mock data.
 **Architecture:** Extend `salesService` and add `returnsService`, `ordersService`, `discountsService`, `salesImportService`. UI in `features/sales/`, built on the shared `DataTable`/`FilterBar`/`PageHeader`. Add Sale is a cart editor that reuses `lib/pos/cart.ts` and `cartTotals`.
 **Tech Stack:** Next.js 16, React 19 (React Compiler lint rules), TanStack Query, next-intl, zod 3, vitest.
-**Spec:** `docs/superpowers/specs/2026-10-01-possible-sales-design.md`
+**Spec:** `docs/design/specs/2026-10-01-possible-sales-design.md`
 
 ## Progress
 All tasks done and merged.

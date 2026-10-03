@@ -48,3 +48,7 @@ next-env.d.ts
 .claude/
 
 !.env.example
+
+# framework-generated agent files
+web/AGENTS.md
+web/CLAUDE.md

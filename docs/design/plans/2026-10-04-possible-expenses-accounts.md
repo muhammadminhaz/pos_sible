@@ -1,7 +1,5 @@
 # pos_sible — Expenses and Accounts Implementation Plan (sub-project 6)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
-
 **Goal:** Replace every placeholder under `/expenses` and `/accounts`.
 **Architecture:** Grow `expensesService` (today only `create`, used by the POS Add Expense dialog) into the full service; add `accountsService` over `accounts`, `accountTxns` and account types. Balance sheet, trial balance and cash flow are pure functions in `lib/domain/ledger.ts`, fed by the service.
 **Branch:** `feat/finance`. Local merge only; no trailer; no push.

@@ -1,7 +1,5 @@
 # pos_sible — Catalog Implementation Plan (sub-project 4) — DONE
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax.
-
 **Goal:** Replace every `/products/*` placeholder: product create/edit/detail, the reference lists (units, categories, brands, variations, warranties, price groups), opening stock, price update, imports and label printing.
 **Architecture:** Extend `productsService` (create, update, duplicate, form load, opening stock, price rows). Reference lists reuse the generic `crud(table)` service and `useCrud` hook through one config-driven `CrudPage`. UI lives in `features/catalog/`. CSV work reuses `lib/csv.ts`; barcodes reuse `features/pos/receipt/Barcode.tsx`.
 **Tech Stack:** as in the Sales plan.

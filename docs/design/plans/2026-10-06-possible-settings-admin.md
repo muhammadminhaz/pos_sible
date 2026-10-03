@@ -1,7 +1,5 @@
 # pos_sible — Settings and Admin Implementation Plan (sub-project 8)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
-
 **Goal:** Replace every placeholder under `/settings/*`, plus `/profile` and `/calendar`, and clear the parked POS follow-ups.
 **Architecture:** `settingsService.update(section, patch)` already exists; Business Settings is one vertical-tab page where each tab is a small form bound to one settings section. Locations, users, roles, invoice schemes/layouts, barcodes, printers and tax rates are `CrudPage`-style screens with bespoke forms. Backup extends the existing `backupService`.
 **Branch:** `feat/settings`. Local merge only; no trailer; no push.

@@ -10,14 +10,14 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 | # | Sub-project | Status | Plan |
 |---|---|---|---|
-| 1 | ✅ Foundation: app shell, auth, data layer, seed data, i18n, theme, Home KPIs, Products list | ✅ Done | [plan](docs/superpowers/plans/2026-09-27-possible-foundation.md) |
-| 2 | ✅ POS: register, cart, product grid, split payments, suspend/draft/quotation, receipts, shortcuts | ✅ Done | [plan](docs/superpowers/plans/2026-09-28-possible-pos.md) |
-| 3 | ✅ Sales: lists, add/edit sale, detail, payments, shipping, returns, orders, shipments, discounts, CSV import | ✅ Done | [plan](docs/superpowers/plans/2026-10-01-possible-sales.md) |
-| 4 | ✅ Catalog: product form and detail, units, categories, brands, variations, warranties, price groups, opening stock, imports, labels | Done | [plan](docs/superpowers/plans/2026-10-02-possible-catalog.md) |
-| 5 | ✅ Contacts, Purchases, Stock | Done | [plan](docs/superpowers/plans/2026-10-03-possible-contacts-purchases-stock.md) |
-| 6 | ✅ Expenses and Accounts | ✅ Done | [plan](docs/superpowers/plans/2026-10-04-possible-expenses-accounts.md) |
-| 7 | ✅ Reports and Dashboard | ✅ Done | [plan](docs/superpowers/plans/2026-10-05-possible-reports-dashboard.md) |
-| 8 | ✅ Settings and Admin, plus POS follow-ups | ✅ Done | [plan](docs/superpowers/plans/2026-10-06-possible-settings-admin.md) |
+| 1 | ✅ Foundation: app shell, auth, data layer, seed data, i18n, theme, Home KPIs, Products list | ✅ Done | [plan](docs/design/plans/2026-09-27-possible-foundation.md) |
+| 2 | ✅ POS: register, cart, product grid, split payments, suspend/draft/quotation, receipts, shortcuts | ✅ Done | [plan](docs/design/plans/2026-09-28-possible-pos.md) |
+| 3 | ✅ Sales: lists, add/edit sale, detail, payments, shipping, returns, orders, shipments, discounts, CSV import | ✅ Done | [plan](docs/design/plans/2026-10-01-possible-sales.md) |
+| 4 | ✅ Catalog: product form and detail, units, categories, brands, variations, warranties, price groups, opening stock, imports, labels | Done | [plan](docs/design/plans/2026-10-02-possible-catalog.md) |
+| 5 | ✅ Contacts, Purchases, Stock | Done | [plan](docs/design/plans/2026-10-03-possible-contacts-purchases-stock.md) |
+| 6 | ✅ Expenses and Accounts | ✅ Done | [plan](docs/design/plans/2026-10-04-possible-expenses-accounts.md) |
+| 7 | ✅ Reports and Dashboard | ✅ Done | [plan](docs/design/plans/2026-10-05-possible-reports-dashboard.md) |
+| 8 | ✅ Settings and Admin, plus POS follow-ups | ✅ Done | [plan](docs/design/plans/2026-10-06-possible-settings-admin.md) |
 
 ## Features
 
@@ -188,4 +188,4 @@ docs/                 design specs, implementation plans, backend notes
 - **Tests:** domain maths and every service have unit tests; `npm run e2e` loads every route in both languages and themes and runs axe accessibility checks.
 
 ## Documentation
-Design specs are in `docs/superpowers/specs/` and step-by-step plans in `docs/superpowers/plans/`. Each sub-project gets a spec, then a plan, then a build on its own branch merged into `main`.
+Design specs are in `docs/design/specs/` and step-by-step plans in `docs/design/plans/`. Each sub-project gets a spec, then a plan, then a build on its own branch merged into `main`.
