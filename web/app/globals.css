@@ -280,6 +280,65 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
 .grow-bar { transform-origin: bottom; animation: grow-y 0.7s ease-out both; }
 .float-slow { animation: float 5s ease-in-out infinite; }
 
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes shine {
+  from { transform: translateX(-100%) skewX(-20deg); }
+  to { transform: translateX(400%) skewX(-20deg); }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes tick {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+/* Table rows rise in one after another (the first dozen; later ones just appear). */
+[data-slot="table-body"] > [data-slot="table-row"] { animation: rise 0.32s ease-out both; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(2) { animation-delay: 25ms; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(3) { animation-delay: 50ms; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(4) { animation-delay: 75ms; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(5) { animation-delay: 100ms; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(6) { animation-delay: 125ms; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(7) { animation-delay: 150ms; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(8) { animation-delay: 175ms; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(9) { animation-delay: 200ms; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(10) { animation-delay: 225ms; }
+[data-slot="table-body"] > [data-slot="table-row"]:nth-child(n + 11) { animation-delay: 250ms; }
+/* A soft light that follows the pointer across a card (set by MicroInteractions). */
+[data-spotlight] { position: relative; }
+[data-spotlight]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+  background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklch, var(--primary) 13%, transparent), transparent 70%);
+}
+[data-spotlight]:hover::before { opacity: 1; }
+/* Ticks and switches answer with a small pop. */
+[data-slot="checkbox"][data-state="checked"] { animation: pop 0.25s ease-out; }
+[data-slot="checkbox-indicator"] > svg { animation: tick 0.28s ease-out; }
+[data-slot="radio-group-indicator"] > * { animation: tick 0.28s ease-out; }
+[data-slot="switch"]:active [data-slot="switch-thumb"] { width: 1.125rem; }
+/* Loading placeholders shimmer instead of blinking. */
+.shimmer {
+  background-image: linear-gradient(90deg, transparent 0%, color-mix(in oklch, var(--foreground) 7%, transparent) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+.grow-x { transform-origin: left; animation: grow-x 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

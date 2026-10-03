@@ -34,8 +34,8 @@ export function RevenuePage() {
     <>
       <AdminHeader title="Revenue" description="Estimated from active subscriptions at each package's current monthly price. Payments themselves aren't tracked here." />
       <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard loading={!businesses} label="Monthly revenue" value={formatMoney(mrr)} />
-        <StatCard loading={!businesses} label="Yearly run rate" value={formatMoney(mrr * 12)} />
+        <StatCard loading={!businesses} label="Monthly revenue" count={mrr} format={formatMoney} />
+        <StatCard loading={!businesses} label="Yearly run rate" count={mrr * 12} format={formatMoney} />
         <StatCard loading={!businesses} label="Per paying business" value={paying.length ? formatMoney(mrr / paying.length) : "—"} />
         <StatCard loading={!businesses} label="Not paying right now" value={formatMoney(lost)} hint="Switched off or lapsed, per month" />
       </section>

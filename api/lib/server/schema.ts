@@ -116,4 +116,12 @@ ON CONFLICT (id) DO NOTHING;
 ALTER TABLE businesses ADD CONSTRAINT businesses_plan_fk FOREIGN KEY (plan) REFERENCES plans (id);
 `,
   },
+  {
+    id: 4,
+    name: "business contact details",
+    sql: `
+-- How the platform owner reaches a business (entered in the admin console; E.164 phone such as +8801711000111).
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS contact_email text, ADD COLUMN IF NOT EXISTS contact_phone text;
+`,
+  },
 ];

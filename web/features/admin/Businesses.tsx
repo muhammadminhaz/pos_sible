@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { EyeIcon, EyeOffIcon, Loader2Icon, MoreHorizontalIcon, PlusIcon, SearchIcon, SettingsIcon, Trash2Icon } from "lucide-react";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Flag, isPhoneOk, PhoneInput } from "@/components/shared/PhoneInput";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -28,6 +30,18 @@ function PlanSelect({ id, plans, value, onChange }: { id: string; plans: Plan[];
         {plans.map((p) => <SelectItem key={p.id} value={p.id}>{planText(p)}</SelectItem>)}
       </SelectContent>
     </Select>
+  );
+}
+
+/** Email and phone on two lines, with the phone's country flag. */
+function Contact({ email, phone }: { email: string | null; phone: string | null }) {
+  const p = phone ? parsePhoneNumberFromString(phone) : undefined;
+  if (!email && !phone) return <span className="text-muted-foreground">—</span>;
+  return (
+    <div className="grid gap-0.5 text-sm">
+      {phone && <span className="flex items-center gap-1.5 whitespace-nowrap tabular-nums">{p?.country && <Flag country={p.country} />}{p ? p.formatInternational() : phone}</span>}
+      {email && <span className="max-w-48 truncate text-muted-foreground">{email}</span>}
+    </div>
   );
 }
 
@@ -70,6 +84,7 @@ export function BusinessesPage() {
             <TableRow>
               <TableHead>Business</TableHead>
               <TableHead>Username</TableHead>
+              <TableHead>Contact</TableHead>
               <TableHead>Package</TableHead>
               <TableHead>Subscription</TableHead>
               <TableHead>Ends</TableHead>
@@ -80,12 +95,13 @@ export function BusinessesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!businesses && <TableRow><TableCell colSpan={9} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
-            {businesses && rows.length === 0 && <TableRow><TableCell colSpan={9} className="h-24 text-center text-muted-foreground">{businesses.length ? "No businesses match." : "No business accounts yet. Add the first one."}</TableCell></TableRow>}
+            {!businesses && <TableRow><TableCell colSpan={10} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
+            {businesses && rows.length === 0 && <TableRow><TableCell colSpan={10} className="h-24 text-center text-muted-foreground">{businesses.length ? "No businesses match." : "No business accounts yet. Add the first one."}</TableCell></TableRow>}
             {rows.map((b) => (
               <TableRow key={b.id}>
                 <TableCell className="font-medium">{b.name}</TableCell>
                 <TableCell className="text-muted-foreground">{b.ownerUsername ?? "—"}</TableCell>
+                <TableCell><Contact email={b.contactEmail} phone={b.contactPhone} /></TableCell>
                 <TableCell>{b.planLabel}</TableCell>
                 <TableCell><StateBadge state={b.state} /></TableCell>
                 <TableCell className="whitespace-nowrap">{day(b.expiresAt)}</TableCell>
@@ -123,6 +139,8 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [plan, setPlan] = useState(plans.find((p) => p.id === "standard")?.id ?? plans[0]?.id ?? "");
   const [ends, setEnds] = useState("");
   const [busy, setBusy] = useState(false);
@@ -132,7 +150,7 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password, plan, expiresAt: ends ? endOfDay(ends) : null }) }).catch(() => null);
+    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password, email, phone, plan, expiresAt: ends ? endOfDay(ends) : null }) }).catch(() => null);
     setBusy(false);
     if (res?.ok) {
       toast.success("Business account created");
@@ -152,11 +170,13 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
       <div className="grid gap-1.5"><Label htmlFor="b-name">Business name</Label><Input id="b-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={80} autoFocus /></div>
       <div className="grid gap-1.5"><Label htmlFor="b-user">Username</Label><Input id="b-user" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} maxLength={40} pattern="[a-zA-Z0-9._-]+" autoComplete="off" /><p className="text-xs text-muted-foreground">Letters, digits, dot, dash or underscore. The business signs in with this.</p></div>
       <PasswordField id="b-pass" label="Password" value={password} onChange={setPassword} />
+      <div className="grid gap-1.5"><Label htmlFor="b-email">Email (optional)</Label><Input id="b-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
+      <div className="grid gap-1.5"><Label htmlFor="b-phone">Phone (optional)</Label><PhoneInput id="b-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
       <div className="grid gap-1.5"><Label htmlFor="b-plan">Package</Label><PlanSelect id="b-plan" plans={plans} value={plan} onChange={setPlan} /></div>
       <div className="grid gap-1.5"><Label htmlFor="b-ends">Subscription ends (optional)</Label><DatePicker id="b-ends" value={ends} onChange={setEnds} placeholder="No end date" /></div>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit" disabled={busy || !plan}>{busy && <Loader2Icon className="animate-spin" />}Create business</Button>
+        <Button type="submit" disabled={busy || !plan || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Create business</Button>
       </DialogFooter>
     </form>
   );
@@ -166,6 +186,8 @@ function ManageForm({ business, plans, onClose, onDone }: { business: Business; 
   const [plan, setPlan] = useState(business.plan);
   const [enabled, setEnabled] = useState(business.status === "active");
   const [ends, setEnds] = useState(toDateValue(business.expiresAt));
+  const [email, setEmail] = useState(business.contactEmail ?? "");
+  const [phone, setPhone] = useState(business.contactPhone ?? "");
   const [busy, setBusy] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [resetting, setResetting] = useState(false);
@@ -173,7 +195,7 @@ function ManageForm({ business, plans, onClose, onDone }: { business: Business; 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ plan, status: enabled ? "active" : "suspended", expiresAt: ends ? endOfDay(ends) : null }) }).catch(() => null);
+    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ plan, status: enabled ? "active" : "suspended", expiresAt: ends ? endOfDay(ends) : null, contactEmail: email, contactPhone: phone }) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) return void toast.error("Couldn't save the change.");
     toast.success("Subscription updated");
@@ -198,6 +220,8 @@ function ManageForm({ business, plans, onClose, onDone }: { business: Business; 
         </DialogHeader>
         <div className="grid gap-1.5"><Label htmlFor="m-plan">Package</Label><PlanSelect id="m-plan" plans={plans} value={plan} onChange={setPlan} /></div>
         <div className="grid gap-1.5"><Label htmlFor="m-ends">Subscription ends</Label><DatePicker id="m-ends" value={ends} onChange={setEnds} placeholder="No end date" /></div>
+        <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
+        <div className="grid gap-1.5"><Label htmlFor="m-phone">Phone</Label><PhoneInput id="m-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
         <div className="flex items-start justify-between gap-4">
           <div className="grid gap-0.5">
             <Label htmlFor="m-on">Subscription is on</Label>
@@ -207,7 +231,7 @@ function ManageForm({ business, plans, onClose, onDone }: { business: Business; 
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={busy}>{busy && <Loader2Icon className="animate-spin" />}Save</Button>
+          <Button type="submit" disabled={busy || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Save</Button>
         </DialogFooter>
       </form>
       <Separator />

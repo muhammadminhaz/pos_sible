@@ -41,6 +41,14 @@ check(!(await admin.getByLabel("Owner name").isVisible().catch(() => false)), "n
 await admin.getByLabel("Business name").fill(name);
 await admin.getByLabel("Username", { exact: true }).fill(owner);
 await admin.getByLabel("Password", { exact: true }).fill("zeta-owner-pass");
+await admin.getByLabel("Email (optional)").fill("owner@zeta.example");
+await admin.getByRole("combobox", { name: /Country code/ }).click();
+await admin.getByPlaceholder("Search country or code…").fill("Bangladesh");
+const bd = admin.getByRole("option", { name: /Bangladesh/ }).first();
+check(await bd.locator("svg").first().isVisible(), "the country list shows a flag next to each country");
+check((await bd.innerText()).includes("+880"), "and its dial code");
+await bd.click();
+await admin.getByLabel("Phone (optional)").fill("01711000111");
 await admin.getByLabel("Package").click();
 await admin.getByRole("option", { name: /Starter/ }).click();
 await admin.getByRole("button", { name: "Create business" }).click();
@@ -49,6 +57,7 @@ await row.waitFor();
 const text = await row.innerText();
 check(text.includes(owner) && /Starter/.test(text) && /Active/.test(text) && /1 \/ 3/.test(text), "listed with username, package, status and 1 / 3 users");
 check(/\d+(\.\d+)? (KB|MB)/.test(text), "storage is shown");
+check(text.includes("+880 1711 000111") && text.includes("owner@zeta.example") && (await row.locator("svg.rounded-\\[3px\\]").count()) > 0, "the phone (with its flag) and email are listed");
 const body = await admin.locator("main").innerText();
 check(!body.includes("scrypt$") && !body.includes("zeta-owner-pass"), "no credentials or records on the page");
 

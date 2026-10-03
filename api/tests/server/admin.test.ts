@@ -88,7 +88,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
   it("shows plan, users and storage per business and nothing from inside it", async () => {
     const id = await open(`Counted ${tag}`, `counted${tag}`, "standard");
     const s = await summary(id);
-    expect(Object.keys(s).sort()).toEqual(["createdAt", "expiresAt", "id", "lastActiveAt", "maxUsers", "name", "ownerUsername", "plan", "planLabel", "priceMonthly", "state", "status", "storageBytes", "users"]);
+    expect(Object.keys(s).sort()).toEqual(["contactEmail", "contactPhone", "createdAt", "expiresAt", "id", "lastActiveAt", "maxUsers", "name", "ownerUsername", "plan", "planLabel", "priceMonthly", "state", "status", "storageBytes", "users"]);
     expect(s).toMatchObject({ name: `Counted ${tag}`, ownerUsername: `counted${tag}`, plan: "standard", planLabel: "Standard", priceMonthly: 1500, state: "active", users: 1, maxUsers: 10 });
     expect(s.storageBytes).toBeGreaterThan(10_000);
     const before = s.storageBytes;
@@ -135,6 +135,19 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     await patchRoute.PATCH(asAdmin(`/api/admin/businesses/${id}`, { method: "PATCH", body: JSON.stringify({ plan: "premium" }) }), { params: Promise.resolve({ id }) });
     expect((await make(3)).ok).toBe(true);
     expect((await summary(id)).maxUsers).toBeNull();
+  });
+
+  it("keeps an email and an international phone number for each business", async () => {
+    const make = (extra: object) => list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: `Reach ${tag}`, username: `reach${tag}`, password: "owner-pass-1", plan: "starter", ...extra }) }));
+    expect((await make({ email: "not-an-email" })).status).toBe(400);
+    expect((await make({ phone: "01711000111" })).status).toBe(400); // needs the country code
+    expect((await make({ phone: "+8801711000111", email: "owner@reach.example" })).status).toBe(201);
+    const row = (await (await list.GET(asAdmin("/api/admin/businesses"))).json()).businesses.find((b: { name: string }) => b.name === `Reach ${tag}`);
+    ids.push(row.id);
+    expect(row).toMatchObject({ contactEmail: "owner@reach.example", contactPhone: "+8801711000111" });
+    const patch = (body: object) => patchRoute.PATCH(asAdmin(`/api/admin/businesses/${row.id}`, { method: "PATCH", body: JSON.stringify(body) }), { params: Promise.resolve({ id: row.id }) });
+    expect((await patch({ contactPhone: "+14155550123", contactEmail: "" })).status).toBe(200);
+    expect(await summary(row.id)).toMatchObject({ contactEmail: null, contactPhone: "+14155550123" });
   });
 
   it("deleting a business needs its owner's username and removes everything", async () => {

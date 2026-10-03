@@ -51,12 +51,12 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 **Platform owner console (`/admin`)**
 - For the person who sells the software. Sign in with `ADMIN_USERNAME` / `ADMIN_PASSWORD` (set in the API's environment and `docker-compose.yml`; defaults `minhaz` / `11111111`; set your own before going live).
 - A sidebar with **Dashboard** (totals, who needs attention, package mix, biggest storage), **Businesses**, **Users** (accounts per business against its limit), **Subscriptions** (edit each package's name, user limit and monthly price) and **Revenue** (monthly revenue and yearly run rate estimated from active subscriptions, by package, renewals due, new businesses per month).
-- **Add a business** with just a name, a username, a password and a package (plus an optional end date). **Manage** switches it on or off, changes the package or end date, and can **set a new password** for the owner (passwords can be replaced, never viewed; the owner is signed out). **Delete** removes a business and all its data for good, after you type its username.
+- **Add a business** with a name, a username, a password and a package, plus an optional email, phone number (searchable country-code dropdown with flags, validated per country) and end date. **Manage** switches it on or off, changes the package or end date, and can **set a new password** for the owner (passwords can be replaced, never viewed; the owner is signed out). **Delete** removes a business and all its data for good, after you type its username.
 - A switched-off or expired business cannot sign in and any open session ends on its next request. The package's user limit is enforced by the server.
 - You see each business's package, user count and storage only: no products, customers, sales or staff, and there is no way to sign in as a business. Businesses are fully isolated from each other (every query is scoped to the signed-in user's business).
 
 **Platform**
-- English and Bangla (digits, units, AM/PM), light/dark themes, accent colours, command palette (⌘K), notifications, installable PWA, accessible (axe-checked), reduced-motion friendly micro animations.
+- English and Bangla (digits, units, AM/PM), light/dark themes, accent colours, command palette (⌘K), notifications, installable PWA, accessible (axe-checked), reduced-motion friendly micro animations (pointer-following spotlight on cards, count-up figures, shine and press on buttons, staggered table rows, shimmer loading, tick/pop on checkboxes, animated active-page markers).
 - **First-run onboarding**: choose sample data or an empty shop, enter business details; a self-ticking "Get started" checklist.
 - **Two modes**: browser-only demo, or **Postgres-backed API mode** with real sign-in (scrypt, sessions, throttling), many users/devices/businesses, server-enforced permissions, audit log, optional public sign-up. See [docs/backend.md](docs/backend.md).
 

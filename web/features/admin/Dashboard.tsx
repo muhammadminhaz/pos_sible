@@ -20,11 +20,11 @@ export function DashboardPage() {
     <>
       <AdminHeader title="Dashboard" description="How the platform is doing. Totals only: each business's own data stays private to it." />
       <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard loading={!businesses} label="Businesses" value={list.length} />
-        <StatCard loading={!businesses} label="Active subscriptions" value={list.filter((b) => b.state === "active").length} />
-        <StatCard loading={!businesses} label="User accounts" value={list.reduce((s, b) => s + b.users, 0)} />
-        <StatCard loading={!businesses} label="Storage used" value={formatBytes(list.reduce((s, b) => s + b.storageBytes, 0))} />
-        <StatCard loading={!businesses} label="Monthly revenue" value={formatMoney(list.reduce((s, b) => s + monthlyRevenue(b), 0))} hint="From active subscriptions" />
+        <StatCard loading={!businesses} label="Businesses" count={list.length} />
+        <StatCard loading={!businesses} label="Active subscriptions" count={list.filter((b) => b.state === "active").length} />
+        <StatCard loading={!businesses} label="User accounts" count={list.reduce((s, b) => s + b.users, 0)} />
+        <StatCard loading={!businesses} label="Storage used" count={list.reduce((s, b) => s + b.storageBytes, 0)} format={formatBytes} />
+        <StatCard loading={!businesses} label="Monthly revenue" count={list.reduce((s, b) => s + monthlyRevenue(b), 0)} format={formatMoney} hint="From active subscriptions" />
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">

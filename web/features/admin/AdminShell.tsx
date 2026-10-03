@@ -30,7 +30,7 @@ const NAV = [
   { href: "/admin/revenue", label: "Revenue", icon: BanknoteIcon },
 ] as const;
 
-const itemBase = "relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring";
+const itemBase = "relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [&>svg]:transition-transform hover:[&>svg]:scale-110";
 
 function SidebarBody({ me, onNavigate, onSignOut }: { me: Me; onNavigate?: () => void; onSignOut: () => void }) {
   const path = usePathname();
@@ -44,7 +44,7 @@ function SidebarBody({ me, onNavigate, onSignOut }: { me: Me; onNavigate?: () =>
         {NAV.map(({ href, label, icon: Icon }) => {
           const active = href === "/admin" ? path === "/admin" : path.startsWith(href);
           return (
-            <Link key={href} href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(itemBase, active && "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary")}>
+            <Link key={href} href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(itemBase, active && "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary before:absolute before:top-1.5 before:bottom-1.5 before:-left-3 before:w-0.5 before:animate-[grow-y_0.25s_ease-out] before:rounded-full before:bg-primary")}>
               <Icon className="size-4 shrink-0" />
               {label}
             </Link>

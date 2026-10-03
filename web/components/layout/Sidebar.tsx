@@ -44,9 +44,9 @@ function useActive() {
 }
 
 const itemBase =
-  "relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring";
+  "relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [&>svg]:transition-transform hover:[&>svg]:scale-110";
 const itemActive =
-  "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary";
+  "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary before:absolute before:top-1.5 before:bottom-1.5 before:-left-3 before:w-0.5 before:origin-center before:animate-[grow-y_0.25s_ease-out] before:rounded-full before:bg-primary";
 
 function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () => void }) {
   const t = useTranslations("nav");

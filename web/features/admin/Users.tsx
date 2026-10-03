@@ -21,9 +21,9 @@ export function UsersPage() {
     <>
       <AdminHeader title="Users" description="How many people can sign in at each business. You see counts, never who they are." />
       <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <StatCard loading={!businesses} label="User accounts" value={total} />
+        <StatCard loading={!businesses} label="User accounts" count={total} />
         <StatCard loading={!businesses} label="Average per business" value={list.length ? (total / list.length).toFixed(1) : "0"} />
-        <StatCard loading={!businesses} label="Businesses at their limit" value={atLimit} hint="Candidates for an upgrade" />
+        <StatCard loading={!businesses} label="Businesses at their limit" count={atLimit} hint="Candidates for an upgrade" />
       </section>
       <div className="relative max-w-xs">
         <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />

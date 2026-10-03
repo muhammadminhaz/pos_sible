@@ -101,6 +101,8 @@ export type BusinessSummary = {
   createdAt: string;
   /** The owner's sign-in name: what the platform owner types to confirm a deletion. */
   ownerUsername: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
   plan: string;
   planLabel: string;
   priceMonthly: number;
@@ -126,11 +128,11 @@ export async function listBusinesses(): Promise<BusinessSummary[]> {
   await ready();
   const { rows } = await pool().query<{
     id: string; name: string; created_at: Date; plan: string; plan_label: string; price: string; max_users: number | null;
-    subscription_status: SubscriptionStatus; subscription_expires_at: Date | null; owner: string | null;
+    subscription_status: SubscriptionStatus; subscription_expires_at: Date | null; owner: string | null; contact_email: string | null; contact_phone: string | null;
     users: string; storage: string; last_active: Date | null;
   }>(`
     SELECT b.id, b.name, b.created_at, b.plan, p.label AS plan_label, p.price_monthly AS price, p.max_users,
-           b.subscription_status, b.subscription_expires_at, l.username AS owner,
+           b.subscription_status, b.subscription_expires_at, l.username AS owner, b.contact_email, b.contact_phone,
            COALESCE(u.n, 0) AS users,
            COALESCE(s.bytes, 0) + pg_column_size(b.settings) + pg_column_size(b.meta) AS storage,
            a.last_active
@@ -142,16 +144,16 @@ export async function listBusinesses(): Promise<BusinessSummary[]> {
       LEFT JOIN (SELECT business_id, MAX(at) AS last_active FROM audit_log GROUP BY business_id) a ON a.business_id = b.id
      ORDER BY b.created_at DESC`);
   return rows.map((r) => ({
-    id: r.id, name: r.name, createdAt: r.created_at.toISOString(), ownerUsername: r.owner, plan: r.plan, planLabel: r.plan_label,
+    id: r.id, name: r.name, createdAt: r.created_at.toISOString(), ownerUsername: r.owner, contactEmail: r.contact_email, contactPhone: r.contact_phone, plan: r.plan, planLabel: r.plan_label,
     priceMonthly: Number(r.price), status: r.subscription_status, expiresAt: r.subscription_expires_at?.toISOString() ?? null,
     state: subscriptionState(r.subscription_status, r.subscription_expires_at), users: Number(r.users), maxUsers: r.max_users,
     storageBytes: Number(r.storage), lastActiveAt: r.last_active?.toISOString() ?? null,
   }));
 }
 
-export type SubscriptionPatch = { plan?: string; status?: SubscriptionStatus; expiresAt?: string | null };
+export type SubscriptionPatch = { plan?: string; status?: SubscriptionStatus; expiresAt?: string | null; contactEmail?: string | null; contactPhone?: string | null };
 
-/** Changes only the package, the on/off switch and the end date. Returns false when there is no such business. */
+/** Changes only the package, the on/off switch, the end date and the contact details. Returns false when there is no such business. */
 export async function setSubscription(businessId: string, patch: SubscriptionPatch): Promise<boolean> {
   await ready();
   const sets: string[] = [];
@@ -159,6 +161,8 @@ export async function setSubscription(businessId: string, patch: SubscriptionPat
   if (patch.plan) { args.push(patch.plan); sets.push(`plan = $${args.length}`); }
   if (patch.status) { args.push(patch.status); sets.push(`subscription_status = $${args.length}`); }
   if (patch.expiresAt !== undefined) { args.push(patch.expiresAt); sets.push(`subscription_expires_at = $${args.length}`); }
+  if (patch.contactEmail !== undefined) { args.push(patch.contactEmail); sets.push(`contact_email = $${args.length}`); }
+  if (patch.contactPhone !== undefined) { args.push(patch.contactPhone); sets.push(`contact_phone = $${args.length}`); }
   if (!sets.length) return (await pool().query("SELECT 1 FROM businesses WHERE id = $1", [businessId])).rowCount === 1;
   const r = await pool().query(`UPDATE businesses SET ${sets.join(", ")} WHERE id = $1`, args);
   // A suspended business is signed out everywhere straight away.

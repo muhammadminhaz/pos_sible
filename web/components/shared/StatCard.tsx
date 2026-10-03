@@ -23,7 +23,7 @@ export function StatCard({
 }) {
   const positive = delta && (delta.positive ?? delta.value >= 0);
   return (
-    <div className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-card-foreground transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div data-spotlight className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-card-foreground transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[13px] font-medium text-muted-foreground">{label}</span>
         {Icon &&

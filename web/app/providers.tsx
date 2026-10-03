@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
 import { AccentSync } from "@/components/layout/AccentSync";
+import { MicroInteractions } from "@/components/layout/MicroInteractions";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,6 +41,7 @@ export function Providers({
           <TooltipProvider delayDuration={300}>
             <DataGate fallback={<Splash />}>
               <AccentSync />
+              <MicroInteractions />
               {children}
             </DataGate>
             <Toaster richColors position="top-right" />

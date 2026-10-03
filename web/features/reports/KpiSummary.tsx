@@ -59,7 +59,7 @@ export function KpiSummary({ now, before, loading }: { now?: Kpis; before?: Kpis
       {PRIMARY.map((k) => {
         const v = now?.[k.key];
         return (
-          <div key={k.key} className="bg-card p-5">
+          <div key={k.key} data-spotlight className="bg-card p-5">
             <div className="text-[13px] font-medium text-muted-foreground">{t(k.label)}</div>
             {loading || v === undefined ? (
               <Skeleton className="mt-3 h-9 w-36" />

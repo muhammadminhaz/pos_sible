@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/server/adminRoute";
+import { contactEmail, contactPhone } from "@/lib/server/contact";
 import { getPlans, listBusinesses, setSubscription } from "@/lib/server/platform";
 import { pool, ready } from "@/lib/server/pool";
 import { createBusiness } from "@/lib/server/tenants";
@@ -19,6 +20,8 @@ const create = z.object({
   businessName: z.string().trim().min(2).max(80),
   username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/),
   password: z.string().min(8).max(200),
+  email: contactEmail.optional(),
+  phone: contactPhone.optional(),
   plan: z.string().min(1).max(40),
   expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
 });
@@ -29,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
   const parsed = create.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, reason: "invalid", fields: parsed.error.flatten().fieldErrors }, { status: 400 });
-  const { businessName, username, password, plan, expiresAt } = parsed.data;
+  const { businessName, username, password, plan, expiresAt, email, phone } = parsed.data;
   await ready();
   if (!(await getPlans()).some((p) => p.id === plan)) return NextResponse.json({ ok: false, reason: "invalid", fields: { plan: ["unknown"] } }, { status: 400 });
   if ((await pool().query("SELECT 1 FROM logins WHERE username = $1", [username.toLowerCase()])).rowCount) {
@@ -41,6 +44,6 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, reason: "username_taken" }, { status: 409 });
   }
-  await setSubscription(businessId, { plan, status: "active", expiresAt: expiresAt ?? null });
+  await setSubscription(businessId, { plan, status: "active", expiresAt: expiresAt ?? null, contactEmail: email ?? null, contactPhone: phone ?? null });
   return NextResponse.json({ ok: true, id: businessId }, { status: 201 });
 }

@@ -1,6 +1,6 @@
 export type Plan = { id: string; label: string; maxUsers: number | null; priceMonthly: number };
 export type Business = {
-  id: string; name: string; createdAt: string; ownerUsername: string | null; plan: string; planLabel: string; priceMonthly: number;
+  id: string; name: string; createdAt: string; ownerUsername: string | null; contactEmail: string | null; contactPhone: string | null; plan: string; planLabel: string; priceMonthly: number;
   status: "active" | "suspended"; expiresAt: string | null; state: "active" | "suspended" | "expired";
   users: number; maxUsers: number | null; storageBytes: number; lastActiveAt: string | null;
 };
