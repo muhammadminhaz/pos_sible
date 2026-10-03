@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { LocaleToggle } from "@/components/layout/LocaleToggle";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { useCan } from "@/lib/auth/useCan";
+import { API_MODE } from "@/lib/data/api/mode";
 import { useOnboardingActions, useOnboardingState } from "@/lib/data/hooks/onboarding";
 import type { Settings } from "@/lib/data/schemas";
 
@@ -23,11 +24,15 @@ const CURRENCIES = [
   { code: "BDT", symbol: "৳" }, { code: "INR", symbol: "₹" }, { code: "USD", symbol: "$" }, { code: "EUR", symbol: "€" }, { code: "GBP", symbol: "£" },
 ];
 
-/** First-run setup for whoever can change business settings: pick demo or empty shop, describe the business, choose a look. */
+/**
+ * First-run setup for whoever can change business settings: pick demo or empty shop, describe the business, choose a look.
+ * Only for a real business account (API mode). The browser-only demo, and showcase accounts the platform owner creates
+ * with sample data, go straight into the app.
+ */
 export function OnboardingGate() {
   const { loaded, onboarding } = useOnboardingState();
   const can = useCan();
-  if (!loaded || !can("settings.business") || onboarding?.done) return null;
+  if (!API_MODE || !loaded || !can("settings.business") || onboarding?.done) return null;
   return <Wizard />;
 }
 

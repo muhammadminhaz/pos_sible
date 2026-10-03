@@ -134,4 +134,26 @@ UPDATE businesses SET subscription_status = 'cancelled' WHERE subscription_statu
 ALTER TABLE businesses ADD CONSTRAINT businesses_subscription_status_check CHECK (subscription_status IN ('active', 'cancelled'));
 `,
   },
+  {
+    id: 6,
+    name: "module subscriptions and free accounts",
+    sql: `
+-- Modules a business has paid for (NULL = all of them) and whether the platform owner waived the subscription entirely.
+ALTER TABLE businesses
+  ADD COLUMN IF NOT EXISTS modules text[],
+  ADD COLUMN IF NOT EXISTS free boolean NOT NULL DEFAULT false;
+
+-- What each module adds to the monthly price. Prices start at 0 so existing businesses are billed exactly as before.
+CREATE TABLE IF NOT EXISTS modules (
+  id text PRIMARY KEY,
+  label text NOT NULL,
+  price_monthly numeric(12, 2) NOT NULL DEFAULT 0 CHECK (price_monthly >= 0),
+  sort integer NOT NULL DEFAULT 0
+);
+INSERT INTO modules (id, label, sort) VALUES
+  ('pos', 'POS', 1), ('sales', 'Sales', 2), ('purchases', 'Purchases', 3), ('stock', 'Stock transfers and adjustments', 4),
+  ('expenses', 'Expenses', 5), ('accounts', 'Accounts', 6), ('reports', 'Reports', 7)
+ON CONFLICT (id) DO NOTHING;
+`,
+  },
 ];

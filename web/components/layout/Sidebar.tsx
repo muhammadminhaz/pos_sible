@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/lib/auth/authStore";
 import { useCan } from "@/lib/auth/useCan";
 import { useUI } from "@/lib/data/store/ui";
 import { useSettings } from "@/lib/data/hooks/settings";
@@ -29,10 +30,11 @@ import { LogoMark } from "./LogoMark";
 export function useVisibleNav(): NavGroup[] {
   const can = useCan();
   const settings = useSettings().data;
+  const licensed = useAuth((s) => s.modules);
   return NAV.flatMap((g) => {
     if (!can(g.permission)) return [];
     if (!g.items) return [g];
-    const items = g.items.filter((i) => can(i.permission) && isPathEnabled(settings, i.href));
+    const items = g.items.filter((i) => can(i.permission) && isPathEnabled(settings, i.href, licensed));
     return items.length ? [{ ...g, items }] : [];
   });
 }

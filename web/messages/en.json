@@ -99,8 +99,8 @@
     "salesOrders": "Sales Orders",
     "allSales": "All Sales",
     "addSale": "Add Sale",
-    "listPos": "POS Sales",
-    "pos": "POS Terminal",
+    "listPos": "List POS",
+    "pos": "POS",
     "addDraft": "Add Draft",
     "drafts": "Drafts",
     "addQuotation": "Add Quotation",
@@ -180,12 +180,18 @@
     "subtitle": "Welcome back. Sign in to continue.",
     "username": "Username",
     "password": "Password",
+    "businessUsername": "Business username",
+    "asOwner": "Business owner",
+    "asStaff": "Staff member",
+    "staffHint": "Use the business username, then the account name and password your owner gave you.",
     "rememberMe": "Remember me",
     "signIn": "Sign in",
     "signingIn": "Signing in…",
     "signOut": "Sign out",
     "switchUser": "Switch user",
     "throttled": "Too many attempts. Wait a few minutes and try again.",
+    "cancelled": "Your subscription has been cancelled. Please renew your subscription and contact your administrator to regain access.",
+    "expired": "Your subscription has expired. Please renew your subscription and contact your administrator to regain access.",
     "noAccount": "New here?",
     "createAccount": "Create your shop",
     "signupTitle": "Create your shop",
@@ -207,9 +213,7 @@
     "invalid": "Wrong username or password",
     "demoHint": "Demo: admin / 112233 or cashier / 112233",
     "forbiddenTitle": "You don't have access",
-    "forbiddenBody": "Ask an administrator to grant the permission for this page.",
-    "expired": "Your subscription has expired. Please renew your subscription and contact your administrator to regain access.",
-    "cancelled": "Your subscription has been cancelled. Please renew your subscription and contact your administrator to regain access."
+    "forbiddenBody": "Ask an administrator to grant the permission for this page."
   },
   "header": {
     "storageFailed": "Changes can't be saved in this browser.",
@@ -268,14 +272,10 @@
     "last30": "Last 30 days",
     "thisMonth": "This month",
     "lastMonth": "Last month",
-    "last3Months": "Last 3 months",
-    "last6Months": "Last 6 months",
-    "last12Months": "Last 12 months",
     "thisFY": "This financial year",
     "lastFY": "Last financial year",
     "custom": "Custom range",
-    "pick": "Pick a date range",
-    "quick": "Quick ranges"
+    "pick": "Pick a date range"
   },
   "products": {
     "title": "Products",
@@ -325,52 +325,6 @@
     "chooseLocationsHint": "Applies to {count, plural, one {# selected product} other {# selected products}}.",
     "noStock": "Stock not managed"
   },
-  "alerts": {
-    "overdueSales": {
-      "title": "{count, plural, one {# invoice is} other {# invoices are}} overdue at {location}",
-      "body": "{amount} is past its pay term. Follow up with the customers."
-    },
-    "supplierOverdue": {
-      "title": "{count, plural, one {# supplier bill is} other {# supplier bills are}} overdue at {location}",
-      "body": "{amount} owed to suppliers is past its pay term."
-    },
-    "outOfStock": {
-      "title": "{count, plural, one {# product is} other {# products are}} out of stock at {location}",
-      "body": "Starting with {example}. Reorder to keep selling."
-    },
-    "lowStock": {
-      "title": "{count, plural, one {# product is} other {# products are}} low on stock at {location}",
-      "body": "Starting with {example}. Check the stock report before it runs out."
-    },
-    "expired": {
-      "title": "{count, plural, one {# lot has} other {# lots have}} expired at {location}",
-      "body": "Starting with {example}. Remove expired stock so it cannot be sold."
-    },
-    "expiringSoon": {
-      "title": "{count, plural, one {# lot expires} other {# lots expire}} within {days} days at {location}",
-      "body": "Starting with {example}. Sell or discount it first."
-    },
-    "registerOpen": {
-      "title": "Cash register at {location} was left open",
-      "body": "{user} opened it on {since} and it has not been closed. Count the cash and close it."
-    },
-    "creditLimit": {
-      "title": "{count, plural, one {# customer is} other {# customers are}} over the credit limit",
-      "body": "{name} owes {amount} against a limit of {limit}."
-    },
-    "suspendedStale": {
-      "title": "{count, plural, one {# held sale was} other {# held sales were}} left from an earlier day at {location}",
-      "body": "Resume or cancel them so they are not forgotten."
-    },
-    "transferStuck": {
-      "title": "Transfer {ref} has been waiting {days} days",
-      "body": "{from} to {to}. Confirm receipt or follow up."
-    },
-    "undelivered": {
-      "title": "{count, plural, one {# order has} other {# orders have}} not been delivered after {days} days at {location}",
-      "body": "Check the shipments list and update the delivery status."
-    }
-  },
   "dashboard": {
     "title": "Welcome back, {name}",
     "description": "Here's how your business is doing.",
@@ -382,13 +336,6 @@
     "purchaseDue": "Purchase due",
     "totalPurchaseReturn": "Total purchase return",
     "expense": "Expense",
-    "salesTrend": "Sales trend",
-    "vsPrevious": "vs previous period",
-    "salesPeriod": "Summary for the selected period",
-    "needsAttention": "Dues and returns",
-    "short3": "3 months",
-    "short6": "6 months",
-    "short12": "12 months",
     "thisMonth": "This month"
   },
   "status": {
@@ -1864,6 +1811,7 @@
       "lastName": "Last name",
       "leftMargin": "Left margin (in)",
       "locationIds": "Locations (none = all)",
+      "modules": "Modules (none = all the business has)",
       "mobile": "Mobile",
       "name": "Name",
       "numberingType": "Numbering",
@@ -2003,13 +1951,6 @@
     "genericBody": "An unexpected error occurred. Try again or go back home.",
     "notFound": "Page not found",
     "notFoundBody": "The page you're looking for doesn't exist or was moved.",
-    "required": "This field is required",
-    "insufficientStock": "Only {available} left of {product}",
-    "creditLimit": "Credit limit exceeded",
-    "forbidden": "You don't have permission to do that",
-    "editWindowExpired": "This transaction can no longer be edited",
-    "notFoundEntity": "{what} not found",
-    "invalidBackup": "This file isn't a valid backup",
     "notFoundPath": "We couldn't find",
     "goBack": "Go back",
     "notFoundTry": "Or head somewhere useful",
@@ -2017,6 +1958,13 @@
     "linkSell": "Point of sale",
     "linkProducts": "Products",
     "linkReports": "Reports",
-    "linkSignIn": "Sign in"
+    "linkSignIn": "Sign in",
+    "required": "This field is required",
+    "insufficientStock": "Only {available} left of {product}",
+    "creditLimit": "Credit limit exceeded",
+    "forbidden": "You don't have permission to do that",
+    "editWindowExpired": "This transaction can no longer be edited",
+    "notFoundEntity": "{what} not found",
+    "invalidBackup": "This file isn't a valid backup"
   }
 }

@@ -15,6 +15,8 @@ type T = ReturnType<typeof useTranslations>;
 
 const f = (t: T, key: string, type: FieldDef["type"], extra: Partial<FieldDef> = {}): FieldDef => ({ key, type, label: t(`settings.f.${key}`), ...extra });
 const activeBadge = (t: T, on: boolean) => <Badge variant={on ? "secondary" : "outline"}>{on ? t("common.active") : t("common.inactive")}</Badge>;
+/** The sellable modules a business owner can hand out per person; labelled with the matching menu name. */
+const MODULE_OPTIONS = ["pos", "sales", "purchases", "stock", "expenses", "accounts", "reports"];
 const cap = (v: string) => v[0].toUpperCase() + v.slice(1);
 const yes = (t: T, v: boolean) => (v ? t("common.yes") : "");
 
@@ -222,6 +224,7 @@ export function UsersPage() {
       { ...f(t, "password", "password", { half: true, required: false }), label: t("settings.f.passwordNew") },
       f(t, "roleId", "select", { half: true, options: () => (data?.roles ?? []).map((r) => ({ value: r.id, label: r.name })) }),
       f(t, "locationIds", "multi", { options: () => (data?.locations ?? []).map((l) => ({ value: l.id, label: l.name })) }),
+      f(t, "modules", "multi", { options: () => MODULE_OPTIONS.map((m) => ({ value: m, label: t(`nav.${m === "sales" ? "allSales" : m}`) })) }),
       f(t, "isSalesAgent", "switch"),
       f(t, "commissionPercent", "number", { min: 0, initial: 0, half: true, show: (v) => !!v.isSalesAgent }),
       f(t, "isActive", "switch", { initial: true }),

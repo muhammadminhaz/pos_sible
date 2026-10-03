@@ -33,7 +33,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
   const principal = async (username: string) => {
     const r = await auth.login(username, "owner-pass-1", true, `ip-${username}`);
     if (!r.ok) throw new Error(`login failed: ${r.reason}`);
-    return { cookie: r.token, p: { businessId: r.principal.businessId, userId: r.principal.userId, role: r.principal.role } };
+    return { cookie: r.token, p: { businessId: r.principal.businessId, userId: r.principal.userId, role: r.principal.role, modules: r.principal.modules } };
   };
 
   beforeAll(async () => {
@@ -88,7 +88,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
   it("shows plan, users and storage per business and nothing from inside it", async () => {
     const id = await open(`Counted ${tag}`, `counted${tag}`, "standard");
     const s = await summary(id);
-    expect(Object.keys(s).sort()).toEqual(["contactEmail", "contactPhone", "createdAt", "expiresAt", "id", "lastActiveAt", "maxUsers", "name", "ownerUsername", "plan", "planLabel", "priceMonthly", "state", "status", "storageBytes", "users"]);
+    expect(Object.keys(s).sort()).toEqual(["contactEmail", "contactPhone", "createdAt", "expiresAt", "free", "id", "lastActiveAt", "maxUsers", "modules", "name", "ownerUsername", "plan", "planLabel", "priceMonthly", "state", "status", "storageBytes", "users"]);
     expect(s).toMatchObject({ name: `Counted ${tag}`, ownerUsername: `counted${tag}`, plan: "standard", planLabel: "Standard", priceMonthly: 1500, state: "active", users: 1, maxUsers: 10 });
     expect(s.storageBytes).toBeGreaterThan(10_000);
     const before = s.storageBytes;
@@ -239,5 +239,65 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     const who = await auth.authenticate(new NextRequest("http://localhost:3000/api/rpc", { headers: { cookie: `posible_sid=${a.cookie}` } }));
     expect(who?.businessId).toBe(a.p.businessId);
     expect(a.p.businessId).not.toBe(b.p.businessId);
+  });
+
+  it("modules and free accounts: price, hiding, server enforcement, no lapse", async () => {
+    const id = await open(`Mods ${tag}`, `mods${tag}`, "starter");
+    const user = `mods${tag}`;
+    const patch = (body: object) => patchRoute.PATCH(asAdmin(`/api/admin/businesses/${id}`, { method: "PATCH", body: JSON.stringify(body) }), { params: Promise.resolve({ id }) });
+    await platform.updateModulePrice("pos", 100);
+    await platform.updateModulePrice("reports", 50);
+    const base = (await platform.getPlans()).find((p) => p.id === "starter")!.priceMonthly;
+
+    expect((await patch({ modules: ["sales"] })).status).toBe(200);
+    expect((await summary(id)).modules).toEqual(["sales"]);
+    const p = await principal(user);
+    expect(await rpc.handleRpc(p.p, { service: "posService", method: "x", args: [] })).toMatchObject({ ok: false, error: { code: "module_off" } });
+    expect((await auth.authenticate(new NextRequest("http://localhost:3000/api/rpc", { headers: { cookie: `posible_sid=${p.cookie}` } })))?.modules).toEqual(["sales"]);
+
+    expect((await patch({ modules: ["sales", "pos", "reports"] })).status).toBe(200);
+    const s = await summary(id);
+    expect(s.priceMonthly).toBe(base + 150 + (await platform.getModules()).find((m) => m.id === "sales")!.priceMonthly);
+    expect((await patch({ modules: ["nope"] })).status).toBe(400);
+
+    // Free: no price, every module, no limit, and an end date in the past does not lock the business out.
+    expect((await patch({ free: true, expiresAt: "2020-01-01T00:00:00Z" })).status).toBe(200);
+    const f = await summary(id);
+    expect(f).toMatchObject({ free: true, priceMonthly: 0, state: "active", maxUsers: null });
+    expect(f.modules).toHaveLength(7);
+    expect((await auth.login(user, "owner-pass-1", true, "ip-free")).ok).toBe(true);
+    await patch({ free: false, expiresAt: null });
+    await platform.updateModulePrice("pos", 0);
+    await platform.updateModulePrice("reports", 0);
+  });
+
+  it("a demo business has no onboarding; a normal one still gets the wizard", async () => {
+    const make = async (username: string, demo: boolean) => {
+      const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: username, username, password: "owner-pass-1", plan: "starter", demo }) }));
+      expect(res.status).toBe(201);
+      ids.push((await res.json()).id as string);
+      const r = await auth.login(username, "owner-pass-1", true, `ip-${username}`);
+      if (!r.ok) throw new Error("login failed");
+      const p = { businessId: r.principal.businessId, userId: r.principal.userId, role: r.principal.role };
+      return rpc.handleRpc(p, { service: "onboardingService", method: "state", args: [] });
+    };
+    expect(await make(`demo${tag}`, true)).toMatchObject({ ok: true, result: { onboarding: { done: true } } });
+    expect(await make(`real${tag}`, false)).toMatchObject({ ok: true, result: { onboarding: { done: false } } });
+  });
+
+  it("staff sign in with business username + account name; a person only gets the modules the owner gave them", async () => {
+    const id = await open(`Staff ${tag}`, `staff${tag}`, "premium");
+    const owner = await principal(`staff${tag}`);
+    const made = await rpc.handleRpc(owner.p, { service: "crud:users", method: "create", args: [{ username: `till${tag}`, firstName: "Till", lastName: "", email: "", roleId: "role_cashier", password: "till-pass-1", locationIds: [], isActive: true, allowLogin: true, modules: ["pos"], prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 }] });
+    expect(made.ok).toBe(true);
+    expect((await auth.login(`till${tag}`, "wrong-pass-1", true, "ip-s1", `staff${tag}`)).ok).toBe(false);
+    expect((await auth.login(`till${tag}`, "till-pass-1", true, "ip-s2", `nobody${tag}`)).ok).toBe(false);
+    const r = await auth.login(`till${tag}`, "till-pass-1", true, "ip-s3", `staff${tag}`);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.principal.businessId).toBe(id);
+    expect(r.principal.modules).toEqual(["pos"]);
+    expect((await auth.login(`staff${tag}`, "owner-pass-1", true, "ip-s4", `staff${tag}`)).ok).toBe(true);
+    const blocked = await rpc.handleRpc({ businessId: id, userId: r.principal.userId, role: r.principal.role, modules: r.principal.modules }, { service: "expensesService", method: "x", args: [] });
+    expect(blocked).toMatchObject({ ok: false, error: { code: "module_off" } });
   });
 });

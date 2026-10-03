@@ -13,9 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Flag, isPhoneOk, PhoneInput } from "@/components/shared/PhoneInput";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminHeader, useAdmin } from "./AdminShell";
-import { call, day, formatBytes, formatMoney, TERMS, type Business, type Plan } from "./api";
+import { call, day, formatBytes, formatMoney, TERMS, type Business, type ModuleDef, type Plan } from "./api";
 import { StateBadge } from "./parts";
 
 const planText = (p: Plan) => `${p.label} · ${p.maxUsers === null ? "unlimited users" : `up to ${p.maxUsers} users`} · ${formatMoney(p.priceMonthly)}/month`;
@@ -55,6 +56,34 @@ function TermSelect({ id, value, onChange, withNone }: { id: string; value: stri
   );
 }
 
+/** One switch per sellable module, with what it adds to the monthly price. */
+function ModulePicker({ modules, value, onChange, disabled }: { modules: ModuleDef[]; value: string[]; onChange: (v: string[]) => void; disabled?: boolean }) {
+  return (
+    <fieldset className="grid gap-2" disabled={disabled}>
+      <legend className="mb-1 text-sm font-medium">Modules</legend>
+      {modules.map((m) => (
+        <div key={m.id} className="flex items-center justify-between gap-3">
+          <Label htmlFor={`mod-${m.id}`} className="font-normal">{m.label}<span className="ml-2 text-xs text-muted-foreground">+{formatMoney(m.priceMonthly)}/month</span></Label>
+          <Switch id={`mod-${m.id}`} checked={value.includes(m.id)} onCheckedChange={(on) => onChange(on ? [...value, m.id] : value.filter((x) => x !== m.id))} />
+        </div>
+      ))}
+      <p className="text-xs text-muted-foreground">Switched-off modules are hidden from the business and blocked on the server. Dashboard, products, contacts and settings are always included.</p>
+    </fieldset>
+  );
+}
+
+function FreeSwitch({ id, value, onChange }: { id: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="grid gap-0.5">
+        <Label htmlFor={id}>Free account</Label>
+        <p className="text-xs text-muted-foreground">No charge, no end date, every module, unlimited users.</p>
+      </div>
+      <Switch id={id} checked={value} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
 function PasswordField({ id, name, value, onChange, label, autoComplete }: { id: string; name?: string; value: string; onChange: (v: string) => void; label: string; autoComplete?: string }) {
   const [show, setShow] = useState(false);
   return (
@@ -69,7 +98,7 @@ function PasswordField({ id, name, value, onChange, label, autoComplete }: { id:
 }
 
 export function BusinessesPage() {
-  const { businesses, plans, reload } = useAdmin();
+  const { businesses, plans, modules, reload } = useAdmin();
   const [q, setQ] = useState("");
   const [adding, setAdding] = useState(false);
   const [managing, setManaging] = useState<Business | null>(null);
@@ -98,6 +127,7 @@ export function BusinessesPage() {
               <TableHead>Username</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Package</TableHead>
+              <TableHead>Modules</TableHead>
               <TableHead>Subscription</TableHead>
               <TableHead>Ends</TableHead>
               <TableHead className="text-right">Users</TableHead>
@@ -107,14 +137,15 @@ export function BusinessesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!businesses && <TableRow><TableCell colSpan={10} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
-            {businesses && rows.length === 0 && <TableRow><TableCell colSpan={10} className="h-24 text-center text-muted-foreground">{businesses.length ? "No businesses match." : "No business accounts yet. Add the first one."}</TableCell></TableRow>}
+            {!businesses && <TableRow><TableCell colSpan={11} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
+            {businesses && rows.length === 0 && <TableRow><TableCell colSpan={11} className="h-24 text-center text-muted-foreground">{businesses.length ? "No businesses match." : "No business accounts yet. Add the first one."}</TableCell></TableRow>}
             {rows.map((b) => (
               <TableRow key={b.id}>
                 <TableCell className="font-medium">{b.name}</TableCell>
                 <TableCell className="text-muted-foreground">{b.ownerUsername ?? "—"}</TableCell>
                 <TableCell><Contact email={b.contactEmail} phone={b.contactPhone} /></TableCell>
-                <TableCell>{b.planLabel}</TableCell>
+                <TableCell>{b.planLabel}{b.free && <span className="ml-2 rounded-full bg-success-soft px-2 py-0.5 text-xs text-success-foreground">Free</span>}</TableCell>
+                <TableCell className="text-muted-foreground">{b.modules.length}/{modules.length}</TableCell>
                 <TableCell><StateBadge state={b.state} /></TableCell>
                 <TableCell className="whitespace-nowrap">{day(b.expiresAt)}</TableCell>
                 <TableCell className="text-right tabular-nums">{b.users}{b.maxUsers !== null ? ` / ${b.maxUsers}` : ""}</TableCell>
@@ -139,10 +170,10 @@ export function BusinessesPage() {
       </div>
 
       <Dialog open={adding} onOpenChange={setAdding}>
-        <DialogContent className="sm:max-w-md">{adding && <AddForm plans={plans} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
+        <DialogContent className="sm:max-w-md">{adding && <AddForm plans={plans} modules={modules} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
       </Dialog>
       <Dialog open={managing !== null} onOpenChange={(o) => !o && setManaging(null)}>
-        <DialogContent className="sm:max-w-md">{managing && <ManageForm key={managing.id} business={managing} plans={plans} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onRenew={() => { setRenewing(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
+        <DialogContent className="sm:max-w-md">{managing && <ManageForm key={managing.id} business={managing} plans={plans} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onRenew={() => { setRenewing(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
       </Dialog>
       <Dialog open={renewing !== null} onOpenChange={(o) => !o && setRenewing(null)}>
         <DialogContent className="sm:max-w-sm">{renewing && <RenewForm key={renewing.id} business={renewing} onClose={() => setRenewing(null)} onDone={async () => { setRenewing(null); await reload(); }} />}</DialogContent>
@@ -153,7 +184,7 @@ export function BusinessesPage() {
   );
 }
 
-function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => void; onDone: () => void }) {
+function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: ModuleDef[]; onClose: () => void; onDone: () => void }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -161,6 +192,9 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
   const [phone, setPhone] = useState("");
   const [plan, setPlan] = useState(plans.find((p) => p.id === "standard")?.id ?? plans[0]?.id ?? "");
   const [term, setTerm] = useState("1");
+  const [picked, setPicked] = useState(modules.map((m) => m.id));
+  const [free, setFree] = useState(false);
+  const [demo, setDemo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -168,7 +202,7 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password, email, phone, plan, months: term === "none" ? null : Number(term) }) }).catch(() => null);
+    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password, email, phone, plan, months: term === "none" ? null : Number(term), modules: picked, free, demo }) }).catch(() => null);
     setBusy(false);
     if (res?.ok) {
       toast.success("Business account created");
@@ -192,6 +226,15 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
       <div className="grid gap-1.5"><Label htmlFor="b-phone">Phone (optional)</Label><PhoneInput id="b-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
       <div className="grid gap-1.5"><Label htmlFor="b-plan">Package</Label><PlanSelect id="b-plan" plans={plans} value={plan} onChange={setPlan} /></div>
       <div className="grid gap-1.5"><Label htmlFor="b-term">Subscription term</Label><TermSelect id="b-term" value={term} onChange={setTerm} withNone /></div>
+      <ModulePicker modules={modules} value={picked} onChange={setPicked} disabled={free} />
+      <FreeSwitch id="b-free" value={free} onChange={setFree} />
+      <div className="flex items-start justify-between gap-4">
+        <div className="grid gap-0.5">
+          <Label htmlFor="b-demo">Demo account</Label>
+          <p className="text-xs text-muted-foreground">Fills the shop with three months of random sample data and skips the welcome wizard.</p>
+        </div>
+        <Switch id="b-demo" checked={demo} onCheckedChange={setDemo} />
+      </div>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
         <Button type="submit" disabled={busy || !plan || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Create business</Button>
@@ -200,10 +243,12 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
   );
 }
 
-function ManageForm({ business, plans, onClose, onDone, onRenew, onCancel }: { business: Business; plans: Plan[]; onClose: () => void; onDone: () => void; onRenew: () => void; onCancel: () => void }) {
+function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCancel }: { business: Business; plans: Plan[]; modules: ModuleDef[]; onClose: () => void; onDone: () => void; onRenew: () => void; onCancel: () => void }) {
   const [plan, setPlan] = useState(business.plan);
   const [email, setEmail] = useState(business.contactEmail ?? "");
   const [phone, setPhone] = useState(business.contactPhone ?? "");
+  const [picked, setPicked] = useState(business.modules);
+  const [free, setFree] = useState(business.free);
   const [busy, setBusy] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [resetting, setResetting] = useState(false);
@@ -211,7 +256,7 @@ function ManageForm({ business, plans, onClose, onDone, onRenew, onCancel }: { b
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ plan, contactEmail: email, contactPhone: phone }) }).catch(() => null);
+    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ plan, contactEmail: email, contactPhone: phone, modules: picked, free, ...(free ? { expiresAt: null } : {}) }) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) return void toast.error("Couldn't save the change.");
     toast.success("Account updated");
@@ -250,6 +295,8 @@ function ManageForm({ business, plans, onClose, onDone, onRenew, onCancel }: { b
 
       <form onSubmit={save} className="grid gap-4">
         <div className="grid gap-1.5"><Label htmlFor="m-plan">Package</Label><PlanSelect id="m-plan" plans={plans} value={plan} onChange={setPlan} /></div>
+        <ModulePicker modules={modules} value={picked} onChange={setPicked} disabled={free} />
+        <FreeSwitch id="m-free" value={free} onChange={setFree} />
         <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
         <div className="grid gap-1.5"><Label htmlFor="m-phone">Phone</Label><PhoneInput id="m-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
         <DialogFooter>

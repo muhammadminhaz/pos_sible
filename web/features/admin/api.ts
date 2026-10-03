@@ -1,10 +1,11 @@
 export type Plan = { id: string; label: string; maxUsers: number | null; priceMonthly: number };
+export type ModuleDef = { id: string; label: string; priceMonthly: number };
 export type Business = {
-  id: string; name: string; createdAt: string; ownerUsername: string | null; contactEmail: string | null; contactPhone: string | null; plan: string; planLabel: string; priceMonthly: number;
+  id: string; name: string; createdAt: string; ownerUsername: string | null; contactEmail: string | null; contactPhone: string | null; plan: string; planLabel: string; priceMonthly: number; modules: string[]; free: boolean;
   status: "active" | "cancelled"; expiresAt: string | null; state: "active" | "cancelled" | "expired";
   users: number; maxUsers: number | null; storageBytes: number; lastActiveAt: string | null;
 };
-export type Me = { username: string; plans: Plan[] };
+export type Me = { username: string; plans: Plan[]; modules: ModuleDef[] };
 
 export const call = (path: string, init?: RequestInit) =>
   fetch(`/api/admin/${path}`, { credentials: "same-origin", ...init, headers: { "content-type": "application/json", ...(init?.headers ?? {}) } });

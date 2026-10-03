@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { MODULE_IDS } from "@/lib/server/plans";
 import { requireAdmin } from "@/lib/server/adminRoute";
 import { contactEmail, contactPhone } from "@/lib/server/contact";
 import { deleteBusiness, getPlans, resetOwnerPassword, setSubscription } from "@/lib/server/platform";
@@ -15,6 +16,8 @@ const patch = z.object({
   expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
   contactEmail: contactEmail.optional(),
   contactPhone: contactPhone.optional(),
+  modules: z.array(z.enum(MODULE_IDS)).optional(),
+  free: z.boolean().optional(),
   /** A new password for the owner's sign-in. Passwords can be replaced from here, never read. */
   ownerPassword: z.string().min(8).max(200).optional(),
 });

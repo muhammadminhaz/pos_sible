@@ -6,9 +6,13 @@ import { hashPassword } from "./passwords";
 import { pool } from "./pool";
 import { insertBusiness } from "./store";
 
+const DEMO_DAYS = 90;
+
 export type NewBusiness = {
   name: string;
   admin: { username: string; password: string; firstName: string; lastName?: string; email?: string };
+  /** A showcase account: a fresh random three months of sample data, and no welcome wizard. */
+  demo?: boolean;
 };
 
 /** Seed data comes with throwaway passwords; a real business never keeps them. */
@@ -20,10 +24,10 @@ function lockDemoAccounts(db: DB, tag: string): void {
   }
 }
 
-/** A new business: the sample shop, one admin with the chosen credentials, and the welcome wizard still to run. */
+/** A new business: the sample shop, one admin with the chosen credentials, and the welcome wizard still to run (not for a demo). */
 export async function createBusiness(input: NewBusiness): Promise<{ businessId: string }> {
   const id = randomUUID();
-  const db = createSeed();
+  const db = input.demo ? createSeed({ seed: Math.floor(Math.random() * 2 ** 31), days: DEMO_DAYS }) : createSeed();
   lockDemoAccounts(db, id.slice(0, 6));
   const admin = db.users.find((u) => u.id === SEED_USER)!;
   Object.assign(admin, {
@@ -32,7 +36,7 @@ export async function createBusiness(input: NewBusiness): Promise<{ businessId: 
   });
   for (const u of db.users) if (u.id !== SEED_USER) u.password = hashPassword(randomUUID());
   db.settings.business.name = input.name.trim();
-  db.meta.onboarding = { done: false };
+  db.meta.onboarding = input.demo ? { done: true, mode: "demo", completedAt: new Date().toISOString(), checklistDismissed: true, visited: [] } : { done: false };
   await insertBusiness(id, db);
   return { businessId: id };
 }

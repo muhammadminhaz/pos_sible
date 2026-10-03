@@ -10,14 +10,16 @@ type AuthState = {
   user: PublicUser | null;
   role: Role | null;
   businessName: string;
-  set: (p: { user: PublicUser; role: Role; businessName: string }) => void;
+  /** Modules the business subscribes to; null until the server says (and in the local demo): everything is on. */
+  modules: string[] | null;
+  set: (p: { user: PublicUser; role: Role; businessName: string; modules?: string[] }) => void;
   clear: () => void;
 };
 
 export const useAuth = create<AuthState>((set) => ({
-  status: "loading", user: null, role: null, businessName: "",
-  set: ({ user, role, businessName }) => set({ status: "in", user, role, businessName }),
-  clear: () => set({ status: "out", user: null, role: null, businessName: "" }),
+  status: "loading", user: null, role: null, businessName: "", modules: null,
+  set: ({ user, role, businessName, modules }) => set({ status: "in", user, role, businessName, modules: modules ?? null }),
+  clear: () => set({ status: "out", user: null, role: null, businessName: "", modules: null }),
 }));
 
 /** Asks the server who we are. Resolves true when signed in. */
@@ -29,7 +31,7 @@ export async function refreshAuth(): Promise<boolean> {
       return false;
     }
     const body = await res.json();
-    useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName });
+    useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName, modules: body.modules });
     return true;
   } catch {
     return useAuth.getState().status === "in";

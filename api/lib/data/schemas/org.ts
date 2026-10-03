@@ -43,6 +43,8 @@ export const user = base.extend({
   language: z.enum(["en", "bn"]).default("en"),
   isActive: z.boolean().default(true),
   allowLogin: z.boolean().default(true),
+  /** Modules this person may use, out of the ones the business subscribes to. Empty = all of them. */
+  modules: z.array(z.string()).default([]),
   isSalesAgent: z.boolean().default(false),
   commissionPercent: z.number().default(0),
   maxSalesDiscountPercent: z.number().nullable().default(null),
