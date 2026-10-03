@@ -1,5 +1,6 @@
 "use client";
 
+import { CARD } from "@/features/reports/KpiSummary";
 import Link from "next/link";
 import { CheckCircle2Icon, CircleIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -30,7 +31,7 @@ export function GettingStarted() {
   const all = done === steps.length;
 
   return (
-    <section aria-label={t("checklistTitle")} className="mb-6 animate-in overflow-hidden rounded-xl border bg-card fade-in slide-in-from-top-2 duration-500">
+    <section aria-label={t("checklistTitle")} className={cn(CARD, "mb-6 overflow-hidden p-0 sm:p-0")}>
       <div className="flex items-start justify-between gap-3 p-4 pb-3">
         <div>
           <h2 className="font-semibold">{all ? t("checklistDone") : t("checklistTitle")}</h2>

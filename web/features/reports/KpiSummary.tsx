@@ -12,11 +12,11 @@ import { useFormat } from "@/lib/i18n/format";
 
 type Key = keyof Kpis;
 
-/** The surface every dashboard block sits on: big radius, no outline, a whisper of shadow. */
-export const CARD = "reveal card-glow min-w-0 rounded-3xl bg-card p-5 shadow-[0_1px_0_rgb(0_0_0/0.03),0_14px_30px_-18px_rgb(0_0_0/0.18)] sm:p-6";
-
-/** The faint accent wash the three headline cards share, strongest in the top-left corner. */
-const TINT = "bg-gradient-to-br from-primary/12 via-card to-card";
+/**
+ * The surface every dashboard card sits on: big radius, no outline, a whisper of shadow, a faint accent wash that is
+ * strongest in the top-left corner, and the glowing border that sweeps in on hover.
+ */
+export const CARD = "reveal card-glow min-w-0 rounded-3xl bg-gradient-to-br from-primary/12 via-card to-card p-5 shadow-[0_1px_0_rgb(0_0_0/0.03),0_14px_30px_-18px_rgb(0_0_0/0.18)] sm:p-6";
 
 /** Small round arrow that opens whatever the block summarises. */
 export function GoButton({ href, label }: { href: string; label: string }) {
@@ -84,7 +84,7 @@ function Headline({ label, value, before, good, share, tone, href, loading, orde
   const t = useTranslations("dashboard");
   const f = useFormat();
   return (
-    <section style={{ "--i": order } as CSSProperties} className={`${CARD} ${TINT} h-full`}>
+    <section style={{ "--i": order } as CSSProperties} className={`${CARD} h-full`}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>
         <GoButton href={href} label={`${t("open")}: ${label}`} />
@@ -108,7 +108,7 @@ function NetCard({ now, before, loading }: { now?: Kpis; before?: Kpis; loading:
   const net = now?.net;
   const margin = now && now.totalSales > 0 ? Math.round(((now.net / now.totalSales) * 100) * 10) / 10 : null;
   return (
-    <section style={{ "--i": 2 } as CSSProperties} className={`${CARD} ${TINT} h-full`}>
+    <section style={{ "--i": 2 } as CSSProperties} className={`${CARD} h-full`}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">{t("net")}</h3>
         <GoButton href="/reports/profit-loss" label={`${t("open")}: ${t("net")}`} />
