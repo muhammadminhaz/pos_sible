@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Flag, isPhoneOk, PhoneInput } from "@/components/shared/PhoneInput";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminHeader, useAdmin } from "./AdminShell";
@@ -59,15 +58,20 @@ function TermSelect({ id, value, onChange, withNone }: { id: string; value: stri
 /** One switch per sellable module, with what it adds to the monthly price. */
 function ModulePicker({ modules, value, onChange, disabled }: { modules: ModuleDef[]; value: string[]; onChange: (v: string[]) => void; disabled?: boolean }) {
   return (
-    <fieldset className="grid gap-2" disabled={disabled}>
+    <fieldset className="grid gap-2 disabled:opacity-50" disabled={disabled}>
       <legend className="mb-1 text-sm font-medium">Modules</legend>
-      {modules.map((m) => (
-        <div key={m.id} className="flex items-center justify-between gap-3">
-          <Label htmlFor={`mod-${m.id}`} className="font-normal">{m.label}<span className="ml-2 text-xs text-muted-foreground">+{formatMoney(m.priceMonthly)}/month</span></Label>
-          <Switch id={`mod-${m.id}`} checked={value.includes(m.id)} onCheckedChange={(on) => onChange(on ? [...value, m.id] : value.filter((x) => x !== m.id))} />
-        </div>
-      ))}
-      <p className="text-xs text-muted-foreground">Switched-off modules are hidden from the business and blocked on the server. Dashboard, products, contacts and settings are always included.</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {modules.map((m) => (
+          <label key={m.id} htmlFor={`mod-${m.id}`} className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2">
+            <span className="grid min-w-0 text-sm leading-tight">
+              <span className="truncate font-medium">{m.label}</span>
+              <span className="text-xs text-muted-foreground">+{formatMoney(m.priceMonthly)}/month</span>
+            </span>
+            <Switch id={`mod-${m.id}`} checked={value.includes(m.id)} onCheckedChange={(on) => onChange(on ? [...value, m.id] : value.filter((x) => x !== m.id))} />
+          </label>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">Switched-off modules are hidden and blocked. Dashboard, products, contacts and settings are always included.</p>
     </fieldset>
   );
 }
@@ -154,7 +158,7 @@ export function BusinessesPage() {
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button size="icon-sm" variant="ghost" aria-label={`Actions for ${b.name}`}><MoreHorizontalIcon /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="min-w-56">
                       <DropdownMenuItem onSelect={() => setManaging(b)}><SettingsIcon />Manage account</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setRenewing(b)}><RefreshCwIcon />Renew subscription</DropdownMenuItem>
                       {b.state !== "cancelled" && <DropdownMenuItem variant="destructive" onSelect={() => setCancelling(b)}><BanIcon />Cancel subscription</DropdownMenuItem>}
@@ -170,10 +174,10 @@ export function BusinessesPage() {
       </div>
 
       <Dialog open={adding} onOpenChange={setAdding}>
-        <DialogContent className="sm:max-w-md">{adding && <AddForm plans={plans} modules={modules} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">{adding && <AddForm plans={plans} modules={modules} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
       </Dialog>
       <Dialog open={managing !== null} onOpenChange={(o) => !o && setManaging(null)}>
-        <DialogContent className="sm:max-w-md">{managing && <ManageForm key={managing.id} business={managing} plans={plans} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onRenew={() => { setRenewing(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">{managing && <ManageForm key={managing.id} business={managing} plans={plans} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onRenew={() => { setRenewing(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
       </Dialog>
       <Dialog open={renewing !== null} onOpenChange={(o) => !o && setRenewing(null)}>
         <DialogContent className="sm:max-w-sm">{renewing && <RenewForm key={renewing.id} business={renewing} onClose={() => setRenewing(null)} onDone={async () => { setRenewing(null); await reload(); }} />}</DialogContent>
@@ -279,37 +283,41 @@ function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCanc
         <DialogDescription>{business.ownerUsername ? `Username ${business.ownerUsername} · ` : ""}{business.users} user{business.users === 1 ? "" : "s"} · {formatBytes(business.storageBytes)} stored</DialogDescription>
       </DialogHeader>
 
-      <div className="grid gap-3 rounded-lg border p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="grid gap-0.5">
-            <span className="text-sm font-medium">Subscription</span>
-            <span className="text-xs text-muted-foreground">{business.state === "cancelled" ? "Cancelled. Nobody in this business can sign in." : business.expiresAt ? `${business.state === "expired" ? "Ended" : "Ends"} ${day(business.expiresAt)}` : "No end date"}</span>
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid content-start gap-4">
+          <div className="grid gap-3 rounded-lg border p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="grid gap-0.5">
+                <span className="text-sm font-medium">Subscription</span>
+                <span className="text-xs text-muted-foreground">{business.state === "cancelled" ? "Cancelled. Nobody in this business can sign in." : business.expiresAt ? `${business.state === "expired" ? "Ended" : "Ends"} ${day(business.expiresAt)}` : "No end date"}</span>
+              </div>
+              <StateBadge state={business.state} />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" onClick={onRenew}><RefreshCwIcon />Renew</Button>
+              {business.state !== "cancelled" && <Button type="button" size="sm" variant="destructive" onClick={onCancel}><BanIcon />Cancel subscription</Button>}
+            </div>
           </div>
-          <StateBadge state={business.state} />
+          <div className="grid gap-3 rounded-lg border p-3">
+            <span className="text-sm font-medium">Set a new owner password</span>
+            <PasswordField id="m-pass" label="New password" value={newPassword} onChange={setNewPassword} />
+            <p className="text-xs text-muted-foreground">Passwords can be replaced, never viewed. The owner is signed out.</p>
+            <Button type="button" variant="outline" size="sm" className="justify-self-start" disabled={resetting || newPassword.length < 8} onClick={reset}>{resetting && <Loader2Icon className="animate-spin" />}Set password</Button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={onRenew}><RefreshCwIcon />Renew</Button>
-          {business.state !== "cancelled" && <Button type="button" variant="destructive" onClick={onCancel}><BanIcon />Cancel subscription</Button>}
-        </div>
-      </div>
 
-      <form onSubmit={save} className="grid gap-4">
-        <div className="grid gap-1.5"><Label htmlFor="m-plan">Package</Label><PlanSelect id="m-plan" plans={plans} value={plan} onChange={setPlan} /></div>
-        <ModulePicker modules={modules} value={picked} onChange={setPicked} disabled={free} />
-        <FreeSwitch id="m-free" value={free} onChange={setFree} />
-        <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
-        <div className="grid gap-1.5"><Label htmlFor="m-phone">Phone</Label><PhoneInput id="m-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>Close</Button>
-          <Button type="submit" disabled={busy || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Save</Button>
-        </DialogFooter>
-      </form>
-      <Separator />
-      <div className="grid gap-2">
-        <PasswordField id="m-pass" label="Set a new password for the owner" value={newPassword} onChange={setNewPassword} />
-        <p className="text-xs text-muted-foreground">Passwords can be replaced here, never viewed. The owner is signed out and uses the new one.</p>
-        <Button type="button" variant="outline" className="justify-self-start" disabled={resetting || newPassword.length < 8} onClick={reset}>{resetting && <Loader2Icon className="animate-spin" />}Set password</Button>
+        <form id="manage-form" onSubmit={save} className="grid content-start gap-4">
+          <div className="grid gap-1.5"><Label htmlFor="m-plan">Package</Label><PlanSelect id="m-plan" plans={plans} value={plan} onChange={setPlan} /></div>
+          <FreeSwitch id="m-free" value={free} onChange={setFree} />
+          <ModulePicker modules={modules} value={picked} onChange={setPicked} disabled={free} />
+          <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
+          <div className="grid gap-1.5"><Label htmlFor="m-phone">Phone</Label><PhoneInput id="m-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
+        </form>
       </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onClose}>Close</Button>
+        <Button type="submit" form="manage-form" disabled={busy || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Save changes</Button>
+      </DialogFooter>
     </div>
   );
 }

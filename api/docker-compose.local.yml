@@ -1,0 +1,6 @@
+# Local only: publishes the API on the host. Not used by Coolify.
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+services:
+  api:
+    ports:
+      - "${API_PORT:-3001}:3000"
