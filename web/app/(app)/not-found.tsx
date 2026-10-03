@@ -1,25 +1,6 @@
-"use client";
+import { NotFoundView } from "@/components/shared/NotFoundView";
 
-import Link from "next/link";
-import { FileQuestionIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/shared/EmptyState";
-
+/** A record or page inside the app that doesn't exist; keeps the sidebar and header around it. */
 export default function NotFound() {
-  const t = useTranslations();
-  return (
-    <div className="rounded-xl border bg-card">
-      <EmptyState
-        icon={FileQuestionIcon}
-        title={t("errors.notFound")}
-        description={t("errors.notFoundBody")}
-        action={
-          <Button variant="outline" asChild>
-            <Link href="/home">{t("common.goHome")}</Link>
-          </Button>
-        }
-      />
-    </div>
-  );
+  return <NotFoundView />;
 }

@@ -2009,6 +2009,14 @@
     "forbidden": "এটি করার অনুমতি আপনার নেই",
     "editWindowExpired": "এই লেনদেন আর সম্পাদনা করা যাবে না",
     "notFoundEntity": "{what} পাওয়া যায়নি",
-    "invalidBackup": "এই ফাইলটি সঠিক ব্যাকআপ নয়"
+    "invalidBackup": "এই ফাইলটি সঠিক ব্যাকআপ নয়",
+    "notFoundPath": "আমরা খুঁজে পাইনি",
+    "goBack": "ফিরে যান",
+    "notFoundTry": "অথবা কাজের কোনো পেজে যান",
+    "notFoundCode": "ত্রুটি ৪০৪",
+    "linkSell": "পয়েন্ট অফ সেল",
+    "linkProducts": "পণ্য",
+    "linkReports": "রিপোর্ট",
+    "linkSignIn": "সাইন ইন"
   }
 }

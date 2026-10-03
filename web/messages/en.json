@@ -2009,6 +2009,14 @@
     "forbidden": "You don't have permission to do that",
     "editWindowExpired": "This transaction can no longer be edited",
     "notFoundEntity": "{what} not found",
-    "invalidBackup": "This file isn't a valid backup"
+    "invalidBackup": "This file isn't a valid backup",
+    "notFoundPath": "We couldn't find",
+    "goBack": "Go back",
+    "notFoundTry": "Or head somewhere useful",
+    "notFoundCode": "Error 404",
+    "linkSell": "Point of sale",
+    "linkProducts": "Products",
+    "linkReports": "Reports",
+    "linkSignIn": "Sign in"
   }
 }
