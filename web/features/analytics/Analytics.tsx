@@ -28,13 +28,13 @@ function Tile({ label, hint, now, before, good, kind = "money" }: { label: strin
   return (
     <TileCard>
       <div title={hint}>
-        <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>
-        {now === undefined ? <Skeleton className="mt-3 h-9 w-36 rounded-xl" /> : (
+        {now === undefined ? <Skeleton className="h-4 w-28 rounded-md" /> : <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>}
+        {now === undefined ? <Skeleton className="mt-3 h-9 w-40 max-w-full rounded-xl" /> : (
           <div className={cn("mt-2 text-3xl leading-tight font-semibold", now < 0 && "text-danger")}>
             {kind === "money" ? <BigMoney value={now} /> : <span className="tabular tracking-tight">{f.number(now)}{kind === "percent" ? "%" : ""}</span>}
           </div>
         )}
-        <div className="mt-1 min-h-6">{now !== undefined && before !== undefined ? <DeltaPill now={now} before={before} good={good} /> : null}</div>
+        <div className="mt-1 min-h-6">{now === undefined ? <Skeleton className="mt-1 h-5 w-32 max-w-full rounded-full" /> : before !== undefined ? <DeltaPill now={now} before={before} good={good} /> : null}</div>
       </div>
     </TileCard>
   );
@@ -59,6 +59,7 @@ function OverviewSection({ rf, section }: SectionProps) {
   const ov = useReport("analytics-overview", rf.filter, () => analyticsReports.overview(rf.filter));
   const o = ov.data;
   const c = o?.current, p = o?.previous;
+  const load = ov.isFetching && !o;
   const tile = (id: string, label: string, hint: string | undefined, now: number | undefined, before: number | undefined, good?: "up", kind?: "money" | "number" | "percent"): CardDef => ({
     id, ...TILE, node: <Tile label={label} hint={hint} now={now} before={before} good={good} kind={kind} />,
   });
@@ -73,7 +74,7 @@ function OverviewSection({ rf, section }: SectionProps) {
       tile("recv", t("receivables"), t("hint.receivables"), o?.receivables, undefined),
       tile("pay", t("payables"), t("hint.payables"), o?.payables, undefined),
       { id: "trend", ...FULL, node: (
-        <GridCard title={t("salesVsProfit")}>
+        <GridCard loading={load} title={t("salesVsProfit")}>
           <Chart loading={ov.isFetching && !o} empty={!o || o.trend.every((r) => r.sales === 0 && r.profit === 0)}>
             <ComboChart data={o?.trend ?? []} xKey="bucket" bar={{ key: "sales", label: t("netSales") }} line={{ key: "profit", label: t("grossProfit") }} label={t("salesVsProfit")} />
           </Chart>
@@ -95,21 +96,21 @@ function SalesSection({ rf, section }: SectionProps) {
   return (
     <CardGrid section={section} items={[
       { id: "heat", w: 12, h: 13, minW: 8, minH: 9, maxW: 12, maxH: 20, node: (
-        <GridCard title={t("busiestTimes")} scroll>
+        <GridCard loading={load} title={t("busiestTimes")} scroll>
           <Chart loading={load} empty={!s || s.heat.flat().every((v) => v === 0)}>
             <Heatmap grid={s?.heat ?? []} rowLabels={weekdays} label={t("busiestTimes")} format={f.money} />
           </Chart>
         </GridCard>
       ) },
       { id: "payment", ...HALF, node: (
-        <GridCard title={t("paymentMix")}>
+        <GridCard loading={load} title={t("paymentMix")}>
           <Chart loading={load} empty={!s?.byPayment.length}>
             <Donut data={(s?.byPayment ?? []).map((x) => ({ name: pm.has(x.method) ? pm(x.method) : x.method, value: x.amount }))} label={t("paymentMix")} other={t("other")} />
           </Chart>
         </GridCard>
       ) },
       { id: "location", ...HALF, node: (
-        <GridCard title={t("byLocation")}>
+        <GridCard loading={load} title={t("byLocation")}>
           <Chart loading={load} empty={!s?.byLocation.length}>
             <Bars layout="vertical" data={s?.byLocation ?? []} xKey="name" yKey="sales" label={t("byLocation")} />
           </Chart>
@@ -137,24 +138,24 @@ function ProductsSection({ rf, section }: SectionProps) {
   return (
     <CardGrid section={section} items={[
       { id: "topProfit", ...HALF, h: 11, node: (
-        <GridCard title={t("topByProfit")}>
+        <GridCard loading={load} title={t("topByProfit")}>
           <Chart loading={load} empty={!a?.topByProfit.length}><Bars layout="horizontal" data={a?.topByProfit ?? []} xKey="label" yKey="profit" label={t("topByProfit")} /></Chart>
         </GridCard>
       ) },
       { id: "topSales", ...HALF, h: 11, node: (
-        <GridCard title={t("topBySales")}>
+        <GridCard loading={load} title={t("topBySales")}>
           <Chart loading={load} empty={!a?.topBySales.length}><Bars layout="horizontal" data={a?.topBySales ?? []} xKey="label" yKey="sales" label={t("topBySales")} /></Chart>
         </GridCard>
       ) },
       { id: "abc", ...FULL, node: (
-        <GridCard title={t("abc")} subtitle={t("abcHint", { a: a?.classACount ?? 0 })}>
+        <GridCard loading={load} title={t("abc")} subtitle={t("abcHint", { a: a?.classACount ?? 0 })}>
           <Chart loading={load} empty={!a?.pareto.length}>
             <ParetoChart data={a?.pareto ?? []} xKey="label" bar={{ key: "sales", label: t("netSales") }} line={{ key: "cumulative", label: t("cumulative") }} label={t("abc")} />
           </Chart>
         </GridCard>
       ) },
       { id: "dead", ...FULL, h: 10, node: (
-        <GridCard title={t("deadStock", { days: a?.deadStockDays ?? 60 })} scroll>
+        <GridCard loading={load} title={t("deadStock", { days: a?.deadStockDays ?? 60 })} scroll>
           <ReportTable bare id="dead-stock" columns={dead} rows={a?.deadStock ?? []} loading={load} getRowId={(r) => r.variationId} />
         </GridCard>
       ) },
@@ -174,19 +175,19 @@ function CustomersSection({ rf, section }: SectionProps) {
       { id: "repeat", ...TILE, node: <Tile label={t("repeatRate")} hint={t("hint.repeatRate")} now={a?.totals.repeatRate} kind="percent" /> },
       { id: "owed", ...TILE, node: <Tile label={t("receivables")} hint={t("hint.receivables")} now={a?.aging.reduce((x, r) => x + r.amount, 0)} /> },
       { id: "top", ...HALF, h: 11, node: (
-        <GridCard title={t("topCustomers")}>
+        <GridCard loading={load} title={t("topCustomers")}>
           <Chart loading={load} empty={!a?.topCustomers.length}><Bars layout="horizontal" data={a?.topCustomers ?? []} xKey="label" yKey="sales" label={t("topCustomers")} /></Chart>
         </GridCard>
       ) },
       { id: "newReturning", ...HALF, h: 11, node: (
-        <GridCard title={t("newVsReturning")}>
+        <GridCard loading={load} title={t("newVsReturning")}>
           <Chart loading={load} empty={!a?.newVsReturning.length}>
             <StackedBars data={a?.newVsReturning ?? []} xKey="bucket" series={[{ key: "newCustomers", label: t("newCustomers") }, { key: "returning", label: t("returningCustomers") }]} label={t("newVsReturning")} />
           </Chart>
         </GridCard>
       ) },
       { id: "aging", ...FULL, h: 9, node: (
-        <GridCard title={t("aging")}>
+        <GridCard loading={load} title={t("aging")}>
           <Chart loading={load} empty={!a || a.aging.every((r) => r.amount === 0)}>
             <Bars layout="vertical" data={(a?.aging ?? []).map((r) => ({ ...r, bucket: t(`agingBucket.${r.bucket}`) }))} xKey="bucket" yKey="amount" label={t("aging")} />
           </Chart>
@@ -210,7 +211,7 @@ function InventorySection({ rf, section }: SectionProps) {
   return (
     <CardGrid section={section} items={[
       { id: "reorder", ...FULL, h: 11, node: (
-        <GridCard title={t("reorder", { days: reorder.data?.coverDays ?? 30 })} subtitle={t("reorderHint")} scroll>
+        <GridCard loading={load} title={t("reorder", { days: reorder.data?.coverDays ?? 30 })} subtitle={t("reorderHint")} scroll>
           <ReportTable bare id="reorder" columns={cols} rows={reorder.data?.rows ?? []} loading={load} getRowId={(r) => r.variationId} />
         </GridCard>
       ) },
@@ -228,12 +229,12 @@ function ExpensesSection({ rf, section }: SectionProps) {
       { id: "total", ...TILE, w: 6, node: <Tile label={t("totalExpenses")} now={a?.total} /> },
       { id: "ratio", ...TILE, w: 6, node: <Tile label={t("expenseRatio")} hint={t("hint.expenseRatio")} now={a?.ratio} kind="percent" /> },
       { id: "share", ...HALF, node: (
-        <GridCard title={t("expenseShare")}>
+        <GridCard loading={load} title={t("expenseShare")}>
           <Chart loading={load} empty={!a?.byCategory.length}><Donut data={(a?.byCategory ?? []).map((x) => ({ name: x.label || t("uncategorised"), value: x.amount }))} label={t("expenseShare")} other={t("other")} /></Chart>
         </GridCard>
       ) },
       { id: "category", ...HALF, node: (
-        <GridCard title={t("expenseByCategory")}>
+        <GridCard loading={load} title={t("expenseByCategory")}>
           <Chart loading={load} empty={!a?.byCategory.length}><Bars layout="horizontal" data={(a?.byCategory ?? []).map((x) => ({ ...x, label: x.label || t("uncategorised") }))} xKey="label" yKey="amount" label={t("expenseByCategory")} /></Chart>
         </GridCard>
       ) },

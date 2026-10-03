@@ -3,10 +3,11 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ReactGridLayout, { useContainerWidth } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
-import { GripVerticalIcon } from "lucide-react";
+import { GripHorizontalIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { CARD } from "@/components/shared/card-surface";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLayouts, type Place } from "./layoutStore";
 
 export const COLS = 12;
@@ -14,6 +15,12 @@ const ROW = 24;
 const GAP = 16;
 const NARROW = 768;
 const HANDLE = ".analytics-drag";
+
+/** The bottom-right corner mark that says "drag here to resize". */
+function ResizeMark({ axis, innerRef }: { axis: string; innerRef: React.Ref<HTMLElement> }) {
+  const t = useTranslations("analytics");
+  return <span ref={innerRef as React.Ref<HTMLSpanElement>} title={t("resizeHint")} aria-label={t("resizeHint")} className={`react-resizable-handle react-resizable-handle-${axis}`} />;
+}
 
 export type CardDef = { id: string; w: number; h: number; minW?: number; minH?: number; maxW?: number; maxH?: number; node: ReactNode };
 
@@ -35,9 +42,24 @@ const HeightContext = createContext<number | null>(null);
 /** Height the enclosing card gives its chart; `fallback` outside a card. */
 export const useChartHeight = (fallback: number) => useContext(HeightContext) ?? fallback;
 
-/** A dashboard card on the grid: the title bar is the handle to drag it, the corner resizes it. `scroll` lets tables scroll inside. */
-export function GridCard({ title, subtitle, scroll, children }: { title: string; subtitle?: string; scroll?: boolean; children: ReactNode }) {
+/** The only part of a card that starts a drag: a small horizontal grip at the top centre. */
+function Grip() {
   const t = useTranslations("analytics");
+  return (
+    <span
+      data-print-hide
+      role="button"
+      aria-label={t("dragHint")}
+      title={t("dragHint")}
+      className="analytics-drag absolute top-1.5 left-1/2 z-10 grid h-5 w-12 -translate-x-1/2 cursor-grab touch-none place-items-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
+    >
+      <GripHorizontalIcon className="size-4" aria-hidden />
+    </span>
+  );
+}
+
+/** A dashboard card on the grid: the title bar is the handle to drag it, the corner resizes it. `scroll` lets tables scroll inside. */
+export function GridCard({ title, subtitle, scroll, loading, children }: { title: string; subtitle?: string; scroll?: boolean; loading?: boolean; children: ReactNode }) {
   const body = useRef<HTMLDivElement>(null);
   const [h, setH] = useState<number | null>(null);
   useEffect(() => {
@@ -47,13 +69,20 @@ export function GridCard({ title, subtitle, scroll, children }: { title: string;
     return () => ro.disconnect();
   }, []);
   return (
-    <section className={cn(CARD, "flex h-full flex-col")}>
-      <header className="analytics-drag mb-3 flex cursor-grab items-start gap-2 active:cursor-grabbing" title={t("dragHint")}>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-          {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
-        </div>
-        <GripVerticalIcon data-print-hide className="mt-0.5 size-4 shrink-0 text-muted-foreground/60" aria-hidden />
+    <section className={cn(CARD, "flex h-full flex-col pt-7 sm:pt-8")}>
+      <Grip />
+      <header className="mb-3">
+        {loading ? (
+          <>
+            <Skeleton className="h-5 w-48 max-w-full rounded-md" />
+            {subtitle && <Skeleton className="mt-2 h-4 w-64 max-w-full rounded-md" />}
+          </>
+        ) : (
+          <>
+            <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+          </>
+        )}
       </header>
       <HeightContext.Provider value={h}>
         <div ref={body} className={cn("min-h-0 flex-1", scroll ? "overflow-auto" : "overflow-hidden")}>{children}</div>
@@ -62,9 +91,9 @@ export function GridCard({ title, subtitle, scroll, children }: { title: string;
   );
 }
 
-/** A headline figure on the grid; the whole tile drags. */
+/** A headline figure on the grid; it moves by its grip like every other card. */
 export function TileCard({ children }: { children: ReactNode }) {
-  return <section className={cn(CARD, "analytics-drag h-full cursor-grab overflow-hidden active:cursor-grabbing")}>{children}</section>;
+  return <section className={cn(CARD, "h-full overflow-hidden pt-7 sm:pt-8")}><Grip />{children}</section>;
 }
 
 /**
@@ -103,13 +132,20 @@ export function CardGrid({ section, items }: { section: string; items: CardDef[]
 
   return (
     <div ref={containerRef} data-analytics-grid={section}>
+      {!mounted && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12" aria-busy="true">
+          {items.map((c) => (
+            <Skeleton key={c.id} style={{ "--span": c.w, height: c.h * (ROW + GAP) - GAP } as React.CSSProperties} className="rounded-3xl lg:col-span-(--span)" />
+          ))}
+        </div>
+      )}
       {mounted && (
         <ReactGridLayout
           width={width}
           layout={layout}
           gridConfig={{ cols: narrow ? 1 : COLS, rowHeight: ROW, margin: [GAP, GAP], containerPadding: [0, 0], maxRows: Infinity }}
-          dragConfig={{ enabled: !narrow, handle: HANDLE, cancel: "a,button,input,[role=button]" }}
-          resizeConfig={{ enabled: !narrow, handles: ["se"] }}
+          dragConfig={{ enabled: !narrow, handle: HANDLE, cancel: "a,button,input" }}
+          resizeConfig={{ enabled: !narrow, handles: ["se"], handleComponent: (axis, ref) => <ResizeMark axis={axis} innerRef={ref} /> }}
           onLayoutChange={(next) => {
             if (narrow) return;
             const places = next.map(({ i, x, y, w, h }) => ({ i, x, y, w, h }));

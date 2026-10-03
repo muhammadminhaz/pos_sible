@@ -2121,8 +2121,9 @@
     "addedBelow": "{name} charts added below",
     "addedBelowHint": "Scroll down to see them. Tap the chip again to remove.",
     "removed": "{name} charts removed",
-    "dragHint": "Drag to move. Drag the bottom-right corner to resize.",
+    "dragHint": "Drag to move this card",
     "resetLayout": "Reset layout",
-    "layoutReset": "Layout reset to default"
+    "layoutReset": "Layout reset to default",
+    "resizeHint": "Drag to resize"
   }
 }

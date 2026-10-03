@@ -421,17 +421,24 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   border-radius: 1.5rem;
 }
 .react-grid-item > .react-resizable-handle {
-  opacity: 0.55;
-  right: 6px;
-  bottom: 6px;
+  opacity: 0.8;
+  right: 4px;
+  bottom: 4px;
+  width: 28px;
+  height: 28px;
+  color: var(--muted-foreground);
+  transition: color 0.15s, opacity 0.15s, transform 0.15s;
 }
-.react-grid-item:hover > .react-resizable-handle { opacity: 1; }
+.react-grid-item > .react-resizable-handle:hover { opacity: 1; color: var(--primary); transform: scale(1.12); }
+/* Two diagonal strokes in the corner: the usual "resize" mark. */
 .react-grid-item > .react-resizable-handle::after {
-  right: 5px;
-  bottom: 5px;
-  border-right-color: var(--muted-foreground);
-  border-bottom-color: var(--muted-foreground);
-  border-bottom-right-radius: 3px;
+  right: 7px;
+  bottom: 7px;
+  width: 14px;
+  height: 14px;
+  border: 0;
+  background: linear-gradient(135deg, transparent 0 38%, currentColor 38% 50%, transparent 50% 66%, currentColor 66% 78%, transparent 78%);
+  border-radius: 0 0 6px 0;
 }
 .react-grid-item.react-draggable-dragging > section,
 .react-grid-item.resizing > section {
