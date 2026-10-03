@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowDownRightIcon, ArrowUpRightIcon, MinusIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -12,7 +13,7 @@ import { useFormat } from "@/lib/i18n/format";
 type Key = keyof Kpis;
 
 /** The surface every dashboard block sits on: big radius, no outline, a whisper of shadow. */
-export const CARD = "card-glow min-w-0 rounded-3xl bg-card p-5 shadow-[0_1px_0_rgb(0_0_0/0.03),0_14px_30px_-18px_rgb(0_0_0/0.18)] sm:p-6";
+export const CARD = "reveal card-glow min-w-0 rounded-3xl bg-card p-5 shadow-[0_1px_0_rgb(0_0_0/0.03),0_14px_30px_-18px_rgb(0_0_0/0.18)] sm:p-6";
 
 /** The faint accent wash the three headline cards share, strongest in the top-left corner. */
 const TINT = "bg-gradient-to-br from-primary/12 via-card to-card";
@@ -77,13 +78,13 @@ function ShareBar({ pct, tone }: { pct: number; tone: "ink" | "accent" }) {
   );
 }
 
-function Headline({ label, value, before, good, share, tone, href, loading }: {
-  label: string; value?: number; before?: number; good?: "up" | "down"; share: number; tone: "ink" | "accent"; href: string; loading: boolean;
+function Headline({ label, value, before, good, share, tone, href, loading, order }: {
+  order: number; label: string; value?: number; before?: number; good?: "up" | "down"; share: number; tone: "ink" | "accent"; href: string; loading: boolean;
 }) {
   const t = useTranslations("dashboard");
   const f = useFormat();
   return (
-    <section className={`${CARD} ${TINT} h-full`}>
+    <section style={{ "--i": order } as CSSProperties} className={`${CARD} ${TINT} h-full`}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>
         <GoButton href={href} label={`${t("open")}: ${label}`} />
@@ -107,7 +108,7 @@ function NetCard({ now, before, loading }: { now?: Kpis; before?: Kpis; loading:
   const net = now?.net;
   const margin = now && now.totalSales > 0 ? Math.round(((now.net / now.totalSales) * 100) * 10) / 10 : null;
   return (
-    <section className={`${CARD} ${TINT} h-full`}>
+    <section style={{ "--i": 2 } as CSSProperties} className={`${CARD} ${TINT} h-full`}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">{t("net")}</h3>
         <GoButton href="/reports/profit-loss" label={`${t("open")}: ${t("net")}`} />
@@ -131,8 +132,8 @@ export function KpiSummary({ now, before, loading }: { now?: Kpis; before?: Kpis
   const salesShare = total > 0 ? ((now?.totalSales ?? 0) / total) * 100 : 0;
   return (
     <section aria-label={t("salesPeriod")} className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-      <Headline label={t("totalSales")} value={now?.totalSales} before={before?.totalSales} good="up" share={salesShare} tone="ink" href="/sales" loading={loading} />
-      <Headline label={t("totalPurchase")} value={now?.totalPurchase} before={before?.totalPurchase} share={total > 0 ? 100 - salesShare : 0} tone="accent" href="/purchases" loading={loading} />
+      <Headline order={0} label={t("totalSales")} value={now?.totalSales} before={before?.totalSales} good="up" share={salesShare} tone="ink" href="/sales" loading={loading} />
+      <Headline order={1} label={t("totalPurchase")} value={now?.totalPurchase} before={before?.totalPurchase} share={total > 0 ? 100 - salesShare : 0} tone="accent" href="/purchases" loading={loading} />
       <div className="md:col-span-2 xl:col-span-1 [&>section]:h-full"><NetCard now={now} before={before} loading={loading} /></div>
     </section>
   );
@@ -150,7 +151,7 @@ export function MoneyOut({ now, before, loading }: { now?: Kpis; before?: Kpis; 
   ];
   return (
     <div className="grid min-w-0 grid-cols-1 gap-3">
-      <section className={CARD}>
+      <section style={{ "--i": 3 } as CSSProperties} className={CARD}>
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-sm font-medium text-muted-foreground">{t("expense")}</h3>
           <GoButton href="/expenses" label={`${t("open")}: ${t("expense")}`} />
@@ -158,7 +159,7 @@ export function MoneyOut({ now, before, loading }: { now?: Kpis; before?: Kpis; 
         {loading || now?.expense === undefined ? <Skeleton className="mt-3 h-10 w-40 rounded-xl" /> : <div className="mt-2 text-3xl font-semibold"><BigMoney value={now.expense} /></div>}
         <div className="mt-1 min-h-6">{now?.expense !== undefined && !loading ? <DeltaPill now={now.expense} before={before?.expense} good="down" /> : null}</div>
       </section>
-      <section className={CARD} aria-label={t("owedAndReturned")}>
+      <section style={{ "--i": 4 } as CSSProperties} className={CARD} aria-label={t("owedAndReturned")}>
         <h3 className="mb-2 text-sm font-medium text-muted-foreground">{t("owedAndReturned")}</h3>
         <ul className="divide-y divide-border/70">
           {rows.map((r) => {

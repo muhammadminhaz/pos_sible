@@ -257,6 +257,29 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
+/*
+ * Cards and panels reveal as they arrive: a fade and rise that sharpens out of a slight blur. Siblings stagger in
+ * reading order (explicit --i, or the position among siblings), and it plays once on mount. Fill is "backwards" so the
+ * card keeps its normal styles (and hover transforms) afterwards.
+ */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); filter: blur(5px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+.reveal {
+  animation: reveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, var(--n, 0)) * 70ms);
+}
+.reveal:nth-child(2) { --n: 1; }
+.reveal:nth-child(3) { --n: 2; }
+.reveal:nth-child(4) { --n: 3; }
+.reveal:nth-child(5) { --n: 4; }
+.reveal:nth-child(6) { --n: 5; }
+.reveal:nth-child(7) { --n: 6; }
+.reveal:nth-child(n + 8) { --n: 7; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { animation: none; }
+}
 @keyframes pop {
   0% { transform: scale(1); }
   40% { transform: scale(1.08); }

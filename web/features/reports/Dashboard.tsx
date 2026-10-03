@@ -26,10 +26,10 @@ function Empty({ children }: { children: ReactNode }) {
 }
 
 /** A dashboard block: round card, title on the left, optional arrow to the full report on the right. */
-function Block({ title, href, children, className }: { title: string; href?: string; children: ReactNode; className?: string }) {
+function Block({ title, href, children, className, order }: { title: string; href?: string; children: ReactNode; className?: string; order: number }) {
   const t = useTranslations("dashboard");
   return (
-    <section className={`${CARD} ${className ?? ""}`}>
+    <section style={{ "--i": order } as CSSProperties} className={`${CARD} ${className ?? ""}`}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold tracking-tight">{title}</h2>
         {href ? <GoButton href={href} label={`${t("open")}: ${title}`} /> : null}
@@ -97,10 +97,10 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
           <div className="xl:col-span-3"><MoneyOut now={kpis.data} before={prev.data} loading={kpis.isPending} /></div>
-          <Block title={t("salesPeriod")} href="/sales" className="xl:col-span-5">
+          <Block order={5} title={t("salesPeriod")} href="/sales" className="xl:col-span-5">
             <div style={accent}>{x ? <AreaChart data={x.salesByDay} xKey="date" yKey="sales" label={t("salesTrend")} height={300} /> : <div className="h-75" />}</div>
           </Block>
-          <Block title={r("topProducts")} href="/reports/trending-products" className="xl:col-span-4">
+          <Block order={6} title={r("topProducts")} href="/reports/trending-products" className="xl:col-span-4">
             <div style={accent}>
               {!x ? <div className="h-75" /> : x.topProducts.length === 0 ? <Empty>{r("empty")}</Empty> : (
                 <BarChart layout="vertical" data={x.topProducts.map((p) => ({ name: p.label, sold: p.sold }))} xKey="name" yKey="sold" label={r("topProducts")} height={300} format={(n) => f.qty(n)} axisTitle={r("unitsSold")} />
@@ -110,9 +110,9 @@ export function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <Block title={r("salesDue")} href="/sales"><DueTable rows={x?.salesDue ?? []} href={(id) => `/sales/${id}`} empty={r("noDue")} /></Block>
-          <Block title={r("purchaseDue")} href="/purchases"><DueTable rows={x?.purchasesDue ?? []} href={(id) => `/purchases/${id}`} empty={r("noDue")} /></Block>
-          <Block title={r("stockAlerts")} href="/reports/stock">
+          <Block order={7} title={r("salesDue")} href="/sales"><DueTable rows={x?.salesDue ?? []} href={(id) => `/sales/${id}`} empty={r("noDue")} /></Block>
+          <Block order={8} title={r("purchaseDue")} href="/purchases"><DueTable rows={x?.purchasesDue ?? []} href={(id) => `/purchases/${id}`} empty={r("noDue")} /></Block>
+          <Block order={9} title={r("stockAlerts")} href="/reports/stock">
             {!x?.stockAlerts.length ? <Empty>{r("noStockAlerts")}</Empty> : (
               <Table>
                 <TableHeader><TableRow className="border-border/60 hover:bg-transparent"><TableHead>{r("product")}</TableHead><TableHead>{r("location")}</TableHead><TableHead className="text-right">{r("currentStock")}</TableHead></TableRow></TableHeader>
@@ -127,7 +127,7 @@ export function Dashboard() {
               </Table>
             )}
           </Block>
-          <Block title={r("expiryAlerts")} href="/reports/stock-expiry">
+          <Block order={10} title={r("expiryAlerts")} href="/reports/stock-expiry">
             {!x?.expiryAlerts.length ? <Empty>{r("noExpiry")}</Empty> : (
               <Table>
                 <TableHeader><TableRow className="border-border/60 hover:bg-transparent"><TableHead>{r("product")}</TableHead><TableHead>{r("expDate")}</TableHead><TableHead className="text-right">{r("qtyLeft")}</TableHead></TableRow></TableHeader>
