@@ -78,4 +78,22 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE INDEX IF NOT EXISTS audit_business_time ON audit_log (business_id, at DESC);
 `,
   },
+  {
+    id: 2,
+    name: "subscriptions and platform admin sessions",
+    sql: `
+-- Which package a business has paid for, and whether it may sign in. Managed only from the platform admin console.
+ALTER TABLE businesses
+  ADD COLUMN IF NOT EXISTS plan text NOT NULL DEFAULT 'standard',
+  ADD COLUMN IF NOT EXISTS subscription_status text NOT NULL DEFAULT 'active' CHECK (subscription_status IN ('active', 'suspended')),
+  ADD COLUMN IF NOT EXISTS subscription_expires_at timestamptz;
+
+-- Sign-ins of the platform owner. Separate from \`sessions\`, which belong to a business's own users.
+CREATE TABLE IF NOT EXISTS platform_sessions (
+  token_hash text PRIMARY KEY,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+`,
+  },
 ];

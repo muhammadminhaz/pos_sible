@@ -48,6 +48,11 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 - **Created by / created at / updated by / updated at on every record** (products, contacts, sales, purchases, expenses, accounts, discounts, stock transfers and adjustments, settings lists, users, roles…). They are stamped automatically in one place, so no screen can forget or forge them. Switch them on in any table's *Columns* menu; detail pages show them too, and they export to CSV.
 - **Role-based access** with a View / Create / Update / Delete grid per area (customers, suppliers, products, categories/brands/units, purchases, sales, discounts, stock transfers and adjustments, expenses, accounts, users, roles…), plus extras such as *take payments*, *edit price at POS*, *close register*. Enforced in the services (so also on the server), and buttons hide when you can't use them. Nobody can grant more than their own role holds, or edit a more powerful role or user. Roles saved before the finer permissions existed keep exactly what they could do.
 
+**Platform owner console (`/admin`)**
+- For the person who sells the software. Sign in with `ADMIN_USERNAME` / `ADMIN_PASSWORD` (set in the API's environment and `docker-compose.yml`; defaults `minhaz` / `11111111`, **change before going live**).
+- **Add business accounts** (business name, owner sign-in, package, optional end date) and **manage subscriptions**: Starter (3 users), Standard (10), Premium (unlimited); switch a business on or off; set when it ends. A switched-off or expired business cannot sign in and any open session ends on its next request. The package's user limit is enforced by the server.
+- See, per business, **how many user accounts** it created and **how much storage** it uses, plus totals. You see nothing else: no products, customers, sales or staff, and there is no way to sign in as a business. Businesses are fully isolated from each other (every query is scoped to the signed-in user's business).
+
 **Platform**
 - English and Bangla (digits, units, AM/PM), light/dark themes, accent colours, command palette (⌘K), notifications, installable PWA, accessible (axe-checked), reduced-motion friendly micro animations.
 - **First-run onboarding**: choose sample data or an empty shop, enter business details; a self-ticking "Get started" checklist.
@@ -106,7 +111,7 @@ npm install
 cp .env.example .env.local      # NEXT_PUBLIC_DATA_MODE=api, BACKEND_URL=http://localhost:3001
 npm run dev:api
 ```
-Migrations run on the API's first request. Sign in as `admin` / `112233` (the demo shop). The API reads `ALLOWED_ORIGINS` (default `http://localhost:3000`); change it if the UI runs on another port. The API sets `Secure` cookies, which Chrome and Firefox accept on `http://localhost`; Safari does not, so use HTTPS there.
+Migrations run on the API's first request. Sign in as `admin` / `112233` (the demo shop). The platform owner console is at `/admin` (default `minhaz` / `11111111`). The API reads `ALLOWED_ORIGINS` (default `http://localhost:3000`); change it if the UI runs on another port. The API sets `Secure` cookies, which Chrome and Firefox accept on `http://localhost`; Safari does not, so use HTTPS there.
 
 To work on the API without Docker for the app itself: `cd api && cp .env.example .env && docker compose up -d db && npm install && npm run dev` (port 3001, database on `127.0.0.1:5435`).
 
@@ -119,6 +124,7 @@ To work on the API without Docker for the app itself: `cd api && cp .env.example
 | `POSTGRES_PASSWORD` | none, required | Database password. The compose file refuses to start without it. Set a long random one in Coolify. It only applies when the data volume is first created; changing it later needs `ALTER USER postgres PASSWORD '...'` in the db container, or `docker compose down -v` (wipes all data). |
 | `ALLOWED_ORIGINS` | `https://pos-sible.vercel.app` | The exact origin(s) of the web app, comma separated, no trailing slash. A Vercel preview URL is a different origin and must be added to be allowed. For local development `.env` sets `http://localhost:3000`. |
 | `POS_SEED_DEMO` | `false` | `true` creates the demo shop (`admin` / `112233`). Leave off for real use. |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `minhaz` / `11111111` | Platform owner login for `/admin` on the web app. Passed to the API container by `docker-compose.yml`. Set your own password in Coolify before going live; the API logs a warning in production while the default is in use. |
 | `POS_ALLOW_SIGNUP` | `false` | `true` offers `/signup`. The image has no CLI, so create your first business with this (then turn it off), or run `npm run db:create-business` from `api/` with `DATABASE_URL` pointing at the database. |
 | `DB_PORT` | `5435` | Host port for Postgres, bound to `127.0.0.1` only (not 5432, so it cannot clash with another database on a shared Coolify server). |
 | `API_PORT` | `3001` | Local only (`docker-compose.local.yml`). The compose file Coolify uses publishes no host port. |
@@ -145,6 +151,7 @@ npm run build
 npm run e2e                             # every route, EN/light + BN/dark + tablet, axe accessibility
 npm run e2e:onboarding                  # first-run wizard and checklist
 npm run e2e:team                        # two users, who-did-what columns, role permission grid
+npm run e2e:admin                       # (API mode) /admin: add a business, suspend it, usage stats, isolation
 
 # api/
 npm run typecheck

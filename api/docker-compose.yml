@@ -6,7 +6,7 @@
 #
 # Coolify resource: Build Pack Docker Compose, Base Directory = /api, file = /docker-compose.yml.
 # Set in the Coolify UI: POSTGRES_PASSWORD (required). ALLOWED_ORIGINS defaults to the Vercel app's origin.
-# Optional: POS_SEED_DEMO, POS_ALLOW_SIGNUP, DB_PORT.
+# Optional: POS_SEED_DEMO, POS_ALLOW_SIGNUP, DB_PORT, ADMIN_USERNAME / ADMIN_PASSWORD (default minhaz / 11111111; change it).
 #
 # Local: cp .env.example .env, then
 #   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   (API on http://localhost:3001)
@@ -41,6 +41,10 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://pos-sible.vercel.app}
       POS_SEED_DEMO: ${POS_SEED_DEMO:-false}
       POS_ALLOW_SIGNUP: ${POS_ALLOW_SIGNUP:-false}
+      # Platform owner login for the /admin console (create business accounts, set subscriptions, see usage).
+      # These defaults are for first start only: set your own ADMIN_PASSWORD in Coolify/.env before going live.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-minhaz}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-11111111}
     depends_on:
       db:
         condition: service_healthy

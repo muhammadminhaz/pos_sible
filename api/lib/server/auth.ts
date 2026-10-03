@@ -5,11 +5,12 @@ import type { PublicUser } from "./types";
 import { pool, ready } from "./pool";
 import { loadBusiness } from "./store";
 import { verifyPassword } from "./passwords";
+import { isPlan, subscriptionState, type PlanId } from "./plans";
 
 export const COOKIE = "posible_sid";
 const DAY = 86_400_000;
 
-export type Principal = { businessId: string; userId: string; user: PublicUser; role: Role; businessName: string };
+export type Principal = { businessId: string; userId: string; user: PublicUser; role: Role; businessName: string; plan: PlanId };
 export type { PublicUser };
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -36,7 +37,7 @@ const recordFail = (key: string) => {
   else f.n++;
 };
 
-export type LoginResult = { ok: true; token: string; maxAge: number | null; principal: Principal } | { ok: false; reason: "invalid" | "throttled" };
+export type LoginResult = { ok: true; token: string; maxAge: number | null; principal: Principal } | { ok: false; reason: "invalid" | "throttled" | "suspended" | "expired" };
 
 export async function login(username: string, password: string, remember: boolean, ip: string): Promise<LoginResult> {
   await ready();
@@ -55,12 +56,16 @@ export async function login(username: string, password: string, remember: boolea
   fails.delete(key);
   const role = loaded.db.roles.find((r) => r.id === user.roleId);
   if (!role) return { ok: false, reason: "invalid" };
+  // Only someone who knows the right password learns that the subscription is the problem.
+  const sub = (await pool().query<{ plan: string; subscription_status: "active" | "suspended"; subscription_expires_at: Date | null }>("SELECT plan, subscription_status, subscription_expires_at FROM businesses WHERE id = $1", [row.business_id])).rows[0];
+  const state = subscriptionState(sub.subscription_status, sub.subscription_expires_at);
+  if (state !== "active") return { ok: false, reason: state };
 
   const token = randomBytes(32).toString("base64url");
   const ttl = remember ? 30 * DAY : DAY / 2;
   await pool().query("INSERT INTO sessions (token_hash, business_id, user_id, expires_at) VALUES ($1, $2, $3, now() + $4 * interval '1 millisecond')", [sha(token), row.business_id, row.user_id, ttl]);
   void pool().query("DELETE FROM sessions WHERE expires_at < now()").catch(() => {});
-  return { ok: true, token, maxAge: remember ? ttl / 1000 : null, principal: { businessId: row.business_id, userId: user.id, user: publicUser(user), role, businessName: loaded.db.settings.business.name } };
+  return { ok: true, token, maxAge: remember ? ttl / 1000 : null, principal: { businessId: row.business_id, userId: user.id, user: publicUser(user), role, businessName: loaded.db.settings.business.name, plan: isPlan(sub.plan) ? sub.plan : "standard" } };
 }
 
 export async function logout(token: string | undefined): Promise<void> {
@@ -72,13 +77,18 @@ export async function authenticate(req: NextRequest | { cookies: { get(name: str
   const token = req.cookies.get(COOKIE)?.value;
   if (!token) return null;
   await ready();
-  const s = (await pool().query<{ business_id: string; user_id: string }>("SELECT business_id, user_id FROM sessions WHERE token_hash = $1 AND expires_at > now()", [sha(token)])).rows[0];
+  const s = (await pool().query<{ business_id: string; user_id: string; plan: string; subscription_status: "active" | "suspended"; subscription_expires_at: Date | null }>(
+    `SELECT s.business_id, s.user_id, b.plan, b.subscription_status, b.subscription_expires_at
+       FROM sessions s JOIN businesses b ON b.id = s.business_id
+      WHERE s.token_hash = $1 AND s.expires_at > now()`, [sha(token)])).rows[0];
   if (!s) return null;
+  // A lapsed or switched-off subscription ends the session on the very next request.
+  if (subscriptionState(s.subscription_status, s.subscription_expires_at) !== "active") return null;
   const { db } = await loadBusiness(s.business_id);
   const user = db.users.find((u) => u.id === s.user_id);
   const role = user && db.roles.find((r) => r.id === user.roleId);
   if (!user || !role || !user.isActive || !user.allowLogin) return null;
-  return { businessId: s.business_id, userId: user.id, user: publicUser(user), role, businessName: db.settings.business.name };
+  return { businessId: s.business_id, userId: user.id, user: publicUser(user), role, businessName: db.settings.business.name, plan: isPlan(s.plan) ? s.plan : "standard" };
 }
 
 export function cookieOptions(maxAge: number | null) {

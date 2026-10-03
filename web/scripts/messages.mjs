@@ -189,6 +189,8 @@ const M = {
     signOut: ["Sign out", "সাইন আউট"],
     switchUser: ["Switch user", "ব্যবহারকারী বদলান"],
     throttled: ["Too many attempts. Wait a few minutes and try again.", "অনেকবার চেষ্টা হয়েছে। কয়েক মিনিট অপেক্ষা করে আবার চেষ্টা করুন।"],
+    suspended: ["This account is switched off. Please contact your provider.", "এই অ্যাকাউন্টটি বন্ধ আছে। অনুগ্রহ করে আপনার সেবাদাতার সাথে যোগাযোগ করুন।"],
+    expired: ["This subscription has ended. Please contact your provider to renew it.", "এই সাবস্ক্রিপশনের মেয়াদ শেষ। নবায়নের জন্য আপনার সেবাদাতার সাথে যোগাযোগ করুন।"],
     noAccount: ["New here?", "নতুন?"],
     createAccount: ["Create your shop", "আপনার দোকান তৈরি করুন"],
     signupTitle: ["Create your shop", "আপনার দোকান তৈরি করুন"],

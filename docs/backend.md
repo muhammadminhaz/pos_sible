@@ -29,6 +29,7 @@ API variables:
 | `ALLOWED_ORIGINS` | Exact browser origins allowed to call the API, comma separated (the web app's origin). Without it only same-host requests pass the origin check. |
 | `POS_SEED_DEMO` | `true`/`false`. Create the demo shop on an empty database. Defaults to on in development, off in production. |
 | `POS_ALLOW_SIGNUP` | Public business sign-up (server check). |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Platform owner login for the `/admin` console. Default `minhaz` / `11111111`; docker-compose passes them through. Never stored in the database. |
 | `PG_POOL_MAX` | Connection pool size (default 10). |
 
 Web variables (build time): `NEXT_PUBLIC_DATA_MODE`, `BACKEND_URL`, `NEXT_PUBLIC_ALLOW_SIGNUP` (the sign-up link),
@@ -83,6 +84,18 @@ browser ── POST /api/rpc {service, method, args} ──▶ route handler (ap
   nothing outside the allow-list is callable.
 * **Tenants.** Every query is scoped by `business_id`. New businesses start with the sample shop and the welcome wizard
   (which can swap it for an empty one); the sample staff accounts are locked and given unguessable passwords.
+
+## Platform admin and subscriptions
+
+The platform owner is not a user of any business. `lib/server/platform.ts` checks the `ADMIN_*` credentials (constant-time,
+throttled per address) and keeps its own sessions in `platform_sessions` under a separate cookie (`posible_admin`), so an
+admin cookie never opens a business and a business cookie never opens `/api/admin/*`. The admin endpoints
+(`app/api/admin/*`) can list businesses, create one with its owner sign-in, and change a business's package, on/off switch
+and end date. The list is computed in SQL as totals only (`COUNT` of accounts that can sign in, `SUM(pg_column_size)` of the
+records, the last audit-log time); no record content is selected, and there is no impersonation. Packages live in
+`lib/server/plans.ts`. Subscription state is checked at sign-in and on every request (`authenticate`), suspending deletes
+the business's sessions, and `crud:users` create / re-enable is refused at the plan's user limit (`assertUserQuota` in
+`rpc.ts`). Migration 2 adds `plan`, `subscription_status`, `subscription_expires_at` and `platform_sessions`.
 
 ## Tests
 

@@ -40,7 +40,7 @@ export default function LoginPage() {
   const serverStatus = useAuth((s) => s.status);
   const userId = API_MODE ? (serverStatus === "in" ? "server" : null) : localUserId;
   const login = useSession((s) => s.login);
-  const [failed, setFailed] = useState<false | "invalid" | "throttled">(false);
+  const [failed, setFailed] = useState<false | "invalid" | "throttled" | "suspended" | "expired">(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<Values>({
@@ -65,7 +65,8 @@ export default function LoginPage() {
         useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName });
         return;
       }
-      setFailed(res?.status === 429 ? "throttled" : "invalid");
+      const reason = await res?.json().then((b: { reason?: string }) => b.reason).catch(() => undefined);
+      setFailed(res?.status === 429 ? "throttled" : reason === "suspended" || reason === "expired" ? reason : "invalid");
       form.setFocus("password");
       return;
     }
@@ -97,7 +98,7 @@ export default function LoginPage() {
             {failed && (
               <div role="alert" className="flex items-center gap-2 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger-foreground">
                 <AlertCircleIcon className="size-4 shrink-0" />
-                {failed === "throttled" ? t("auth.throttled") : t("auth.invalid")}
+                {failed === "invalid" ? t("auth.invalid") : t(`auth.${failed}`)}
               </div>
             )}
 

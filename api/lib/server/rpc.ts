@@ -40,7 +40,8 @@ import { serviceRegistry } from "@/lib/data/api/registry";
 import { serverCrud } from "@/lib/data/services/catalog";
 import type { Role } from "@/lib/data/schemas";
 import { pool } from "./pool";
-import { runInBusiness } from "./store";
+import { PLANS, isPlan } from "./plans";
+import { loadBusiness, runInBusiness } from "./store";
 import { TABLE_NAMES } from "./tables";
 
 /**
@@ -108,6 +109,22 @@ function resolve(service: string, method: string): { target: Record<string, unkn
   return { target: target!, fn: fn as (...a: unknown[]) => unknown };
 }
 
+/**
+ * A package allows a number of accounts that can sign in. Adding one, or switching one back on, is refused at the
+ * limit, whatever the screen does; deactivating and deleting are never blocked.
+ */
+async function assertUserQuota(businessId: string, method: string, args: unknown[]): Promise<void> {
+  const patch = (method === "create" ? args[0] : args[1]) as { allowLogin?: unknown } | undefined;
+  if (!(method === "create" ? patch?.allowLogin !== false : method === "update" && patch?.allowLogin === true)) return;
+  const row = (await pool().query<{ plan: string }>("SELECT plan FROM businesses WHERE id = $1", [businessId])).rows[0];
+  const max = PLANS[isPlan(row?.plan) ? row.plan : "standard"].maxUsers;
+  if (max === null) return;
+  const { db } = await loadBusiness(businessId);
+  const existing = method === "update" ? db.users.find((u) => u.id === args[0]) : undefined;
+  if (existing && existing.allowLogin !== false) return;
+  if (db.users.filter((u) => u.allowLogin !== false).length >= max) throw new AppError(`Your plan allows up to ${max} users who can sign in. Ask your provider to upgrade the package.`, "plan_limit");
+}
+
 /** Password hashes never leave the server. */
 function redact(value: unknown): unknown {
   return JSON.parse(JSON.stringify(value ?? null, (k, v) => (k === "password" && typeof v === "string" ? "" : v)));
@@ -123,6 +140,7 @@ export async function handleRpc(p: { businessId: string; userId: string; role: R
     const gate = GATES[service];
     if (gate && !gate.some((g) => hasPermission(p.role, g))) throw new ForbiddenError(gate[0]);
     const { target, fn } = resolve(service, method);
+    if (service === "crud:users") await assertUserQuota(p.businessId, method, args);
 
     const out = await runInBusiness(p.businessId, p.userId, async () => fn.apply(target, args));
     if (out.wrote) {
