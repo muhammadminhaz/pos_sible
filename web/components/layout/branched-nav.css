@@ -1,0 +1,132 @@
+/* Branched menu, adapted from React Bits (reactbits.dev, "Branched Menu"), themed with the sidebar's own tokens. */
+.branched-menu {
+  --bm-ink: var(--sidebar-foreground);
+  --bm-accent: var(--primary);
+  /* A solid mix (not a transparent colour) so where lines overlap the joints never get darker. */
+  --bm-line: color-mix(in oklab, var(--sidebar-foreground) 22%, var(--sidebar));
+  --bm-font: 13px;
+  --bm-row: 30px;
+  --bm-indent: 36px;
+  --bm-line-w: 1.5;
+  --bm-draw: 400ms;
+  --bm-fold: 300ms;
+  --bm-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --bm-muted: color-mix(in oklab, var(--bm-ink) 80%, transparent);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding-left: 14px;
+  color: var(--bm-ink);
+  font-size: var(--bm-font);
+  line-height: 1.2;
+}
+
+.branched-menu__marker {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  z-index: 1;
+  width: 2px;
+  height: 16px;
+  border-radius: 1px;
+  background: var(--bm-accent);
+  opacity: 0;
+  transition: top 220ms var(--bm-ease-out), opacity 150ms ease;
+}
+.branched-menu__marker[data-on] { opacity: 1; }
+
+.branched-menu__section { display: flex; flex-direction: column; }
+
+.branched-menu__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 8px 8px;
+  margin-left: -8px; /* room for the highlight without moving the text */
+  width: calc(100% + 8px);
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--bm-muted);
+  font: inherit;
+  font-size: calc(var(--bm-font) + 1px);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 200ms ease;
+}
+.branched-menu__head:focus-visible { box-shadow: 0 0 0 2px var(--sidebar-ring); }
+.branched-menu__head > svg:first-child { flex: none; width: 16px; height: 16px; transition: transform 200ms var(--bm-ease-out); }
+.branched-menu__chev { margin-left: auto; flex: none; width: 14px; height: 14px; opacity: 0.55; transition: transform var(--bm-fold) var(--bm-ease-out); }
+.branched-menu__section[data-open] .branched-menu__chev { transform: rotate(90deg); }
+.branched-menu__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.branched-menu__section[data-open] .branched-menu__head { color: var(--bm-ink); }
+
+@media (hover: hover) and (pointer: fine) {
+  .branched-menu__head:hover { color: var(--bm-ink); }
+  .branched-menu__head:hover > svg:first-child { transform: scale(1.1); }
+  .branched-menu__item:hover { color: var(--bm-ink); }
+}
+
+.branched-menu__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--bm-fold) var(--bm-ease-out);
+}
+.branched-menu__section[data-open] .branched-menu__body { grid-template-rows: 1fr; }
+.branched-menu__fold { min-height: 0; overflow: hidden; }
+
+.branched-menu__tree { position: relative; padding: 6px 0; box-sizing: border-box; }
+
+.branched-menu__lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.branched-menu__section[data-open] .branched-menu__lines { opacity: 1; transition: opacity 250ms ease 100ms; }
+
+.branched-menu__base,
+.branched-menu__reach { fill: none; stroke-width: var(--bm-line-w); stroke-linecap: round; stroke-linejoin: round; }
+.branched-menu__base { stroke: var(--bm-line); }
+.branched-menu__reach { stroke: var(--bm-accent); transition: stroke-dashoffset var(--bm-draw) var(--bm-ease-out); }
+
+.branched-menu__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--bm-row);
+  margin: 0;
+  padding: 0 6px 0 var(--bm-indent);
+  border-radius: 6px;
+  color: var(--bm-muted);
+  text-decoration: none;
+  outline: none;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 200ms ease;
+}
+.branched-menu__item:focus-visible { box-shadow: 0 0 0 2px var(--sidebar-ring); }
+.branched-menu__item[data-active] { color: var(--bm-accent); font-weight: 500; }
+
+/* The section holding the current page: tinted pill, accent colour, a little heavier. Wins over hover and "open". */
+.branched-menu .branched-menu__head[data-current] {
+  color: color-mix(in oklab, var(--bm-accent) 82%, var(--bm-ink));
+  font-weight: 600;
+  background: color-mix(in oklab, var(--bm-accent) 11%, transparent);
+}
+.branched-menu__head { transition: color 200ms ease, background-color 200ms ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .branched-menu__marker { transition: opacity 150ms ease; }
+  .branched-menu__body, .branched-menu__reach, .branched-menu__chev { transition: none; }
+}

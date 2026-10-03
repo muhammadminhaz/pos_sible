@@ -34,9 +34,9 @@ await page.getByLabel("Name").fill("Team Test Brand");
 await page.getByRole("button", { name: "Save" }).click();
 await page.getByRole("dialog").waitFor({ state: "detached" });
 await page.locator("main").getByPlaceholder(/search/i).first().fill("Team Test");
-await page.getByText("Team Test Brand").waitFor();
+await page.getByRole("table").getByText("Team Test Brand").waitFor();
 await showAuditColumns();
-const row = page.locator("tr", { hasText: "Team Test Brand" });
+const row = page.getByRole("table").locator("tr", { hasText: "Team Test Brand" });
 check((await row.innerText()).includes("Mahmud"), "created by shows the admin");
 
 // A manager (switch user) edits it; created-by stays, updated-by changes.
@@ -46,16 +46,16 @@ await page.waitForURL(/\/login/);
 await signIn("rafiq");
 await page.goto(`${BASE}/products/brands`);
 await page.locator("main").getByPlaceholder(/search/i).first().fill("Team Test");
-await page.locator("tr", { hasText: "Team Test Brand" }).getByRole("button").last().click();
+await page.getByRole("table").locator("tr", { hasText: "Team Test Brand" }).getByRole("button").last().click();
 await page.getByRole("menuitem", { name: "Edit" }).click();
 await page.getByLabel("Name").fill("Team Test Brand 2");
 await page.getByRole("button", { name: "Save" }).click();
 await page.getByRole("dialog").waitFor({ state: "detached" });
-await page.getByText("Team Test Brand 2").waitFor();
-const text = await page.locator("tr", { hasText: "Team Test Brand 2" }).innerText();
+await page.getByRole("table").getByText("Team Test Brand 2").waitFor();
+const text = await page.getByRole("table").locator("tr", { hasText: "Team Test Brand 2" }).innerText();
 check(text.includes("Mahmud") && text.includes("Rafiq"), "created by is the admin and updated by is the manager");
 // The manager role has no delete permission for brands.
-await page.locator("tr", { hasText: "Team Test Brand 2" }).getByRole("button").last().click();
+await page.getByRole("table").locator("tr", { hasText: "Team Test Brand 2" }).getByRole("button").last().click();
 check(!(await page.getByRole("menuitem", { name: "Delete" }).isVisible().catch(() => false)), "no Delete action without the delete permission");
 await page.keyboard.press("Escape");
 

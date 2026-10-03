@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ChevronRightIcon, MonitorSmartphoneIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
+import { MonitorSmartphoneIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +21,7 @@ import { useUI } from "@/lib/data/store/ui";
 import { useSettings } from "@/lib/data/hooks/settings";
 import { isPathEnabled } from "@/lib/modules";
 import { findNavTrail, NAV, type NavGroup } from "@/lib/nav";
+import { BranchedNav, type BranchedSection } from "./BranchedNav";
 import { LocationSwitcher } from "./LocationSwitcher";
 import { LogoMark } from "./LogoMark";
 
@@ -43,11 +43,6 @@ function useActive() {
   return findNavTrail(pathname, search ? `?${search}` : "");
 }
 
-const itemBase =
-  "relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring [&>svg]:transition-transform hover:[&>svg]:scale-110";
-const itemActive =
-  "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary before:absolute before:top-1.5 before:bottom-1.5 before:-left-3 before:w-0.5 before:origin-center before:animate-[grow-y_0.25s_ease-out] before:rounded-full before:bg-primary";
-
 function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () => void }) {
   const t = useTranslations("nav");
   const active = useActive();
@@ -66,50 +61,26 @@ function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: 
     );
   };
 
+  const sections: BranchedSection[] = groups.map((g) => ({
+    key: g.key, label: t(g.key), icon: g.icon, href: g.href,
+    kids: g.items?.map((i) => ({ key: i.key, href: i.href, label: t(i.key) })),
+  }));
+
   return (
-    <nav className="flex flex-col gap-0.5 px-3 py-2">
-      {groups.map((g) => {
-        const Icon = g.icon;
-        if (!g.items) {
-          const isActive = active.group?.key === g.key;
-          return (
-            <Link key={g.key} href={g.href!} onClick={onNavigate} className={cn(itemBase, isActive && itemActive)}>
-              <Icon className="size-4 shrink-0" />
-              {t(g.key)}
-            </Link>
-          );
-        }
-        const containsActive = active.group?.key === g.key;
-        const open = isOpen(g.key);
-        return (
-          <Collapsible key={g.key} open={open} onOpenChange={() => toggleGroup(g.key)}>
-            <CollapsibleTrigger className={cn(itemBase, "w-full", containsActive && "text-foreground")}>
-              <Icon className={cn("size-4 shrink-0", containsActive && "text-primary")} />
-              <span className="flex-1 text-left">{t(g.key)}</span>
-              <ChevronRightIcon className={cn("size-3.5 text-muted-foreground transition-transform", open && "rotate-90")} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-              <div className="my-0.5 ml-[18px] flex flex-col gap-0.5 border-l pl-3">
-                {g.items.map((i) => (
-                  <Link
-                    key={i.key}
-                    href={i.href}
-                    onClick={() => {
-                      // The page we land on makes this group "open" by itself; a leftover manual-open flag would flip it shut.
-                      setOpenGroups([]);
-                      onNavigate?.();
-                    }}
-                    className={cn(itemBase, "h-7 font-normal", active.item?.key === i.key && itemActive)}
-                  >
-                    {t(i.key)}
-                  </Link>
-                ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        );
-      })}
-    </nav>
+    <div className="px-3 py-2">
+      <BranchedNav
+        sections={sections}
+        activeSection={active.group?.key}
+        activeKid={active.item?.key}
+        isOpen={isOpen}
+        onToggle={toggleGroup}
+        // The page we land on makes its group "open" by itself; a leftover manual-open flag would flip it shut.
+        onNavigate={() => {
+          setOpenGroups([]);
+          onNavigate?.();
+        }}
+      />
+    </div>
   );
 }
 
