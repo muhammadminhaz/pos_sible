@@ -66,6 +66,16 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 - **Email/SMS** "test" buttons are mocked; a real gateway needs a provider key and a worker.
 - **Field labels** inside some Business Settings tabs are generated from the setting names and are English-only in Bangla mode.
 
+
+### Modules, free accounts, demo accounts and staff sign-in
+
+- **Subscription = package + modules.** A package sets the user limit and base price; each module (POS, Sales, Purchases, Stock, Expenses, Accounts, Reports) adds its own monthly price (edit under `/admin` → Subscriptions). Dashboard, products, contacts and settings are always included. Modules a business does not have are hidden in the menu, blocked on its pages and refused by the server (`module_off`).
+- **Per-person modules.** Under Settings → Users the owner can narrow what each person may use (none picked = everything the business has).
+- **Free account.** Switch on in `/admin` → Manage: price 0, no end date, every module, unlimited users.
+- **Demo account.** Tick "Demo account" when adding a business: three months of random sample data and no welcome wizard. Real business accounts still get the wizard; the browser-only demo never shows it.
+- **Staff sign-in.** The login page has "Business owner" and "Staff member" tabs. Staff enter the business username (the owner's sign-in name), their own account name and the password the owner set for them under Settings → Users.
+- **Notifications.** The bell re-derives alerts from the data before every read and re-checks every 5 minutes and on focus.
+
 ## Tech stack
 Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand, next-intl, next-themes, zod, recharts, sonner, lucide-react, PostgreSQL (`pg`), vitest, Playwright-core + axe-core for browser checks. Fonts: Inter and Anek Bangla.
 

@@ -19,6 +19,7 @@ import { useSession } from "@/lib/auth/session";
 import Link from "next/link";
 
 const schema = z.object({
+  business: z.string().trim().optional(),
   username: z.string().trim().min(1),
   password: z.string().min(1),
   remember: z.boolean(),
@@ -42,10 +43,11 @@ export default function LoginPage() {
   const login = useSession((s) => s.login);
   const [failed, setFailed] = useState<false | "invalid" | "throttled" | "cancelled" | "expired">(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [staff, setStaff] = useState(false);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { username: "", password: "", remember: true },
+    defaultValues: { business: "", username: "", password: "", remember: true },
   });
   const { errors, isSubmitting } = form.formState;
 
@@ -56,13 +58,14 @@ export default function LoginPage() {
     if (userId) router.replace("/home");
   }, [userId, router]);
 
-  const onSubmit = form.handleSubmit(async ({ username, password, remember }) => {
+  const onSubmit = form.handleSubmit(async ({ business, username, password, remember }) => {
     setFailed(false);
+    if (API_MODE && staff && !business) return form.setFocus("business");
     if (API_MODE) {
-      const res = await fetch("/api/auth/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ username, password, remember }) }).catch(() => null);
+      const res = await fetch("/api/auth/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ username, password, remember, ...(staff ? { business } : {}) }) }).catch(() => null);
       if (res?.ok) {
         const body = await res.json();
-        useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName });
+        useAuth.getState().set({ user: body.user, role: body.role, businessName: body.businessName, modules: body.modules });
         return;
       }
       const reason = await res?.json().then((b: { reason?: string }) => b.reason).catch(() => undefined);
@@ -102,6 +105,22 @@ export default function LoginPage() {
               </div>
             )}
 
+            {API_MODE && (
+              <div role="group" aria-label={t("auth.signIn")} className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1 text-sm">
+                {([false, true] as const).map((isStaff) => (
+                  <button key={String(isStaff)} type="button" aria-pressed={staff === isStaff} onClick={() => setStaff(isStaff)} className={`rounded-md px-2 py-1.5 font-medium transition-colors ${staff === isStaff ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                    {isStaff ? t("auth.asStaff") : t("auth.asOwner")}
+                  </button>
+                ))}
+              </div>
+            )}
+            {API_MODE && staff && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="business">{t("auth.businessUsername")}</Label>
+                <Input id="business" autoComplete="organization" autoCapitalize="none" className="h-9" {...form.register("business")} />
+                <p className="text-xs text-muted-foreground">{t("auth.staffHint")}</p>
+              </div>
+            )}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="username">{t("auth.username")}</Label>
               <Input

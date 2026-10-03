@@ -31,6 +31,8 @@ import { contactsService } from "@/lib/data/services/contacts";
 import { productsService } from "@/lib/data/services/products";
 import { useFormat } from "@/lib/i18n/format";
 import { useCommandPalette } from "./commandStore";
+import { useAuth } from "@/lib/auth/authStore";
+import { isPathLicensed } from "@/lib/modules";
 import { useVisibleNav } from "./Sidebar";
 
 type Action = { key: string; label: string; href: string; icon: LucideIcon; permission: string };
@@ -50,6 +52,7 @@ export function CommandPalette() {
   const can = useCan();
   const f = useFormat();
   const groups = useVisibleNav();
+  const licensed = useAuth((s) => s.modules);
   const open = useCommandPalette((s) => s.open);
   const setOpen = useCommandPalette((s) => s.setOpen);
   const [query, setQuery] = useState("");
@@ -84,7 +87,7 @@ export function CommandPalette() {
     { key: "addPurchase", label: t("nav.addPurchase"), href: "/purchases/new", icon: ShoppingBagIcon, permission: "purchase.create" },
     { key: "addExpense", label: t("nav.addExpense"), href: "/expenses/new", icon: ReceiptIcon, permission: "expense.create" },
     { key: "addContact", label: t("header.addContact"), href: "/contacts/customers?new=1", icon: UserPlusIcon, permission: "contacts.customer" },
-  ].filter((a) => can(a.permission));
+  ].filter((a) => can(a.permission) && isPathLicensed(licensed, a.href));
 
   const go = (href: string) => {
     setOpen(false);

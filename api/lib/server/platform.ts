@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { pool, ready } from "./pool";
-import { subscriptionState, type Plan, type SubscriptionStatus } from "./plans";
+import { effectiveModules, MODULE_IDS, subscriptionState, type ModuleDef, type ModuleId, type Plan, type SubscriptionStatus } from "./plans";
 import { hashPassword } from "./passwords";
 import { sqlName, TABLE_NAMES } from "./tables";
 
@@ -45,6 +45,19 @@ export async function updatePlan(id: string, patch: PlanPatch): Promise<boolean>
   if (patch.priceMonthly !== undefined) { args.push(patch.priceMonthly); sets.push(`price_monthly = $${args.length}`); }
   if (!sets.length) return (await pool().query("SELECT 1 FROM plans WHERE id = $1", [id])).rowCount === 1;
   return (await pool().query(`UPDATE plans SET ${sets.join(", ")} WHERE id = $1`, args)).rowCount === 1;
+}
+
+type ModuleRow = { id: ModuleId; label: string; price_monthly: string };
+
+export async function getModules(): Promise<ModuleDef[]> {
+  await ready();
+  return (await pool().query<ModuleRow>("SELECT id, label, price_monthly FROM modules ORDER BY sort, id")).rows.map((r) => ({ id: r.id, label: r.label, priceMonthly: Number(r.price_monthly) }));
+}
+
+/** Changes what a module adds to the monthly price. Returns false for an unknown module. */
+export async function updateModulePrice(id: string, priceMonthly: number): Promise<boolean> {
+  await ready();
+  return (await pool().query("UPDATE modules SET price_monthly = $2 WHERE id = $1", [id, priceMonthly])).rowCount === 1;
 }
 
 declare global {
@@ -105,7 +118,12 @@ export type BusinessSummary = {
   contactPhone: string | null;
   plan: string;
   planLabel: string;
+  /** What the business pays per month: package plus its modules, or 0 when free. */
   priceMonthly: number;
+  /** Modules the business can use (all of them when free). */
+  modules: ModuleId[];
+  /** Waived by the platform owner: no price, no end date, every module, unlimited users. */
+  free: boolean;
   status: SubscriptionStatus;
   expiresAt: string | null;
   /** What actually applies now: "expired" when the date has passed. */
@@ -129,10 +147,10 @@ export async function listBusinesses(): Promise<BusinessSummary[]> {
   const { rows } = await pool().query<{
     id: string; name: string; created_at: Date; plan: string; plan_label: string; price: string; max_users: number | null;
     subscription_status: SubscriptionStatus; subscription_expires_at: Date | null; owner: string | null; contact_email: string | null; contact_phone: string | null;
-    users: string; storage: string; last_active: Date | null;
+    modules: string[] | null; free: boolean; users: string; storage: string; last_active: Date | null;
   }>(`
     SELECT b.id, b.name, b.created_at, b.plan, p.label AS plan_label, p.price_monthly AS price, p.max_users,
-           b.subscription_status, b.subscription_expires_at, l.username AS owner, b.contact_email, b.contact_phone,
+           b.subscription_status, b.subscription_expires_at, l.username AS owner, b.contact_email, b.contact_phone, b.modules, b.free,
            COALESCE(u.n, 0) AS users,
            COALESCE(s.bytes, 0) + pg_column_size(b.settings) + pg_column_size(b.meta) AS storage,
            a.last_active
@@ -143,17 +161,22 @@ export async function listBusinesses(): Promise<BusinessSummary[]> {
       LEFT JOIN (SELECT business_id, SUM(bytes) AS bytes FROM (${ENTITY_SIZES}) x GROUP BY business_id) s ON s.business_id = b.id
       LEFT JOIN (SELECT business_id, MAX(at) AS last_active FROM audit_log GROUP BY business_id) a ON a.business_id = b.id
      ORDER BY b.created_at DESC`);
-  return rows.map((r) => ({
-    id: r.id, name: r.name, createdAt: r.created_at.toISOString(), ownerUsername: r.owner, contactEmail: r.contact_email, contactPhone: r.contact_phone, plan: r.plan, planLabel: r.plan_label,
-    priceMonthly: Number(r.price), status: r.subscription_status, expiresAt: r.subscription_expires_at?.toISOString() ?? null,
-    state: subscriptionState(r.subscription_status, r.subscription_expires_at), users: Number(r.users), maxUsers: r.max_users,
-    storageBytes: Number(r.storage), lastActiveAt: r.last_active?.toISOString() ?? null,
-  }));
+  const prices = new Map((await getModules()).map((m) => [m.id, m.priceMonthly]));
+  return rows.map((r) => {
+    const modules = effectiveModules(r.modules, r.free);
+    return {
+      id: r.id, name: r.name, createdAt: r.created_at.toISOString(), ownerUsername: r.owner, contactEmail: r.contact_email, contactPhone: r.contact_phone,
+      plan: r.plan, planLabel: r.plan_label, priceMonthly: r.free ? 0 : Number(r.price) + modules.reduce((sum, m) => sum + (prices.get(m) ?? 0), 0),
+      modules, free: r.free, status: r.subscription_status, expiresAt: r.subscription_expires_at?.toISOString() ?? null,
+      state: subscriptionState(r.subscription_status, r.subscription_expires_at, new Date(), r.free), users: Number(r.users),
+      maxUsers: r.free ? null : r.max_users, storageBytes: Number(r.storage), lastActiveAt: r.last_active?.toISOString() ?? null,
+    };
+  });
 }
 
-export type SubscriptionPatch = { plan?: string; status?: SubscriptionStatus; expiresAt?: string | null; contactEmail?: string | null; contactPhone?: string | null };
+export type SubscriptionPatch = { plan?: string; status?: SubscriptionStatus; expiresAt?: string | null; contactEmail?: string | null; contactPhone?: string | null; modules?: ModuleId[]; free?: boolean };
 
-/** Changes only the package, the on/off switch, the end date and the contact details. Returns false when there is no such business. */
+/** Changes only the package, the on/off switch, the end date, the contact details, its modules and the free flag. Returns false when there is no such business. */
 export async function setSubscription(businessId: string, patch: SubscriptionPatch): Promise<boolean> {
   await ready();
   const sets: string[] = [];
@@ -163,6 +186,8 @@ export async function setSubscription(businessId: string, patch: SubscriptionPat
   if (patch.expiresAt !== undefined) { args.push(patch.expiresAt); sets.push(`subscription_expires_at = $${args.length}`); }
   if (patch.contactEmail !== undefined) { args.push(patch.contactEmail); sets.push(`contact_email = $${args.length}`); }
   if (patch.contactPhone !== undefined) { args.push(patch.contactPhone); sets.push(`contact_phone = $${args.length}`); }
+  if (patch.modules) { args.push(MODULE_IDS.filter((m) => patch.modules!.includes(m))); sets.push(`modules = $${args.length}`); }
+  if (patch.free !== undefined) { args.push(patch.free); sets.push(`free = $${args.length}`); }
   if (!sets.length) return (await pool().query("SELECT 1 FROM businesses WHERE id = $1", [businessId])).rowCount === 1;
   const r = await pool().query(`UPDATE businesses SET ${sets.join(", ")} WHERE id = $1`, args);
   // A cancelled business is signed out everywhere straight away.

@@ -39,6 +39,7 @@ import { AppError, ForbiddenError, serializeError, ValidationError, type WireErr
 import { serviceRegistry } from "@/lib/data/api/registry";
 import { serverCrud } from "@/lib/data/services/catalog";
 import type { Role } from "@/lib/data/schemas";
+import { SERVICE_MODULES, type ModuleId } from "./plans";
 import { pool } from "./pool";
 import { loadBusiness, runInBusiness } from "./store";
 import { TABLE_NAMES } from "./tables";
@@ -115,7 +116,7 @@ function resolve(service: string, method: string): { target: Record<string, unkn
 async function assertUserQuota(businessId: string, method: string, args: unknown[]): Promise<void> {
   const patch = (method === "create" ? args[0] : args[1]) as { allowLogin?: unknown } | undefined;
   if (!(method === "create" ? patch?.allowLogin !== false : method === "update" && patch?.allowLogin === true)) return;
-  const row = (await pool().query<{ max_users: number | null }>("SELECT p.max_users FROM businesses b JOIN plans p ON p.id = b.plan WHERE b.id = $1", [businessId])).rows[0];
+  const row = (await pool().query<{ max_users: number | null }>("SELECT CASE WHEN b.free THEN NULL ELSE p.max_users END AS max_users FROM businesses b JOIN plans p ON p.id = b.plan WHERE b.id = $1", [businessId])).rows[0];
   const max = row?.max_users ?? null;
   if (max === null) return;
   const { db } = await loadBusiness(businessId);
@@ -129,13 +130,16 @@ function redact(value: unknown): unknown {
   return JSON.parse(JSON.stringify(value ?? null, (k, v) => (k === "password" && typeof v === "string" ? "" : v)));
 }
 
-export async function handleRpc(p: { businessId: string; userId: string; role: Role }, body: RpcRequest): Promise<RpcResponse> {
+export async function handleRpc(p: { businessId: string; userId: string; role: Role; modules?: ModuleId[] }, body: RpcRequest): Promise<RpcResponse> {
   const started = Date.now();
   try {
     if (typeof body.service !== "string" || typeof body.method !== "string" || !Array.isArray(body.args) || body.args.length > 20) {
       throw new AppError("Malformed request", "bad_request");
     }
     const { service, method, args } = body as { service: string; method: string; args: unknown[] };
+    // A module the business hasn't subscribed to is closed here, whatever the screens show.
+    const unlockedBy = SERVICE_MODULES[service];
+    if (p.modules && unlockedBy && !unlockedBy.some((m) => p.modules!.includes(m))) throw new AppError("This feature isn't part of your subscription.", "module_off");
     const gate = GATES[service];
     if (gate && !gate.some((g) => hasPermission(p.role, g))) throw new ForbiddenError(gate[0]);
     const { target, fn } = resolve(service, method);

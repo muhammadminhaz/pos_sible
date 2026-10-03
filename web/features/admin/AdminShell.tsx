@@ -11,9 +11,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import { call, type Business, type Me, type Plan } from "./api";
+import { call, type Business, type Me, type ModuleDef, type Plan } from "./api";
 
-type AdminState = { me: Me; plans: Plan[]; businesses: Business[] | null; reload: () => Promise<void>; signOut: () => Promise<void> };
+type AdminState = { me: Me; plans: Plan[]; modules: ModuleDef[]; businesses: Business[] | null; reload: () => Promise<void>; signOut: () => Promise<void> };
 const Ctx = createContext<AdminState | null>(null);
 
 export function useAdmin(): AdminState {
@@ -91,7 +91,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     setMe(null);
   }, []);
 
-  const value = useMemo(() => (me && me !== "offline" ? { me, plans: me.plans, businesses, reload: async () => { await Promise.all([refreshMe(), reload()]); }, signOut } : null), [me, businesses, reload, refreshMe, signOut]);
+  const value = useMemo(() => (me && me !== "offline" ? { me, plans: me.plans, modules: me.modules, businesses, reload: async () => { await Promise.all([refreshMe(), reload()]); }, signOut } : null), [me, businesses, reload, refreshMe, signOut]);
 
   if (me === "offline") {
     return (

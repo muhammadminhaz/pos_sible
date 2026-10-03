@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   }
   const r = await login(username, password, true, clientIp(req));
   if (!r.ok) return NextResponse.json({ ok: false, reason: "invalid" }, { status: 500 });
-  const res = NextResponse.json({ ok: true, user: r.principal.user, role: r.principal.role, businessName: r.principal.businessName });
+  const res = NextResponse.json({ ok: true, user: r.principal.user, role: r.principal.role, businessName: r.principal.businessName, modules: r.principal.modules });
   res.cookies.set(COOKIE, r.token, cookieOptions(r.maxAge));
   return res;
 }

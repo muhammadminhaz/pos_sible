@@ -6,6 +6,7 @@ import { PowerOffIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth/authStore";
 import { useSettings } from "@/lib/data/hooks/settings";
 import { isPathEnabled } from "@/lib/modules";
 import { EmptyState } from "./EmptyState";
@@ -15,7 +16,8 @@ export function ModuleGate({ children }: { children: ReactNode }) {
   const t = useTranslations();
   const pathname = usePathname();
   const settings = useSettings().data;
-  if (isPathEnabled(settings, pathname)) return children;
+  const licensed = useAuth((s) => s.modules);
+  if (isPathEnabled(settings, pathname, licensed)) return children;
   return (
     <div className="rounded-xl border bg-card">
       <EmptyState

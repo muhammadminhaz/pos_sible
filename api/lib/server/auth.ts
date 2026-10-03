@@ -5,13 +5,16 @@ import type { PublicUser } from "./types";
 import { pool, ready } from "./pool";
 import { loadBusiness } from "./store";
 import { verifyPassword } from "./passwords";
-import { subscriptionState } from "./plans";
+import { effectiveModules, subscriptionState, type ModuleId } from "./plans";
 
 export const COOKIE = "posible_sid";
 const DAY = 86_400_000;
 
-export type Principal = { businessId: string; userId: string; user: PublicUser; role: Role; businessName: string; plan: string };
+export type Principal = { businessId: string; userId: string; user: PublicUser; role: Role; businessName: string; plan: string; modules: ModuleId[] };
 export type { PublicUser };
+
+/** What one person can use: the business's modules, narrowed to the ones the owner gave them (none chosen = all). */
+const userModules = (business: ModuleId[], user: User): ModuleId[] => (user.modules?.length ? business.filter((m) => user.modules.includes(m)) : business);
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 export const publicUser = ({ password: _password, ...rest }: User): PublicUser => {
@@ -39,14 +42,23 @@ const recordFail = (key: string) => {
 
 export type LoginResult = { ok: true; token: string; maxAge: number | null; principal: Principal } | { ok: false; reason: "invalid" | "throttled" | "cancelled" | "expired" };
 
-export async function login(username: string, password: string, remember: boolean, ip: string): Promise<LoginResult> {
+/**
+ * Signs in. `business` is the business owner's username: when given, the account name is looked up inside that business
+ * (staff sign-in); without it the account name alone identifies the person.
+ */
+export async function login(username: string, password: string, remember: boolean, ip: string, business?: string): Promise<LoginResult> {
   await ready();
-  const key = `${ip}|${username.trim().toLowerCase()}`;
+  const key = `${ip}|${business?.trim().toLowerCase() ?? ""}|${username.trim().toLowerCase()}`;
   if (throttled(key)) return { ok: false, reason: "throttled" };
 
-  const row = (await pool().query<{ business_id: string; user_id: string }>("SELECT business_id, user_id FROM logins WHERE username = $1", [username.trim().toLowerCase()])).rows[0];
+  let row = (await pool().query<{ business_id: string; user_id: string }>("SELECT business_id, user_id FROM logins WHERE username = $1", [(business?.trim() || username).toLowerCase()])).rows[0];
   const loaded = row ? await loadBusiness(row.business_id) : null;
-  const user = row && loaded ? loaded.db.users.find((u) => u.id === row.user_id) : undefined;
+  let user = row && loaded ? loaded.db.users.find((u) => u.id === row!.user_id) : undefined;
+  if (business?.trim() && row && loaded) {
+    // The business name resolved to its owner's login; now find the person inside that business.
+    user = loaded.db.users.find((u) => u.username.toLowerCase() === username.trim().toLowerCase());
+    row = user ? { business_id: row.business_id, user_id: user.id } : (undefined as never);
+  }
   // Same work whether or not the user exists, so timing doesn't reveal which usernames are real.
   const good = verifyPassword(password, user?.password ?? "scrypt$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
   if (!row || !loaded || !user || !good || !user.isActive || !user.allowLogin) {
@@ -57,15 +69,15 @@ export async function login(username: string, password: string, remember: boolea
   const role = loaded.db.roles.find((r) => r.id === user.roleId);
   if (!role) return { ok: false, reason: "invalid" };
   // Only someone who knows the right password learns that the subscription is the problem.
-  const sub = (await pool().query<{ plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null }>("SELECT plan, subscription_status, subscription_expires_at FROM businesses WHERE id = $1", [row.business_id])).rows[0];
-  const state = subscriptionState(sub.subscription_status, sub.subscription_expires_at);
+  const sub = (await pool().query<{ plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null; modules: string[] | null; free: boolean }>("SELECT plan, subscription_status, subscription_expires_at, modules, free FROM businesses WHERE id = $1", [row.business_id])).rows[0];
+  const state = subscriptionState(sub.subscription_status, sub.subscription_expires_at, new Date(), sub.free);
   if (state !== "active") return { ok: false, reason: state };
 
   const token = randomBytes(32).toString("base64url");
   const ttl = remember ? 30 * DAY : DAY / 2;
   await pool().query("INSERT INTO sessions (token_hash, business_id, user_id, expires_at) VALUES ($1, $2, $3, now() + $4 * interval '1 millisecond')", [sha(token), row.business_id, row.user_id, ttl]);
   void pool().query("DELETE FROM sessions WHERE expires_at < now()").catch(() => {});
-  return { ok: true, token, maxAge: remember ? ttl / 1000 : null, principal: { businessId: row.business_id, userId: user.id, user: publicUser(user), role, businessName: loaded.db.settings.business.name, plan: sub.plan } };
+  return { ok: true, token, maxAge: remember ? ttl / 1000 : null, principal: { businessId: row.business_id, userId: user.id, user: publicUser(user), role, businessName: loaded.db.settings.business.name, plan: sub.plan, modules: userModules(effectiveModules(sub.modules, sub.free), user) } };
 }
 
 export async function logout(token: string | undefined): Promise<void> {
@@ -77,18 +89,18 @@ export async function authenticate(req: NextRequest | { cookies: { get(name: str
   const token = req.cookies.get(COOKIE)?.value;
   if (!token) return null;
   await ready();
-  const s = (await pool().query<{ business_id: string; user_id: string; plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null }>(
-    `SELECT s.business_id, s.user_id, b.plan, b.subscription_status, b.subscription_expires_at
+  const s = (await pool().query<{ business_id: string; user_id: string; plan: string; subscription_status: "active" | "cancelled"; subscription_expires_at: Date | null; modules: string[] | null; free: boolean }>(
+    `SELECT s.business_id, s.user_id, b.plan, b.subscription_status, b.subscription_expires_at, b.modules, b.free
        FROM sessions s JOIN businesses b ON b.id = s.business_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`, [sha(token)])).rows[0];
   if (!s) return null;
   // A lapsed or switched-off subscription ends the session on the very next request.
-  if (subscriptionState(s.subscription_status, s.subscription_expires_at) !== "active") return null;
+  if (subscriptionState(s.subscription_status, s.subscription_expires_at, new Date(), s.free) !== "active") return null;
   const { db } = await loadBusiness(s.business_id);
   const user = db.users.find((u) => u.id === s.user_id);
   const role = user && db.roles.find((r) => r.id === user.roleId);
   if (!user || !role || !user.isActive || !user.allowLogin) return null;
-  return { businessId: s.business_id, userId: user.id, user: publicUser(user), role, businessName: db.settings.business.name, plan: s.plan };
+  return { businessId: s.business_id, userId: user.id, user: publicUser(user), role, businessName: db.settings.business.name, plan: s.plan, modules: userModules(effectiveModules(s.modules, s.free), user) };
 }
 
 export function cookieOptions(maxAge: number | null) {
