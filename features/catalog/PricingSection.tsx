@@ -15,6 +15,7 @@ import { recalcPrices, type PriceField } from "@/lib/domain/pricing";
 import { combinations } from "@/lib/domain/variations";
 import { Field, NumInput, PickField, Section } from "./formParts";
 import { blankVariation } from "./productFormState";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 type Props = { value: ProductFormData; onChange: (patch: Partial<ProductFormData>) => void };
 
@@ -118,7 +119,7 @@ function VariationBuilder({ value, onChange, rate, margin }: Props & { rate: num
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("catalog.noVariationRows")}</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <ScrollFade className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -157,7 +158,7 @@ function VariationBuilder({ value, onChange, rate, margin }: Props & { rate: num
               ))}
             </TableBody>
           </Table>
-        </div>
+        </ScrollFade>
       )}
     </div>
   );

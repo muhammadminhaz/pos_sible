@@ -27,6 +27,7 @@ import { methodLabel, tillMethods } from "@/lib/pos/methods";
 import { cartTotals } from "@/lib/pos/selectors";
 import { usePosDialogs } from "@/features/pos/dialogStore";
 import { saleErrorMessage } from "./saleError";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 type Status = "final" | "draft" | "quotation" | "proforma";
 export type SaleFormInit = { id?: string; cart: Cart; sale?: Transaction; status: Status; locationId?: string; orderIds?: string[] };
@@ -158,7 +159,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
           )}
         </div>
         {cart.lines.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">{t("sales.noLines")}</p> : (
-          <div className="overflow-x-auto">
+          <ScrollFade className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-muted-foreground">
                 <th className="py-1 pr-2">{t("sales.product")}</th><th className="w-24 px-1">{t("sales.qty")}</th><th className="w-28 px-1">{t("sales.unitPrice")}</th><th className="w-36 px-1">{t("sales.discount")}</th><th className="w-20 px-1">{t("sales.tax")}</th><th className="px-1 text-right">{t("sales.lineSubtotal")}</th><th className="w-8" />
@@ -182,7 +183,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollFade>
         )}
       </div>
 
@@ -256,7 +257,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
         </div>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/95 px-6 py-3 backdrop-blur md:left-16">
+      <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background px-6 py-3 md:left-16">
         <span className="mr-auto text-sm text-muted-foreground">{t("common.total")}: <Money value={totals.total} className="text-lg font-semibold text-foreground" /></span>
         <Button type="button" variant="outline" onClick={() => router.back()}>{t("common.cancel")}</Button>
         <Button type="button" variant="outline" disabled={save.isPending} onClick={(e) => submit(e as unknown as FormEvent, true)}>{t("sales.saveAndPrint")}</Button>

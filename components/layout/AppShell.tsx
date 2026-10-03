@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { OnboardingGate } from "@/features/onboarding/OnboardingWizard";
 import { ModuleGate } from "@/components/shared/ModuleGate";
 import { CommandPalette } from "./CommandPalette";
+import { NotificationSync } from "./NotificationSync";
 import { PageTransition } from "./PageTransition";
 import { StorageBanner } from "./StorageBanner";
 import { Header } from "./Header";
@@ -18,6 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
       <CommandPalette />
       <OnboardingGate />
+      <NotificationSync />
     </div>
   );
 }

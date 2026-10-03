@@ -117,25 +117,22 @@ export function SalesList({ kind = "all" }: { kind?: SaleKind }) {
   const allRows = () => salesService.listAll({ ...filters, page: 0, pageSize: -1 }).then((r) => r.rows);
   const totals = list.data?.totals;
 
+  const addButton = can("sell.create") && (
+    <Button asChild>
+      <Link href={ADD_HREF[kind]}>
+        <PlusIcon />
+        {kind === "all" ? t("nav.addSale") : kind === "drafts" ? t("nav.addDraft") : t("nav.addQuotation")}
+      </Link>
+    </Button>
+  );
+
   return (
     <>
-      <PageHeader
-        title={t(TITLE[kind])}
-        description={t(DESCRIPTION[kind])}
-        actions={
-          can("sell.create") && (
-            <Button asChild>
-              <Link href={ADD_HREF[kind]}>
-                <PlusIcon />
-                {kind === "all" ? t("nav.addSale") : kind === "drafts" ? t("nav.addDraft") : t("nav.addQuotation")}
-              </Link>
-            </Button>
-          )
-        }
-      />
+      <PageHeader title={t(TITLE[kind])} description={t(DESCRIPTION[kind])} actions={addButton} actionsHiddenOnMobile />
       <div className="mb-4">
         <FilterBar
           defs={defs}
+          mobileActions={addButton}
           value={url}
           onChange={(patch) => {
             setUrl(patch);

@@ -46,13 +46,25 @@ function useActive() {
 const itemBase =
   "relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring";
 const itemActive =
-  "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary before:absolute before:-left-3 before:top-1.5 before:bottom-1.5 before:w-0.5 before:rounded-full before:bg-primary";
+  "bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary";
 
 function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: () => void }) {
   const t = useTranslations("nav");
   const active = useActive();
   const openGroups = useUI((s) => s.openGroups);
-  const toggleGroup = useUI((s) => s.toggleGroup);
+  const setOpenGroups = useUI((s) => s.setOpenGroups);
+
+  // Accordion: opening a group folds the rest. A group counts as open when its stored flag differs from
+  // "contains the active page", so to land on the wanted state we store the flag only where they disagree.
+  const isOpen = (key: string) => openGroups.includes(key) !== (active.group?.key === key);
+  const toggleGroup = (key: string) => {
+    const willOpen = !isOpen(key);
+    setOpenGroups(
+      groups
+        .filter((g) => g.items && (g.key === key ? willOpen : false) !== (active.group?.key === g.key))
+        .map((g) => g.key),
+    );
+  };
 
   return (
     <nav className="flex flex-col gap-0.5 px-3 py-2">
@@ -68,7 +80,7 @@ function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: 
           );
         }
         const containsActive = active.group?.key === g.key;
-        const open = openGroups.includes(g.key) !== containsActive; // the active group is open unless toggled shut
+        const open = isOpen(g.key);
         return (
           <Collapsible key={g.key} open={open} onOpenChange={() => toggleGroup(g.key)}>
             <CollapsibleTrigger className={cn(itemBase, "w-full", containsActive && "text-foreground")}>
@@ -175,10 +187,12 @@ function OpenPosButton({ collapsed }: { collapsed?: boolean }) {
 }
 
 function Brand({ collapsed }: { collapsed?: boolean }) {
+  const business = useSettings().data?.business;
+  const name = business?.logo && business.name ? business.name : "pos_sible";
   return (
     <Link href="/home" className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
       <LogoMark />
-      {!collapsed && <span className="text-[15px] font-semibold tracking-tight">pos_sible</span>}
+      {!collapsed && <span className="truncate text-[15px] font-semibold tracking-tight">{name}</span>}
     </Link>
   );
 }

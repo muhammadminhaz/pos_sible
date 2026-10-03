@@ -50,7 +50,7 @@ function SearchTrigger() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden h-8 w-full max-w-sm items-center gap-2 rounded-lg border bg-muted/40 px-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted md:flex"
+        className="hidden h-8 pointer-coarse:h-11 w-full max-w-sm items-center gap-2 rounded-lg border bg-muted/40 px-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted md:flex"
       >
         <SearchIcon className="size-4" />
         <span className="flex-1 text-left">{t("searchTrigger")}</span>
@@ -67,7 +67,7 @@ export function Header() {
   return (
     <header
       data-print-hide
-      className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur supports-backdrop-filter:bg-background/70 lg:px-6"
+      className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4 lg:px-6"
     >
       <MobileNav />
       <div className="flex min-w-0 flex-1 items-center gap-4">

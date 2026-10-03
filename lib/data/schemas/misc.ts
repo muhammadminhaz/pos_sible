@@ -82,6 +82,18 @@ export const notification = base.extend({
   href: z.string().nullable().default(null),
   readAt: isoDate.nullable().default(null),
   kind: z.enum(["info", "success", "warning", "danger"]).default("info"),
+  // Generated alerts: one live notification per `key`, worded from `type` + `params` in the viewer's language.
+  key: z.string().nullable().default(null),
+  type: z.string().nullable().default(null),
+  params: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
+  /** Business location the alert is about; users who cannot access it do not see it. `null` = whole business. */
+  locationId: z.string().nullable().default(null),
+  /** Permission needed to see (and act on) the alert. */
+  permission: z.string().nullable().default(null),
+  /** How bad it is (usually a count); a higher value than last time makes a read alert unread again. */
+  signal: z.number().default(0),
+  /** Per-user read times, so one person reading an alert does not clear it for the rest of the team. */
+  readBy: z.record(z.string(), isoDate).default({}),
 });
 export type Notification = z.infer<typeof notification>;
 

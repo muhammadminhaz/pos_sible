@@ -128,7 +128,7 @@ export function ExpenseForm({ id, init }: { id?: string; init: Omit<ExpenseInput
         </Section>
       </div>
 
-      <div data-print-hide className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 px-6 py-3 backdrop-blur md:left-(--sidebar-width,0px)">
+      <div data-print-hide className="fixed inset-x-0 bottom-0 z-20 border-t bg-background px-6 py-3 md:left-(--sidebar-width,0px)">
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-2">
           <div className="text-sm font-semibold"><Money value={v.isRefund ? -total : total} /></div>
           <div className="flex gap-2">

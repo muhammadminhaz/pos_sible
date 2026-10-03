@@ -4,11 +4,14 @@ export function PageHeader({
   title,
   description,
   actions,
+  actionsHiddenOnMobile,
   children,
 }: {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
+  /** Hide the actions below md when the page renders them elsewhere (e.g. beside a mobile filter toggle). */
+  actionsHiddenOnMobile?: boolean;
   children?: ReactNode;
 }) {
   return (
@@ -19,7 +22,7 @@ export function PageHeader({
           {description && <p className="mt-1 text-muted-foreground">{description}</p>}
         </div>
         {actions && (
-          <div data-print-hide className="flex flex-wrap items-center gap-2">
+          <div data-print-hide className={actionsHiddenOnMobile ? "hidden flex-wrap items-center gap-2 md:flex" : "flex flex-wrap items-center gap-2"}>
             {actions}
           </div>
         )}

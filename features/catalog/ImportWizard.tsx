@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { useCatalogImports } from "@/lib/data/hooks/products";
 import { useFormat } from "@/lib/i18n/format";
 import { catalogErrorMessage } from "./catalogError";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 type Parse<R> = { rows: R[]; errors: { row: number; message: string }[] };
 
@@ -96,14 +97,14 @@ export function ImportWizard<R>(p: ImportWizardProps<R>) {
             </Table>
           ) : (
             result.rows.length > 0 && (
-              <div className="max-h-80 overflow-auto rounded-lg border">
+              <ScrollFade className="max-h-80 overflow-auto rounded-lg border">
                 <Table>
                   <TableHeader><TableRow>{p.preview.headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
                   <TableBody>
                     {result.rows.slice(0, 50).map((r, i) => <TableRow key={i}>{p.preview.cells(r).map((c, j) => <TableCell key={j} className="tabular">{c}</TableCell>)}</TableRow>)}
                   </TableBody>
                 </Table>
-              </div>
+              </ScrollFade>
             )
           )}
           <div><Button disabled={result.errors.length > 0 || result.rows.length === 0 || busy} onClick={run}><UploadIcon />{t("catalog.importNow")}</Button></div>

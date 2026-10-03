@@ -237,7 +237,9 @@ export function SectionForm({
       return;
     }
     setErrors({});
-    await update.mutateAsync(parsed.data as never);
+    // Hidden keys have their own UI (e.g. the logo) that saves separately; a stale draft must not overwrite them.
+    const payload = Object.fromEntries(Object.entries(parsed.data as object).filter(([k]) => !hidden.includes(k)));
+    await update.mutateAsync(payload as never);
     setDraft(null);
     toast.success(t("common.saved"));
   };

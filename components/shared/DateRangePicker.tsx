@@ -42,17 +42,21 @@ export function DateRangePicker({
   placeholder,
   className,
   align = "start",
+  showDates,
 }: {
   value?: DateRange;
   onChange: (r: DateRange | undefined) => void;
   placeholder?: string;
   className?: string;
   align?: "start" | "end";
+  /** Show the actual dates on the button even when the range matches a preset. */
+  showDates?: boolean;
 }) {
   const t = useTranslations("dateRange");
   const tc = useTranslations("common");
   const locale = useLocale();
   const label = useRangeLabel();
+  const f = useFormat();
   const { today, fyStartMonth } = useRangeContext();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<{ from?: Date; to?: Date } | undefined>();
@@ -73,7 +77,7 @@ export function DateRangePicker({
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className={cn("justify-start font-normal", !value && "text-muted-foreground", className)}>
           <CalendarIcon />
-          {value ? label(value) : (placeholder ?? t("pick"))}
+          {value ? (showDates ? (value.from === value.to ? f.date(value.from) : `${f.date(value.from)} – ${f.date(value.to)}`) : label(value)) : (placeholder ?? t("pick"))}
         </Button>
       </PopoverTrigger>
       <PopoverContent align={align} className="flex w-auto flex-col p-0 sm:flex-row">

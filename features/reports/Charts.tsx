@@ -15,6 +15,8 @@ type ChartProps = {
   /** Format a y value for the tooltip and the text alternative; defaults to money. */
   format?: (n: number) => string;
   layout?: "vertical" | "horizontal";
+  /** Unit or measure shown beside the value axis, so numbers are never unlabeled. */
+  axisTitle?: string;
 };
 
 /** A visually hidden table so screen readers get the numbers the picture shows. */
@@ -29,7 +31,7 @@ function TextAlternative({ data, xKey, yKey, label, format }: Required<Pick<Char
   );
 }
 
-const tick = { fill: "var(--muted-foreground)", fontSize: 11 };
+const tick = { fill: "var(--muted-foreground)", fontSize: 12 };
 const tooltipStyle = { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--popover-foreground)", fontSize: 12 };
 
 function useChartFormat(format?: (n: number) => string) {
@@ -55,7 +57,7 @@ export function AreaChart({ data, xKey, yKey, label, height = 240, format }: Cha
             <XAxis dataKey={xKey} tick={tick} tickLine={false} axisLine={false} minTickGap={24} tickFormatter={(v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? f.date(v).slice(0, 5) : v)} />
             <YAxis tick={tick} tickLine={false} axisLine={false} width={56} tickFormatter={(n: number) => f.number(n)} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v) => fmt(Number(v))} />
-            <Area type="monotone" dataKey={yKey} stroke="var(--chart-1)" strokeWidth={2} fill={`url(#fill-${yKey})`} />
+            <Area type="linear" dataKey={yKey} stroke="var(--chart-1)" strokeWidth={2} fill={`url(#fill-${yKey})`} />
           </RAreaChart>
         </ResponsiveContainer>
       </div>
@@ -64,7 +66,7 @@ export function AreaChart({ data, xKey, yKey, label, height = 240, format }: Cha
   );
 }
 
-export function BarChart({ data, xKey, yKey, label, height = 280, format, layout = "horizontal" }: ChartProps) {
+export function BarChart({ data, xKey, yKey, label, height = 280, format, layout = "horizontal", axisTitle }: ChartProps) {
   const fmt = useChartFormat(format);
   const f = useFormat();
   const vertical = layout === "vertical";
@@ -76,7 +78,7 @@ export function BarChart({ data, xKey, yKey, label, height = 280, format, layout
             <CartesianGrid horizontal={!vertical} vertical={vertical} stroke="var(--border)" />
             {vertical ? (
               <>
-                <XAxis type="number" tick={tick} tickLine={false} axisLine={false} tickFormatter={(n: number) => f.number(n)} />
+                <XAxis type="number" tick={tick} tickLine={false} axisLine={false} tickFormatter={(n: number) => f.number(n)} label={axisTitle ? { value: axisTitle, position: "insideBottomRight", offset: 0, fill: "var(--muted-foreground)", fontSize: 11 } : undefined} height={axisTitle ? 44 : undefined} />
                 <YAxis type="category" dataKey={xKey} tick={tick} tickLine={false} axisLine={false} width={140} />
               </>
             ) : (
@@ -86,7 +88,7 @@ export function BarChart({ data, xKey, yKey, label, height = 280, format, layout
               </>
             )}
             <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--muted)", opacity: 0.5 }} formatter={(v) => fmt(Number(v))} />
-            <Bar dataKey={yKey} fill="var(--chart-1)" radius={vertical ? [0, 4, 4, 0] : [4, 4, 0, 0]} />
+            <Bar dataKey={yKey} fill="var(--chart-1)" minPointSize={3} radius={vertical ? [0, 4, 4, 0] : [4, 4, 0, 0]} />
           </RBarChart>
         </ResponsiveContainer>
       </div>

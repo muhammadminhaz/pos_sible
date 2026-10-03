@@ -30,14 +30,14 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg p-1 outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring md:pr-2">
+      <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg p-1 pointer-coarse:p-2 outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring md:pr-2">
         <Avatar className="size-7">
           {user.avatar && <AvatarImage src={user.avatar} alt="" />}
           <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">{initials}</AvatarFallback>
         </Avatar>
-        <span className="hidden text-left leading-tight md:block">
-          <span className="block text-[13px] font-medium">{name}</span>
-          <span className="block text-[11px] text-muted-foreground">{role.name}</span>
+        <span className="hidden max-w-40 text-left leading-tight md:block">
+          <span className="block truncate text-[13px] font-medium" title={name}>{name}</span>
+          <span className="block truncate text-xs text-muted-foreground">{role.name}</span>
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

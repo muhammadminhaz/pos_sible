@@ -13,6 +13,7 @@ type UIState = {
   tablePrefs: Record<string, TablePref>;
   setSidebarCollapsed: (v: boolean) => void;
   toggleGroup: (key: string) => void;
+  setOpenGroups: (keys: string[]) => void;
   setDensity: (d: Density) => void;
   setLocationId: (id: string | "all") => void;
   setTablePref: (table: string, pref: Partial<TablePref>) => void;
@@ -27,6 +28,7 @@ export const useUI = create<UIState>()(
       locationId: "all",
       tablePrefs: {},
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+      setOpenGroups: (openGroups) => set({ openGroups }),
       toggleGroup: (key) =>
         set((s) => ({ openGroups: s.openGroups.includes(key) ? s.openGroups.filter((k) => k !== key) : [...s.openGroups, key] })),
       setDensity: (density) => set({ density }),

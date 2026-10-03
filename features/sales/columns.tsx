@@ -27,7 +27,10 @@ export type SaleActions = {
 const dash = <span className="text-muted-foreground">—</span>;
 const text = (id: keyof SaleListRow, label: string, className?: string): ColumnDef<SaleListRow> => ({
   id, accessorKey: id, header: label, meta: { label, className },
-  cell: ({ getValue }) => getValue<string>() || dash,
+  cell: ({ getValue }) => {
+    const v = getValue<string>();
+    return v ? <span title={v}>{v}</span> : dash;
+  },
 });
 const money = (id: keyof SaleListRow, label: string): ColumnDef<SaleListRow> => ({
   id, accessorKey: id, header: label, meta: { label, align: "right" }, cell: ({ row }) => <Money value={row.original[id] as number} muted />,
@@ -67,21 +70,22 @@ export function saleColumns(t: T, f: Formatter, kind: SaleKind, a: SaleActions):
     id: "refNo", accessorKey: "refNo", header: final ? t("sales.invoiceNo") : t("sales.refNo"), meta: { label: final ? t("sales.invoiceNo") : t("sales.refNo") },
     cell: ({ row }) => (
       <span className="inline-flex items-center gap-1.5">
-        <Link href={`/sales/${row.original.id}`} onClick={(e) => e.stopPropagation()} className="font-medium tabular hover:underline">
+        <Link href={`/sales/${row.original.id}`} onClick={(e) => e.stopPropagation()} className="-my-3.5 py-3.5 font-medium tabular hover:underline">
           {row.original.refNo}
         </Link>
         {row.original.recurring && <RepeatIcon className="size-3.5 text-muted-foreground" aria-label={t("sales.subscription")} />}
       </span>
     ),
   };
-  const customer = text("contactName", t("sales.customer"), "min-w-32");
+  const customer = text("contactName", t("sales.customer"), "min-w-32 whitespace-nowrap");
   const mobile = text("mobile", t("sales.mobile"));
-  const location = text("locationName", t("common.location"));
+  const location = text("locationName", t("common.location"), "max-w-40 truncate");
   const items: ColumnDef<SaleListRow> = {
-    id: "itemsCount", accessorKey: "itemsCount", header: t("sales.totalItems"), meta: { label: t("sales.totalItems"), align: "right" },
+    id: "itemsCount", accessorKey: "itemsCount", header: t("sales.totalItems"), meta: { label: t("sales.totalItems"), align: "right", mobileHidden: true },
     cell: ({ row }) => <span className="tabular">{f.number(row.original.itemsCount)}</span>,
   };
   const addedBy = text("addedBy", t("sales.addedBy"));
+  addedBy.meta = { ...addedBy.meta, mobileHidden: true };
 
   if (!final) return [date, refNo, customer, mobile, location, items, addedBy, text("note", t("sales.sellNote")), actions];
 
@@ -97,7 +101,7 @@ export function saleColumns(t: T, f: Formatter, kind: SaleKind, a: SaleActions):
     },
     {
       id: "methods", header: t("sales.paymentMethod"), enableSorting: false,
-      meta: { label: t("sales.paymentMethod"), csv: (s) => s.methods.map((m) => (t.has(`payMethods.${m}`) ? t(`payMethods.${m}`) : m)).join(", ") },
+      meta: { label: t("sales.paymentMethod"), mobileHidden: true, csv: (s) => s.methods.map((m) => (t.has(`payMethods.${m}`) ? t(`payMethods.${m}`) : m)).join(", ") },
       cell: ({ row }) =>
         row.original.methods.length ? (
           <span className="flex flex-wrap gap-1">
@@ -113,7 +117,7 @@ export function saleColumns(t: T, f: Formatter, kind: SaleKind, a: SaleActions):
     money("returnDue", t("sales.sellReturnDue")),
     {
       id: "shippingStatus", accessorKey: "shippingStatus", header: t("sales.shippingStatus"),
-      meta: { label: t("sales.shippingStatus"), csv: (s) => (s.shippingStatus ? t(`status.${s.shippingStatus === "ordered" ? "ordered_shipping" : s.shippingStatus}`) : "") },
+      meta: { label: t("sales.shippingStatus"), mobileHidden: true, csv: (s) => (s.shippingStatus ? t(`status.${s.shippingStatus === "ordered" ? "ordered_shipping" : s.shippingStatus}`) : "") },
       cell: ({ row }) => (row.original.shippingStatus ? <StatusBadge status={row.original.shippingStatus === "ordered" ? "ordered_shipping" : row.original.shippingStatus} /> : dash),
     },
     items,
@@ -128,4 +132,4 @@ export function saleColumns(t: T, f: Formatter, kind: SaleKind, a: SaleActions):
   ];
 }
 
-export const SALE_DEFAULT_HIDDEN = ["channel", "staffNote", "note", "returnDue", "mobile"];
+export const SALE_DEFAULT_HIDDEN = ["channel", "staffNote", "note", "returnDue", "mobile", "itemsCount", "addedBy", "shippingStatus"];

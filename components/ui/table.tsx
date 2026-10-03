@@ -2,10 +2,11 @@
 
 import * as React from "react"
 import { cn } from "cn"
+import { ScrollFade } from "@/components/ui/scroll-fade"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div
+    <ScrollFade
       data-slot="table-container"
       // Keyboard users must be able to scroll a table that overflows sideways.
       tabIndex={0}
@@ -16,7 +17,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}
       />
-    </div>
+    </ScrollFade>
   )
 }
 

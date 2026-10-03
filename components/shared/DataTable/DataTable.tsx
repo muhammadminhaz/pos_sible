@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings } from "@/lib/data/hooks/settings";
 import { useUI } from "@/lib/data/store/ui";
@@ -194,9 +195,9 @@ export function DataTable<T>({
         {toolbar}
       </Toolbar>
 
-      <div tabIndex={0} className="relative max-h-[calc(100dvh-16rem)] overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/50 print:max-h-none">
+      <ScrollFade tabIndex={0} className="relative hidden max-h-[calc(100dvh-16rem)] overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:block print:max-h-none">
         <table className="w-full caption-bottom text-[13px]">
-          <thead className="sticky top-0 z-10 bg-muted/70 backdrop-blur supports-backdrop-filter:bg-muted/60">
+          <thead className="sticky top-0 z-10 bg-muted">
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} className="border-b">
                 {hg.headers.map((h) => {
@@ -221,7 +222,7 @@ export function DataTable<T>({
                           type="button"
                           onClick={h.column.getToggleSortingHandler()}
                           className={cn(
-                            "-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 hover:text-foreground",
+                            "-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 pointer-coarse:min-h-11 hover:text-foreground",
                             meta?.align === "right" && "flex-row-reverse",
                             sort && "text-foreground",
                           )}
@@ -293,7 +294,7 @@ export function DataTable<T>({
             )}
           </tbody>
           {footerCells && data.length > 0 && (
-            <tfoot className="sticky bottom-0 border-t bg-muted/70 font-medium backdrop-blur">
+            <tfoot className="sticky bottom-0 border-t bg-muted font-medium">
               <tr className="h-10">
                 {visibleCols.map((c) => (
                   <td
@@ -311,7 +312,65 @@ export function DataTable<T>({
             </tfoot>
           )}
         </table>
-      </div>
+      </ScrollFade>
+
+      {/* Below md rows become stacked cards; the full table needs more width than a phone has. */}
+      <ul className="divide-y md:hidden print:hidden">
+        {loading && !data.length ? (
+          Array.from({ length: Math.min(skeletonRows, 5) }, (_, i) => (
+            <li key={i} className="space-y-2 p-4">
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-full" />
+            </li>
+          ))
+        ) : data.length === 0 ? (
+          <li>{empty ?? <EmptyState title={t("common.noResults")} />}</li>
+        ) : (
+          table.getRowModel().rows.map((row) => {
+            const cells = row.getVisibleCells();
+            const lead = cells.find((c) => c.column.id !== "__select" && c.column.id !== "actions");
+            const select = cells.find((c) => c.column.id === "__select");
+            const actions = cells.find((c) => c.column.id === "actions");
+            const rest = cells.filter(
+              (c) => c !== lead && c !== select && c !== actions && !c.column.columnDef.meta?.mobileHidden,
+            );
+            return (
+              <li
+                key={row.id}
+                data-state={row.getIsSelected() ? "selected" : undefined}
+                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                className={cn("p-4 data-[state=selected]:bg-primary/5", onRowClick && "cursor-pointer", loading && "opacity-60")}
+              >
+                <div className="flex items-center gap-3">
+                  {select && flexRender(select.column.columnDef.cell, select.getContext())}
+                  <div className="min-w-0 flex-1 font-medium">{lead && flexRender(lead.column.columnDef.cell, lead.getContext())}</div>
+                  {actions && flexRender(actions.column.columnDef.cell, actions.getContext())}
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 text-[13px]">
+                  {rest.map((c) => (
+                    <div key={c.id} className="min-w-0">
+                      <dt className="text-xs text-muted-foreground">{columnLabel(c.column)}</dt>
+                      <dd className="mt-0.5">{flexRender(c.column.columnDef.cell, c.getContext())}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </li>
+            );
+          })
+        )}
+        {footerCells && data.length > 0 && (
+          <li className="grid grid-cols-2 gap-x-4 gap-y-1 bg-muted/60 p-4 text-[13px] font-medium">
+            {visibleCols
+              .filter((c) => footerCells[c.id])
+              .map((c) => (
+                <div key={c.id} className={cn("min-w-0", c.columnDef.meta?.align === "right" && "text-right")}>
+                  <div className="text-xs font-normal text-muted-foreground">{columnLabel(c)}</div>
+                  {footerCells[c.id]}
+                </div>
+              ))}
+          </li>
+        )}
+      </ul>
 
       <Pagination
         page={query.page}

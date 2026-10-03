@@ -6,11 +6,12 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { useCurrentUser } from "@/lib/auth/useCan";
 import type { Location } from "@/lib/data/schemas";
 import { usePosMutations } from "@/lib/data/hooks/pos";
+import { useFormat } from "@/lib/i18n/format";
 import { focusSearch } from "../focus";
 import { usePosError } from "../usePosAction";
 
@@ -20,6 +21,7 @@ export function RegisterGate({ location }: { location: Location }) {
   const user = useCurrentUser()?.user;
   const { openRegister } = usePosMutations();
   const onError = usePosError();
+  const f = useFormat();
   const [cash, setCash] = useState("");
 
   const submit = async (e: FormEvent) => {
@@ -46,17 +48,23 @@ export function RegisterGate({ location }: { location: Location }) {
           </CardHeader>
           <CardContent className="grid gap-2 py-4">
             <Label htmlFor="opening-cash">{t("openingCash")}</Label>
-            <Input
-              id="opening-cash"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="any"
-              autoFocus
-              value={cash}
-              onChange={(e) => setCash(e.target.value)}
-              className="h-11 text-lg tabular-nums"
-            />
+            <InputGroup className="h-11">
+              <InputGroupAddon>
+                <InputGroupText>{f.money(0).replace(/[\d.,\s-]/g, "")}</InputGroupText>
+              </InputGroupAddon>
+              <InputGroupInput
+                id="opening-cash"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                autoFocus
+                placeholder={f.amount(0)}
+                value={cash}
+                onChange={(e) => setCash(e.target.value)}
+                className="text-lg tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+            </InputGroup>
             {user && <p className="text-xs text-muted-foreground">{`${user.firstName} ${user.lastName}`.trim()}</p>}
           </CardContent>
           <CardFooter>

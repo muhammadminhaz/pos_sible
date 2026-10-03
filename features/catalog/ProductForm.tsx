@@ -188,7 +188,7 @@ export function ProductForm({ id, init }: { id?: string; init: ProductFormData }
 
       <PricingSection value={v} onChange={set} />
 
-      <div data-print-hide className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 px-6 py-3 backdrop-blur md:left-(--sidebar-width,0px)">
+      <div data-print-hide className="fixed inset-x-0 bottom-0 z-20 border-t bg-background px-6 py-3 md:left-(--sidebar-width,0px)">
         <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-end gap-2">
           <Button asChild type="button" variant="ghost"><Link href="/products">{t("common.cancel")}</Link></Button>
           {!id && <Button type="submit" variant="outline" disabled={pending} onClick={() => setAfter("another")}>{t("catalog.saveAddAnother")}</Button>}

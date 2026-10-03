@@ -39,4 +39,14 @@ describe("dashboard extras", () => {
     for (const r of e.expiryAlerts) expect(r.daysLeft).toBeLessThanOrEqual(seed.settings.dashboard.stockExpiryAlertDays);
     expect(e.topProducts.length).toBeLessThanOrEqual(5);
   });
+
+  it("sizes the sales trend to the selected range and never runs past today", () => {
+    const today = "2026-09-27";
+    expect(dashboardExtras(seed, { today }).salesByDay).toHaveLength(30);
+    const week = dashboardExtras(seed, { today, from: "2026-09-01", to: "2026-09-07" }).salesByDay;
+    expect(week).toHaveLength(7);
+    expect(week[0].date).toBe("2026-09-01");
+    const month = dashboardExtras(seed, { today, from: "2026-09-01", to: "2026-09-30" }).salesByDay;
+    expect(month.at(-1)?.date).toBe(today);
+  });
 });

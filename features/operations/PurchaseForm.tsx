@@ -30,6 +30,7 @@ import { opsErrorMessage } from "./opsError";
 import { PurchaseImportButton } from "./PurchaseImportDialog";
 import type { PurchaseImportRow } from "@/lib/data/services/purchaseImport";
 import { ProductPicker, variationLabel } from "./ProductPicker";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 
 export type PurchaseRowState = PurchaseLineInput & { name: string; sku: string; unitName: string; updatePrice: boolean; currentSellInc: number };
 
@@ -149,7 +150,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("ops.noItems")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border">
+          <ScrollFade className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -204,7 +205,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
                 })}
               </TableBody>
             </Table>
-          </div>
+          </ScrollFade>
         )}
       </Section>
 
@@ -254,7 +255,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
         </Section>
       </div>
 
-      <div data-print-hide className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 px-6 py-3 backdrop-blur md:left-(--sidebar-width,0px)">
+      <div data-print-hide className="fixed inset-x-0 bottom-0 z-20 border-t bg-background px-6 py-3 md:left-(--sidebar-width,0px)">
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-2">
           <div className="text-sm text-muted-foreground">{t("ops.itemsTotal", { count: totals.itemsCount })} · <span className="font-semibold text-foreground"><Money value={totals.total} /></span></div>
           <div className="flex gap-2">

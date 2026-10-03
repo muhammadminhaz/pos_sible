@@ -9,6 +9,8 @@ declare module "@tanstack/react-table" {
     /** Value written to CSV; defaults to the accessor value. Return `undefined` to skip the column. */
     csv?: (row: TData) => unknown;
     className?: string;
+    /** Leave the column out of the stacked card layout used below the md breakpoint. */
+    mobileHidden?: boolean;
   }
 }
 
