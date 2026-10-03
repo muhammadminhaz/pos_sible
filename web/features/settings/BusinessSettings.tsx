@@ -74,8 +74,8 @@ export function BusinessSettings() {
   return (
     <>
       <PageHeader title={tn("businessSettings")} description={t("businessSettingsDescription")} />
-      <Tabs value={tab} onValueChange={(v) => setTab(v as (typeof TABS)[number])} orientation="vertical" className="gap-6 data-[orientation=vertical]:flex-col lg:data-[orientation=vertical]:flex-row">
-        <TabsList aria-label={t("sections")} className="h-fit w-full shrink-0 justify-start max-lg:flex-row! max-lg:flex-wrap lg:w-52">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as (typeof TABS)[number])} className="gap-4">
+        <TabsList aria-label={t("sections")} className="h-auto flex-wrap">
           {TABS.map((k) => <TabsTrigger key={k} value={k}>{t(`tabs.${k}`)}</TabsTrigger>)}
         </TabsList>
         <section className="min-w-0 flex-1 rounded-xl border bg-card p-5" aria-label={t(`tabs.${tab}`)}>

@@ -114,10 +114,9 @@
   border-radius: var(--st-radius);
   overflow: hidden;
   background: var(--st-bg);
-  /* Readable on any page colour: a status-coloured edge and bar, plus a real shadow to lift it off the content. */
+  /* Readable on any page colour: a status-coloured border and fuse bar, plus a real shadow to lift it off the content. */
   border: 1px solid color-mix(in srgb, var(--st-fuse) 45%, var(--st-ink) 12%);
   box-shadow:
-    inset 4px 0 0 var(--st-fuse),
     0 2px 4px rgba(0, 0, 0, 0.12),
     0 12px 28px rgba(0, 0, 0, 0.22);
   cursor: grab;

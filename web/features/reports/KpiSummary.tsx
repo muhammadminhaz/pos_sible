@@ -68,7 +68,7 @@ function ShareBar({ pct, tone }: { pct: number; tone: "ink" | "accent" }) {
   return (
     <div className="h-9 overflow-hidden rounded-full bg-muted" role="presentation">
       <div
-        className={cn("h-full rounded-full transition-[width] duration-700 ease-out", tone === "ink" ? "bg-foreground" : "bg-warning")}
+        className={cn("h-full rounded-full transition-[width] duration-700 ease-out", tone === "ink" ? "bg-foreground" : "bg-primary")}
         style={{ width: pct > 0 ? `${Math.max(pct, 4)}%` : 0 }}
       />
     </div>
