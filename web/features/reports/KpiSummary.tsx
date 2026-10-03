@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowDownRightIcon, ArrowUpRightIcon, MinusIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
+import { CARD } from "@/components/shared/card-surface";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCountUp } from "@/lib/useCountUp";
 import type { Kpis } from "@/lib/data/services/dashboard";
@@ -12,11 +13,7 @@ import { useFormat } from "@/lib/i18n/format";
 
 type Key = keyof Kpis;
 
-/**
- * The surface every dashboard card sits on: big radius, no outline, a whisper of shadow, a faint accent wash that is
- * strongest in the top-left corner, and the glowing border that sweeps in on hover.
- */
-export const CARD = "reveal card-glow min-w-0 rounded-3xl bg-gradient-to-br from-primary/12 via-card to-card p-5 shadow-[0_1px_0_rgb(0_0_0/0.03),0_14px_30px_-18px_rgb(0_0_0/0.18)] sm:p-6";
+export { CARD };
 
 /** Small round arrow that opens whatever the block summarises. */
 export function GoButton({ href, label }: { href: string; label: string }) {

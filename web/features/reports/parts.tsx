@@ -2,22 +2,30 @@
 
 import type { ReactNode } from "react";
 import { Money } from "@/components/shared/Money";
-import { StatCard } from "@/components/shared/StatCard";
+import type { CSSProperties } from "react";
+import { cn } from "cn";
+import { CARD } from "@/components/shared/card-surface";
 import type { Tone } from "@/components/shared/tones";
+import { BigMoney } from "./KpiSummary";
 
 export function Stats({ items, cols = 4 }: { items: { label: string; value: number; tone?: Exclude<Tone, "primary"> }[]; cols?: 2 | 3 | 4 }) {
   const grid = { 2: "sm:grid-cols-2", 3: "sm:grid-cols-3", 4: "sm:grid-cols-2 xl:grid-cols-4" }[cols];
   return (
     <div className={`grid gap-3 ${grid}`}>
-      {items.map((i) => <StatCard key={i.label} label={i.label} tone={i.tone} value={<Money value={i.value} />} />)}
+      {items.map((i, n) => (
+        <section key={i.label} style={{ "--i": n } as CSSProperties} className={cn(CARD, "h-full")}>
+          <h3 className="text-sm font-medium text-muted-foreground">{i.label}</h3>
+          <div className={cn("mt-2 text-3xl leading-tight font-semibold", i.value < 0 && "text-danger")}><BigMoney value={i.value} /></div>
+        </section>
+      ))}
     </div>
   );
 }
 
 export function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section data-spotlight className="reveal h-full rounded-xl border bg-card p-4">
-      <h2 className="mb-3 text-sm font-semibold">{title}</h2>
+    <section className={cn(CARD, "h-full")}>
+      <h2 className="mb-4 text-base font-semibold tracking-tight">{title}</h2>
       {children}
     </section>
   );

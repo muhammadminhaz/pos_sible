@@ -75,7 +75,7 @@ export function ReportTable<R>({
     return (
     <DataTable
       tableId={`report-${id}`} columns={columnDefs} data={pageRows} total={rows.length} loading={loading} query={query} onQueryChange={setQuery}
-      exportName={id} exportRows={async () => rows} getRowId={getRowId ? getRowId : undefined}
+      surface="card" exportName={id} exportRows={async () => rows} getRowId={getRowId ? getRowId : undefined}
       empty={<EmptyState icon={FileBarChartIcon} title={empty ?? t("reports.empty")} />} footer={footer}
     />
   );

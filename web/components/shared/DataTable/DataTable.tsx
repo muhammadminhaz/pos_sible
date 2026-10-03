@@ -16,6 +16,7 @@ import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "@/lib/toast";
 import { cn } from "cn";
+import { CARD } from "@/components/shared/card-surface";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,6 +56,8 @@ export type DataTableProps<T> = {
   empty?: ReactNode;
   /** Columns hidden until the user shows them (only used before a preference is saved). */
   defaultHidden?: string[];
+  /** "card" gives the table the same surface as the dashboard cards (used by reports). */
+  surface?: "plain" | "card";
 };
 
 const ROW_H = { comfortable: "h-10", compact: "h-8" };
@@ -77,6 +80,7 @@ export function DataTable<T>({
   onRowClick,
   empty,
   defaultHidden = [],
+  surface = "plain",
 }: DataTableProps<T>) {
   const t = useTranslations();
   const density = useUI((s) => s.density);
@@ -191,7 +195,7 @@ export function DataTable<T>({
   const skeletonRows = Math.min(query.pageSize === -1 ? 10 : query.pageSize, 10);
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card text-card-foreground">
+    <div className={cn("text-card-foreground", surface === "card" ? `${CARD} overflow-hidden p-0 sm:p-0` : "overflow-hidden rounded-xl border bg-card")}>
       <Toolbar
         table={table}
         search={query.search}
