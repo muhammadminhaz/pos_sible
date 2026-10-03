@@ -1,5 +1,5 @@
-import { AdminConsole } from "@/features/admin/AdminConsole";
+import { DashboardPage } from "@/features/admin/Dashboard";
 
-export default function AdminPage() {
-  return <AdminConsole />;
+export default function Page() {
+  return <DashboardPage />;
 }

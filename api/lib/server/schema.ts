@@ -96,4 +96,24 @@ CREATE TABLE IF NOT EXISTS platform_sessions (
 );
 `,
   },
+  {
+    id: 3,
+    name: "editable subscription plans",
+    sql: `
+-- The packages a business can be on. Prices are what the platform owner charges per month (BDT) and drive the revenue view.
+CREATE TABLE IF NOT EXISTS plans (
+  id text PRIMARY KEY,
+  label text NOT NULL,
+  max_users integer CHECK (max_users IS NULL OR max_users > 0),
+  price_monthly numeric(12, 2) NOT NULL DEFAULT 0 CHECK (price_monthly >= 0),
+  sort integer NOT NULL DEFAULT 0
+);
+INSERT INTO plans (id, label, max_users, price_monthly, sort) VALUES
+  ('starter', 'Starter', 3, 500, 1),
+  ('standard', 'Standard', 10, 1500, 2),
+  ('premium', 'Premium', NULL, 3000, 3)
+ON CONFLICT (id) DO NOTHING;
+ALTER TABLE businesses ADD CONSTRAINT businesses_plan_fk FOREIGN KEY (plan) REFERENCES plans (id);
+`,
+  },
 ];

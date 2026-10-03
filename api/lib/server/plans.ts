@@ -1,13 +1,5 @@
-/** Subscription packages. `maxUsers` counts accounts that can sign in; null means no limit. */
-export const PLANS = {
-  starter: { label: "Starter", maxUsers: 3 },
-  standard: { label: "Standard", maxUsers: 10 },
-  premium: { label: "Premium", maxUsers: null },
-} as const;
-
-export type PlanId = keyof typeof PLANS;
-export const PLAN_IDS = Object.keys(PLANS) as PlanId[];
-export const isPlan = (v: unknown): v is PlanId => typeof v === "string" && Object.hasOwn(PLANS, v);
+/** A subscription package. `maxUsers` counts accounts that can sign in; null means no limit. */
+export type Plan = { id: string; label: string; maxUsers: number | null; priceMonthly: number };
 
 export type SubscriptionStatus = "active" | "suspended";
 

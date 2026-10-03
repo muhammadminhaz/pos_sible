@@ -49,9 +49,11 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 - **Role-based access** with a View / Create / Update / Delete grid per area (customers, suppliers, products, categories/brands/units, purchases, sales, discounts, stock transfers and adjustments, expenses, accounts, users, roles…), plus extras such as *take payments*, *edit price at POS*, *close register*. Enforced in the services (so also on the server), and buttons hide when you can't use them. Nobody can grant more than their own role holds, or edit a more powerful role or user. Roles saved before the finer permissions existed keep exactly what they could do.
 
 **Platform owner console (`/admin`)**
-- For the person who sells the software. Sign in with `ADMIN_USERNAME` / `ADMIN_PASSWORD` (set in the API's environment and `docker-compose.yml`; defaults `minhaz` / `11111111`, **change before going live**).
-- **Add business accounts** (business name, owner sign-in, package, optional end date) and **manage subscriptions**: Starter (3 users), Standard (10), Premium (unlimited); switch a business on or off; set when it ends. A switched-off or expired business cannot sign in and any open session ends on its next request. The package's user limit is enforced by the server.
-- See, per business, **how many user accounts** it created and **how much storage** it uses, plus totals. You see nothing else: no products, customers, sales or staff, and there is no way to sign in as a business. Businesses are fully isolated from each other (every query is scoped to the signed-in user's business).
+- For the person who sells the software. Sign in with `ADMIN_USERNAME` / `ADMIN_PASSWORD` (set in the API's environment and `docker-compose.yml`; defaults `minhaz` / `11111111`; set your own before going live).
+- A sidebar with **Dashboard** (totals, who needs attention, package mix, biggest storage), **Businesses**, **Users** (accounts per business against its limit), **Subscriptions** (edit each package's name, user limit and monthly price) and **Revenue** (monthly revenue and yearly run rate estimated from active subscriptions, by package, renewals due, new businesses per month).
+- **Add a business** with just a name, a username, a password and a package (plus an optional end date). **Manage** switches it on or off, changes the package or end date, and can **set a new password** for the owner (passwords can be replaced, never viewed; the owner is signed out). **Delete** removes a business and all its data for good, after you type its username.
+- A switched-off or expired business cannot sign in and any open session ends on its next request. The package's user limit is enforced by the server.
+- You see each business's package, user count and storage only: no products, customers, sales or staff, and there is no way to sign in as a business. Businesses are fully isolated from each other (every query is scoped to the signed-in user's business).
 
 **Platform**
 - English and Bangla (digits, units, AM/PM), light/dark themes, accent colours, command palette (⌘K), notifications, installable PWA, accessible (axe-checked), reduced-motion friendly micro animations.
@@ -151,7 +153,7 @@ npm run build
 npm run e2e                             # every route, EN/light + BN/dark + tablet, axe accessibility
 npm run e2e:onboarding                  # first-run wizard and checklist
 npm run e2e:team                        # two users, who-did-what columns, role permission grid
-npm run e2e:admin                       # (API mode) /admin: add a business, suspend it, usage stats, isolation
+npm run e2e:admin                       # (API mode) /admin: add, suspend, reset password, delete, isolation
 
 # api/
 npm run typecheck

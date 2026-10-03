@@ -20,7 +20,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     new NextRequest(`http://localhost:3000${url}`, { ...init, headers: { cookie: `posible_admin=${adminToken}`, "content-type": "application/json" } });
 
   const open = async (name: string, username: string, plan = "starter", expiresAt: string | null = null) => {
-    const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: name, ownerName: "Owner", username, password: "owner-pass-1", plan, expiresAt }) }));
+    const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password: "owner-pass-1", plan, expiresAt }) }));
     expect(res.status).toBe(201);
     const id = (await res.json()).id as string;
     ids.push(id);
@@ -88,8 +88,8 @@ describe.runIf(up)("platform admin and subscriptions", () => {
   it("shows plan, users and storage per business and nothing from inside it", async () => {
     const id = await open(`Counted ${tag}`, `counted${tag}`, "standard");
     const s = await summary(id);
-    expect(Object.keys(s).sort()).toEqual(["createdAt", "expiresAt", "id", "lastActiveAt", "maxUsers", "name", "plan", "state", "status", "storageBytes", "users"]);
-    expect(s).toMatchObject({ name: `Counted ${tag}`, plan: "standard", state: "active", users: 1, maxUsers: 10 });
+    expect(Object.keys(s).sort()).toEqual(["createdAt", "expiresAt", "id", "lastActiveAt", "maxUsers", "name", "ownerUsername", "plan", "planLabel", "priceMonthly", "state", "status", "storageBytes", "users"]);
+    expect(s).toMatchObject({ name: `Counted ${tag}`, ownerUsername: `counted${tag}`, plan: "standard", planLabel: "Standard", priceMonthly: 1500, state: "active", users: 1, maxUsers: 10 });
     expect(s.storageBytes).toBeGreaterThan(10_000);
     const before = s.storageBytes;
     const { p } = await principal(`counted${tag}`);
@@ -135,6 +135,45 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     await patchRoute.PATCH(asAdmin(`/api/admin/businesses/${id}`, { method: "PATCH", body: JSON.stringify({ plan: "premium" }) }), { params: Promise.resolve({ id }) });
     expect((await make(3)).ok).toBe(true);
     expect((await summary(id)).maxUsers).toBeNull();
+  });
+
+  it("deleting a business needs its owner's username and removes everything", async () => {
+    const id = await open(`Doomed ${tag}`, `doomed${tag}`);
+    const del = (confirmUsername: string) => patchRoute.DELETE(asAdmin(`/api/admin/businesses/${id}`, { method: "DELETE", body: JSON.stringify({ confirmUsername }) }), { params: Promise.resolve({ id }) });
+    expect((await del("not-the-name")).status).toBe(422);
+    expect(await summary(id)).toBeTruthy();
+    const { cookie } = await principal(`doomed${tag}`);
+    expect((await del(`DOOMED${tag}`)).status).toBe(200); // case doesn't matter
+    expect(await summary(id)).toBeUndefined();
+    expect(await auth.authenticate(new NextRequest("http://localhost:3000/api/rpc", { headers: { cookie: `posible_sid=${cookie}` } }))).toBeNull();
+    expect((await poolMod.pool().query("SELECT 1 FROM logins WHERE business_id = $1", [id])).rowCount).toBe(0);
+    expect((await poolMod.pool().query("SELECT 1 FROM products WHERE business_id = $1", [id])).rowCount).toBe(0);
+    expect((await del(`doomed${tag}`)).status).toBe(404);
+    ids.splice(ids.indexOf(id), 1);
+  });
+
+  it("the owner's password can be replaced from the console but never read", async () => {
+    const id = await open(`Reset ${tag}`, `reset${tag}`);
+    const { cookie } = await principal(`reset${tag}`);
+    const patch = (body: object) => patchRoute.PATCH(asAdmin(`/api/admin/businesses/${id}`, { method: "PATCH", body: JSON.stringify(body) }), { params: Promise.resolve({ id }) });
+    expect((await patch({ ownerPassword: "short" })).status).toBe(400);
+    expect((await patch({ ownerPassword: "a-new-password-9" })).status).toBe(200);
+    expect(await auth.authenticate(new NextRequest("http://localhost:3000/api/rpc", { headers: { cookie: `posible_sid=${cookie}` } }))).toBeNull();
+    expect(await auth.login(`reset${tag}`, "owner-pass-1", true, "ip-r1")).toMatchObject({ ok: false, reason: "invalid" });
+    expect((await auth.login(`reset${tag}`, "a-new-password-9", true, "ip-r2")).ok).toBe(true);
+    const raw = JSON.stringify(await (await list.GET(asAdmin("/api/admin/businesses"))).json());
+    expect(raw).not.toContain("a-new-password-9");
+  });
+
+  it("package limits and prices are editable", async () => {
+    const plansRoute = await import("@/app/api/admin/plans/[id]/route");
+    const edit = (id: string, body: object) => plansRoute.PATCH(asAdmin(`/api/admin/plans/${id}`, { method: "PATCH", body: JSON.stringify(body) }), { params: Promise.resolve({ id }) });
+    expect((await edit("nope", { priceMonthly: 5 })).status).toBe(404);
+    expect((await edit("starter", { priceMonthly: -1 })).status).toBe(400);
+    expect((await edit("starter", { priceMonthly: 650, maxUsers: 4 })).status).toBe(200);
+    const starter = (await platform.getPlans()).find((p) => p.id === "starter")!;
+    expect(starter).toMatchObject({ priceMonthly: 650, maxUsers: 4 });
+    await edit("starter", { priceMonthly: 500, maxUsers: 3 });
   });
 
   it("business A never sees business B", async () => {

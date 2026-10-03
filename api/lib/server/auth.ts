@@ -5,12 +5,12 @@ import type { PublicUser } from "./types";
 import { pool, ready } from "./pool";
 import { loadBusiness } from "./store";
 import { verifyPassword } from "./passwords";
-import { isPlan, subscriptionState, type PlanId } from "./plans";
+import { subscriptionState } from "./plans";
 
 export const COOKIE = "posible_sid";
 const DAY = 86_400_000;
 
-export type Principal = { businessId: string; userId: string; user: PublicUser; role: Role; businessName: string; plan: PlanId };
+export type Principal = { businessId: string; userId: string; user: PublicUser; role: Role; businessName: string; plan: string };
 export type { PublicUser };
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -65,7 +65,7 @@ export async function login(username: string, password: string, remember: boolea
   const ttl = remember ? 30 * DAY : DAY / 2;
   await pool().query("INSERT INTO sessions (token_hash, business_id, user_id, expires_at) VALUES ($1, $2, $3, now() + $4 * interval '1 millisecond')", [sha(token), row.business_id, row.user_id, ttl]);
   void pool().query("DELETE FROM sessions WHERE expires_at < now()").catch(() => {});
-  return { ok: true, token, maxAge: remember ? ttl / 1000 : null, principal: { businessId: row.business_id, userId: user.id, user: publicUser(user), role, businessName: loaded.db.settings.business.name, plan: isPlan(sub.plan) ? sub.plan : "standard" } };
+  return { ok: true, token, maxAge: remember ? ttl / 1000 : null, principal: { businessId: row.business_id, userId: user.id, user: publicUser(user), role, businessName: loaded.db.settings.business.name, plan: sub.plan } };
 }
 
 export async function logout(token: string | undefined): Promise<void> {
@@ -88,7 +88,7 @@ export async function authenticate(req: NextRequest | { cookies: { get(name: str
   const user = db.users.find((u) => u.id === s.user_id);
   const role = user && db.roles.find((r) => r.id === user.roleId);
   if (!user || !role || !user.isActive || !user.allowLogin) return null;
-  return { businessId: s.business_id, userId: user.id, user: publicUser(user), role, businessName: db.settings.business.name, plan: isPlan(s.plan) ? s.plan : "standard" };
+  return { businessId: s.business_id, userId: user.id, user: publicUser(user), role, businessName: db.settings.business.name, plan: s.plan };
 }
 
 export function cookieOptions(maxAge: number | null) {

@@ -40,7 +40,6 @@ import { serviceRegistry } from "@/lib/data/api/registry";
 import { serverCrud } from "@/lib/data/services/catalog";
 import type { Role } from "@/lib/data/schemas";
 import { pool } from "./pool";
-import { PLANS, isPlan } from "./plans";
 import { loadBusiness, runInBusiness } from "./store";
 import { TABLE_NAMES } from "./tables";
 
@@ -116,8 +115,8 @@ function resolve(service: string, method: string): { target: Record<string, unkn
 async function assertUserQuota(businessId: string, method: string, args: unknown[]): Promise<void> {
   const patch = (method === "create" ? args[0] : args[1]) as { allowLogin?: unknown } | undefined;
   if (!(method === "create" ? patch?.allowLogin !== false : method === "update" && patch?.allowLogin === true)) return;
-  const row = (await pool().query<{ plan: string }>("SELECT plan FROM businesses WHERE id = $1", [businessId])).rows[0];
-  const max = PLANS[isPlan(row?.plan) ? row.plan : "standard"].maxUsers;
+  const row = (await pool().query<{ max_users: number | null }>("SELECT p.max_users FROM businesses b JOIN plans p ON p.id = b.plan WHERE b.id = $1", [businessId])).rows[0];
+  const max = row?.max_users ?? null;
   if (max === null) return;
   const { db } = await loadBusiness(businessId);
   const existing = method === "update" ? db.users.find((u) => u.id === args[0]) : undefined;
