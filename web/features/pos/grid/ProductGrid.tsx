@@ -60,7 +60,8 @@ function ChipRow({ label, children }: { label: string; children: React.ReactNode
     }
     drag.current = null;
   };
-  const fade = `linear-gradient(to right, ${edge.left ? "transparent, #000 3rem" : "#000, #000 0"}, ${edge.right ? "#000 calc(100% - 3rem), transparent" : "#000 100%, #000"})`;
+  // Chips are invisible under an arrow (it sits 4px in and is 32px wide) and ramp back to full over the next 2rem.
+  const fade = `linear-gradient(to right, ${edge.left ? "transparent 2.25rem, #000 4.5rem" : "#000, #000 0"}, ${edge.right ? "#000 calc(100% - 4.5rem), transparent calc(100% - 2.25rem)" : "#000 100%, #000"})`;
   const arrow = (dir: -1 | 1) => (
     <button
       type="button"
