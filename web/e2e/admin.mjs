@@ -67,7 +67,7 @@ for (const [link, heading] of [["Users", "Users"], ["Subscriptions", "Subscripti
   await admin.getByRole("heading", { name: heading, level: 1 }).waitFor();
   await admin.waitForTimeout(300);
   await admin.evaluate(axeSource);
-  const axe = await admin.evaluate(async () => (await window.axe.run({ exclude: [["[data-sonner-toaster]"]] })).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html.slice(0, 80)).join(" | ")}`));
+  const axe = await admin.evaluate(async () => (await window.axe.run({ exclude: [[".swipe-toast"]] })).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html.slice(0, 80)).join(" | ")}`));
   check(axe.length === 0, `${heading} page is accessible ${axe.join("; ")}`);
 }
 check(/Monthly revenue/.test(await admin.locator("main").innerText()), "the dashboard shows revenue");
@@ -125,7 +125,7 @@ check(true, "after renewing, the owner can sign in again");
 // A new password can be set (never read); the old one stops working.
 await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
 await admin.getByRole("menuitem", { name: "Manage account" }).click();
-await admin.getByLabel("Set a new password for the owner").fill("brand-new-pass-1");
+await admin.getByLabel("New password").fill("brand-new-pass-1");
 await admin.getByRole("button", { name: "Set password" }).click();
 await admin.getByText(/New password set/).waitFor();
 await admin.getByRole("button", { name: "Close" }).first().click();

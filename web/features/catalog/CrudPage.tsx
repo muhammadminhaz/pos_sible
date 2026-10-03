@@ -3,14 +3,13 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { ArrowDownIcon, ArrowUpIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -40,6 +39,8 @@ export type FieldDef = {
   show?: (values: Values) => boolean;
   /** Narrow fields share a row in the dialog. */
   half?: boolean;
+  /** Multi: message key shown while nothing is ticked ("common.all" when empty means everything). Defaults to "common.none". */
+  emptyLabel?: string;
 };
 
 export type ColumnDescriptor<R> = {
@@ -125,6 +126,7 @@ function ListField({ label, value, onChange }: { label: string; value: string[];
 }
 
 function FieldInput({ f, values, id, set }: { f: FieldDef; values: Values; id?: string; set: (v: unknown) => void }) {
+  const t = useTranslations();
   const dom = `f-${f.key}`;
   const v = values[f.key];
   switch (f.type) {
@@ -151,19 +153,13 @@ function FieldInput({ f, values, id, set }: { f: FieldDef; values: Values; id?: 
     }
     case "switch":
       return <Switch id={dom} checked={!!v} onCheckedChange={set} />;
-    case "multi": {
-      const sel = (v as string[]) ?? [];
+    case "multi":
       return (
-        <div className="flex flex-wrap gap-x-4 gap-y-2">
-          {(f.options?.({ id, values }) ?? []).map((o) => (
-            <Label key={o.value} className="gap-2 font-normal">
-              <Checkbox checked={sel.includes(o.value)} onCheckedChange={(c) => set(c ? [...sel, o.value] : sel.filter((x) => x !== o.value))} />
-              {o.label}
-            </Label>
-          ))}
-        </div>
+        <MultiSelect
+          id={dom} values={(v as string[]) ?? []} onChange={set} options={f.options?.({ id, values }) ?? []}
+          placeholder={t(f.emptyLabel ?? "common.none")} summary={(count) => t("common.selected", { count })} ariaLabel={f.label}
+        />
       );
-    }
     case "password":
       return <Input id={dom} type="password" autoComplete="new-password" required={f.required} value={(v as string) ?? ""} onChange={(e) => set(e.target.value)} />;
     case "list":

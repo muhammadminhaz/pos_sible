@@ -6,7 +6,7 @@ import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
 import { AccentSync } from "@/components/layout/AccentSync";
 import { MicroInteractions } from "@/components/layout/MicroInteractions";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/lib/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DataGate } from "@/lib/data/store/DataGate";
 
@@ -44,7 +44,7 @@ export function Providers({
               <MicroInteractions />
               {children}
             </DataGate>
-            <Toaster richColors position="top-right" />
+            <Toaster />
           </TooltipProvider>
         </QueryClientProvider>
       </NextIntlClientProvider>

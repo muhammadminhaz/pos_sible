@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { PercentIcon, PlusIcon, PowerIcon, PowerOffIcon, PencilIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { useIsMutating } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { AppError, BelowMinPriceError, InsufficientStockError, ProductUnavailableError, SerialsRequiredError, ValidationError } from "@/lib/data/errors";
 import { usePosMutations } from "@/lib/data/hooks/pos";
 import { useSettings } from "@/lib/data/hooks/settings";

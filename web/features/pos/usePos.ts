@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { create } from "zustand";
 import { useCurrentUser } from "@/lib/auth/useCan";
 import { useLookups } from "@/lib/data/hooks/lookups";

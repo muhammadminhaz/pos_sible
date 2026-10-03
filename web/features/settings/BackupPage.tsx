@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { DatabaseBackupIcon, DownloadIcon, PlusIcon, RotateCcwIcon, Trash2Icon, UploadIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable, RowActions, useTableQuery } from "@/components/shared/DataTable";
