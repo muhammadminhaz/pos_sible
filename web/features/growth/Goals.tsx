@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import RubberSegment from "@/components/ui/rubber-segment";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GOAL_METRICS, GOAL_PERIODS, type GoalMetric, type GoalPeriod } from "@/lib/data/schemas";
-import { goalsService, type GoalInput, type GoalProgress } from "@/lib/data/services/reports/possible";
+import { goalsService, type GoalInput, type GoalProgress } from "@/lib/data/services/reports/growth";
 import { useFormat } from "@/lib/i18n/format";
 import { toast } from "@/lib/toast";
 import { useCountUp } from "@/lib/useCountUp";

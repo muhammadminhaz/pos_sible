@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useReport } from "@/lib/data/hooks/reports";
-import { possibleReports, type Opportunity } from "@/lib/data/services/reports/possible";
+import { possibleReports, type Opportunity } from "@/lib/data/services/reports/growth";
 import { useFormat } from "@/lib/i18n/format";
 import { ForecastChart } from "@/features/analytics/charts";
 import { BigMoney, DeltaPill } from "@/features/reports/KpiSummary";

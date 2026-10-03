@@ -28,7 +28,7 @@ import "@/lib/data/services/reports/analytics";
 import "@/lib/data/services/reports/contacts";
 import "@/lib/data/services/reports/dashboard";
 import "@/lib/data/services/reports/money";
-import "@/lib/data/services/reports/possible";
+import "@/lib/data/services/reports/growth";
 import "@/lib/data/services/reports/products";
 import "@/lib/data/services/reports/stock";
 import "@/lib/data/services/returns";

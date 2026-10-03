@@ -3,7 +3,7 @@ import { endOfMonth, format, parseISO } from "date-fns";
 import { createSeed } from "@/lib/data/seed";
 import { todayISO } from "@/lib/dates";
 import { headline } from "./analytics";
-import { forecast, goalProgress, opportunities, periodRange } from "./possible";
+import { forecast, goalProgress, opportunities, periodRange } from "./growth";
 
 // The engine reads "today" from the clock, so the demo history has to end today too.
 const today = todayISO(createSeed({ seed: 42 }).settings.business.timeZone);

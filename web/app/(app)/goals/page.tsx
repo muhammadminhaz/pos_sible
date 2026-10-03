@@ -1,5 +1,5 @@
 import { RequirePermission } from "@/components/shared/Can";
-import { Goals } from "@/features/possible/Goals";
+import { Goals } from "@/features/growth/Goals";
 
 export default function Page() {
   return (

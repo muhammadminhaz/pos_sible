@@ -1,5 +1,5 @@
 import { RequirePermission } from "@/components/shared/Can";
-import { Opportunities } from "@/features/possible/Opportunities";
+import { Opportunities } from "@/features/growth/Opportunities";
 
 export default function Page() {
   return (
