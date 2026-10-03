@@ -357,7 +357,7 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
 @property --gr { syntax: "<length>"; inherits: false; initial-value: 0px; }
 .card-glow {
   --glow-a: var(--primary);
-  --glow-b: color-mix(in oklch, var(--primary) 40%, oklch(0.78 0.15 215));
+  --glow-b: color-mix(in oklch, var(--primary) 70%, black);
   position: relative;
 }
 .card-glow::before,
