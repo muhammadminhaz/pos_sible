@@ -136,7 +136,6 @@ function redact(value: unknown): unknown {
 }
 
 export async function handleRpc(p: { businessId: string; userId: string; role: Role; modules?: ModuleId[] }, body: RpcRequest): Promise<RpcResponse> {
-  const started = Date.now();
   try {
     if (typeof body.service !== "string" || typeof body.method !== "string" || !Array.isArray(body.args) || body.args.length > 20) {
       throw new AppError("Malformed request", "bad_request");
@@ -150,12 +149,7 @@ export async function handleRpc(p: { businessId: string; userId: string; role: R
     const { target, fn } = resolve(service, method);
     if (service === "crud:users") await assertUserQuota(p.businessId, method, args);
 
-    const out = await runInBusiness(p.businessId, p.userId, async () => fn.apply(target, args));
-    if (out.wrote) {
-      void pool()
-        .query("INSERT INTO audit_log (business_id, user_id, service, method, changed_rows, duration_ms) VALUES ($1, $2, $3, $4, $5, $6)", [p.businessId, p.userId, service, method, out.changedRows, Date.now() - started])
-        .catch(() => {});
-    }
+    const out = await runInBusiness(p.businessId, p.userId, async () => fn.apply(target, args), { service, method });
     return { ok: true, result: redact(out.result) };
   } catch (e) {
     if (e instanceof AppError || e instanceof ValidationError) return { ok: false, error: serializeError(e) };

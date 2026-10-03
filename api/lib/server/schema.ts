@@ -244,4 +244,17 @@ ALTER TABLE subscription_payments
 UPDATE subscription_payments sp SET plan_label = p.label FROM plans p WHERE p.id = sp.plan AND sp.plan_label IS NULL;
 `,
   },
+  {
+    id: 12,
+    name: "shared sign-in throttling",
+    sql: `
+-- Failed sign-in counters, shared by every API instance and surviving restarts (they used to live in process memory).
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key text PRIMARY KEY,
+  hits integer NOT NULL,
+  window_start timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS rate_limits_window ON rate_limits (window_start);
+`,
+  },
 ];

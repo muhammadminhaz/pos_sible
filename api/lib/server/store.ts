@@ -153,9 +153,11 @@ type Outcome<T> = { result: T; wrote: boolean; changedRows: number };
 /**
  * Runs `fn` against the business's data as `userId`. Reads are lock-free; if the function changed anything, the
  * changes are saved in one transaction guarded by the business's version, and the whole call is retried if someone
- * else saved first. Nothing is written when `fn` throws.
+ * else saved first. Nothing is written when `fn` throws. With `audit`, the audit-log row is written in that same
+ * transaction, so a change is never saved without its record (and a record never exists for a change that was not).
  */
-export async function runInBusiness<T>(businessId: string, userId: string | null, fn: () => Promise<T>): Promise<Outcome<T>> {
+export async function runInBusiness<T>(businessId: string, userId: string | null, fn: () => Promise<T>, audit?: { service: string; method: string }): Promise<Outcome<T>> {
+  const started = Date.now();
   for (let attempt = 0; attempt < 6; attempt++) {
     const loaded = await loadBusiness(businessId);
     const ctx = { db: loaded.db, userId, dirty: false };
@@ -177,6 +179,9 @@ export async function runInBusiness<T>(businessId: string, userId: string | null
       const meta = JSON.stringify(ctx.db.meta);
       const next = loaded.version + 1;
       await client.query("UPDATE businesses SET settings = $2, meta = $3, name = $4, version = $5 WHERE id = $1", [businessId, settings, meta, ctx.db.settings.business.name, next]);
+      if (audit) {
+        await client.query("INSERT INTO audit_log (business_id, user_id, service, method, changed_rows, duration_ms) VALUES ($1, $2, $3, $4, $5, $6)", [businessId, userId, audit.service, audit.method, d.changed, Date.now() - started]);
+      }
       await client.query("COMMIT");
       cache().set(businessId, { db: deepFreeze(ctx.db), version: next, snapshot: takeSnapshot(ctx.db) });
       return { result, wrote: true, changedRows: d.changed };

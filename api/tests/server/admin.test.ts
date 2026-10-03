@@ -57,6 +57,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     list = await import("@/app/api/admin/businesses/route");
     patchRoute = await import("@/app/api/admin/businesses/[id]/route");
     await poolMod.ready();
+    await poolMod.pool().query("DELETE FROM rate_limits"); // counters persist in Postgres, so start each run clean
     const r = await platform.adminLogin("owner-admin", "platform-secret", "ip-admin");
     if (!r.ok) throw new Error("admin login failed");
     adminToken = r.token;

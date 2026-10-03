@@ -129,7 +129,7 @@ export function KpiSummary({ now, before, loading }: { now?: Kpis; before?: Kpis
   return (
     <section aria-label={t("salesPeriod")} className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
       <Headline order={0} label={t("totalSales")} value={now?.totalSales} before={before?.totalSales} good="up" share={salesShare} tone="ink" href="/sales" loading={loading} />
-      <Headline order={1} label={t("totalPurchase")} value={now?.totalPurchase} before={before?.totalPurchase} share={total > 0 ? 100 - salesShare : 0} tone="accent" href="/purchases" loading={loading} />
+      <Headline order={1} label={t("totalPurchase")} value={now?.totalPurchase} before={before?.totalPurchase} share={total > 0 ? 100 - salesShare : 0} tone="ink" href="/purchases" loading={loading} />
       <div className="md:col-span-2 xl:col-span-1 [&>section]:h-full"><NetCard now={now} before={before} loading={loading} /></div>
     </section>
   );

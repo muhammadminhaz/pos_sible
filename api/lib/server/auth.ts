@@ -4,6 +4,7 @@ import type { Role, User } from "@/lib/data/schemas";
 import type { PublicUser } from "./types";
 import { pool, ready } from "./pool";
 import { loadBusiness } from "./store";
+import { clearFails, recordFail, throttled } from "./throttle";
 import { verifyPassword } from "./passwords";
 import { effectiveModules, subscriptionState, type ModuleId } from "./plans";
 
@@ -24,24 +25,9 @@ export const publicUser = ({ password: _password, ...rest }: User): PublicUser =
 
 // --- sign-in throttling ---------------------------------------------------------------------------------------
 // Five wrong passwords per user+address per quarter hour, and ACCOUNT_LIMIT per account from any address, so faking a
-// new address on every try can't buy unlimited guesses.
-const fails = new Map<string, { n: number; first: number }>();
+// new address on every try can't buy unlimited guesses. Counters live in Postgres (lib/server/throttle.ts).
 const WINDOW = 15 * 60_000;
 export const ACCOUNT_LIMIT = 20;
-function throttled(key: string, limit = 5): boolean {
-  const f = fails.get(key);
-  if (!f) return false;
-  if (Date.now() - f.first > WINDOW) {
-    fails.delete(key);
-    return false;
-  }
-  return f.n >= limit;
-}
-const recordFail = (key: string) => {
-  const f = fails.get(key);
-  if (!f || Date.now() - f.first > WINDOW) fails.set(key, { n: 1, first: Date.now() });
-  else f.n++;
-};
 
 export type LoginResult = { ok: true; token: string; maxAge: number | null; principal: Principal } | { ok: false; reason: "invalid" | "throttled" | "cancelled" | "expired" };
 
@@ -54,7 +40,7 @@ export async function login(username: string, password: string, remember: boolea
   const code = business?.trim().toLowerCase();
   const key = `${ip}|${code ?? ""}|${username.trim().toLowerCase()}`;
   const account = `account|${code ?? ""}|${username.trim().toLowerCase()}`;
-  if (throttled(key) || throttled(account, ACCOUNT_LIMIT)) return { ok: false, reason: "throttled" };
+  if ((await throttled(key, 5, WINDOW)) || (await throttled(account, ACCOUNT_LIMIT, WINDOW))) return { ok: false, reason: "throttled" };
 
   const name = username.trim().toLowerCase();
   const row = (await pool().query<{ business_id: string; user_id: string }>(
@@ -68,12 +54,11 @@ export async function login(username: string, password: string, remember: boolea
   // Same work whether or not the user exists, so timing doesn't reveal which usernames are real.
   const good = verifyPassword(password, user?.password ?? "scrypt$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
   if (!row || !loaded || !user || !good || !user.isActive || !user.allowLogin) {
-    recordFail(key);
-    recordFail(account);
+    await recordFail(key, WINDOW);
+    await recordFail(account, WINDOW);
     return { ok: false, reason: "invalid" };
   }
-  fails.delete(key);
-  fails.delete(account);
+  await clearFails(key, account);
   const role = loaded.db.roles.find((r) => r.id === user.roleId);
   if (!role) return { ok: false, reason: "invalid" };
   // Only someone who knows the right password learns that the subscription is the problem.

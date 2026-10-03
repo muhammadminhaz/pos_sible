@@ -4,6 +4,7 @@ import { pool, ready } from "./pool";
 import { effectiveModules, MODULE_IDS, monthlyEquivalent, subscriptionState, termInterval, type ModuleDef, type ModuleId, type PeriodUnit, type Plan, type SubscriptionStatus } from "./plans";
 import { hashPassword } from "./passwords";
 import { sqlName, TABLE_NAMES } from "./tables";
+import { clearFails, recordFail, throttled } from "./throttle";
 
 /**
  * The platform owner: the person who sells subscriptions, not a user of any business. Credentials come from the
@@ -80,29 +81,19 @@ export async function getModules(): Promise<ModuleDef[]> {
 
 declare global {
   var __posibleAdminWarned: boolean | undefined;
-  var __posibleAdminFails: Map<string, { n: number; first: number }> | undefined;
 }
-const fails = () => (globalThis.__posibleAdminFails ??= new Map());
 const WINDOW = 15 * 60_000;
 
 export type AdminLogin = { ok: true; token: string } | { ok: false; reason: "invalid" | "throttled" };
 
 /** There is only one admin account, so this caps wrong passwords from all addresses together. */
 const ADMIN_ACCOUNT_LIMIT = 20;
-const ACCOUNT_KEY = "|admin|";
-const over = (key: string, limit: number) => {
-  const f = fails().get(key);
-  return !!f && Date.now() - f.first <= WINDOW && f.n >= limit;
-};
-const bump = (key: string) => {
-  const cur = fails().get(key);
-  if (!cur || Date.now() - cur.first > WINDOW) fails().set(key, { n: 1, first: Date.now() });
-  else cur.n++;
-};
+const ACCOUNT_KEY = "admin|account";
 
 export async function adminLogin(username: string, password: string, ip: string): Promise<AdminLogin> {
   await ready();
-  if (over(ip, 5) || over(ACCOUNT_KEY, ADMIN_ACCOUNT_LIMIT)) return { ok: false, reason: "throttled" };
+  const ipKey = `admin|ip|${ip}`;
+  if ((await throttled(ipKey, 5, WINDOW)) || (await throttled(ACCOUNT_KEY, ADMIN_ACCOUNT_LIMIT, WINDOW))) return { ok: false, reason: "throttled" };
 
   const want = adminCredentials();
   if (!want.username || !want.password) {
@@ -115,12 +106,11 @@ export async function adminLogin(username: string, password: string, ip: string)
   // Both fields are always compared, so timing doesn't say which one was wrong.
   const good = same(username.trim(), want.username) && same(password, want.password);
   if (!good) {
-    bump(ip);
-    bump(ACCOUNT_KEY);
+    await recordFail(ipKey, WINDOW);
+    await recordFail(ACCOUNT_KEY, WINDOW);
     return { ok: false, reason: "invalid" };
   }
-  fails().delete(ip);
-  fails().delete(ACCOUNT_KEY);
+  await clearFails(ipKey, ACCOUNT_KEY);
   const token = randomBytes(32).toString("base64url");
   await pool().query("INSERT INTO platform_sessions (token_hash, expires_at) VALUES ($1, now() + $2 * interval '1 millisecond')", [sha(token), TTL_MS]);
   void pool().query("DELETE FROM platform_sessions WHERE expires_at < now()").catch(() => {});

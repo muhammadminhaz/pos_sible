@@ -65,7 +65,7 @@ browser ── POST /api/rpc {service, method, args} ──▶ route handler (ap
 * **Storage.** One Postgres table per collection, each `(business_id, id, data jsonb, seq)` with the tenant, primary key
   and insertion order as real columns, plus indexed generated columns on `transactions` (type, status, date, location,
   contact). `businesses` holds settings, metadata and a `version`. `logins` is the global username index, `sessions`
-  the sign-ins, `audit_log` one row per call that changed data.
+  the sign-ins, `audit_log` one row per call that changed data (written in the same transaction as the change, so neither exists without the other), `rate_limits` the failed sign-in counters (migration 12; one atomic upsert per failure, shared by every API instance and kept across restarts, for business and admin sign-in alike).
 * **Concurrency.** Reads take no lock. A call that changed data saves inside a transaction guarded by the business's
   version (`SELECT ... FOR UPDATE`); if someone saved first, the call is simply run again on fresh data. Nothing is
   written when a service throws. The loaded database is deep-frozen, so a service that mutates data outside
