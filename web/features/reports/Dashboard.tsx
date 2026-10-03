@@ -77,11 +77,11 @@ export function Dashboard() {
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Panel title={t("salesTrend")}>
-            {x ? <AreaChart data={x.salesByDay} xKey="date" yKey="sales" label={t("salesTrend")} /> : <div className="h-60" />}
+            {x ? <AreaChart data={x.salesByDay} xKey="date" yKey="sales" label={t("salesTrend")} height={264} /> : <div className="h-66" />}
           </Panel>
         </div>
         <Panel title={r("topProducts")}>
-          {!x ? <div className="h-60" /> : x.topProducts.length === 0 ? <Empty>{r("empty")}</Empty> : (
+          {!x ? <div className="h-66" /> : x.topProducts.length === 0 ? <Empty>{r("empty")}</Empty> : (
             <BarChart layout="vertical" data={x.topProducts.map((p) => ({ name: p.label, sold: p.sold }))} xKey="name" yKey="sold" label={r("topProducts")} height={264} format={(n) => f.qty(n)} axisTitle={r("unitsSold")} />
           )}
         </Panel>

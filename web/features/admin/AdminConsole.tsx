@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { API_MODE } from "@/lib/data/api/mode";
 
 type PlanId = string;
 type Plans = Record<PlanId, { label: string; maxUsers: number | null }>;
@@ -43,21 +42,27 @@ const STATE_STYLE = {
 const selectClass = "h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
 export function AdminConsole() {
-  const [me, setMe] = useState<Me | null | undefined>(undefined);
+  // undefined: asking · null: signed out · "offline": the backend didn't answer like the API (not configured or down)
+  const [me, setMe] = useState<Me | null | undefined | "offline">(undefined);
 
   const refreshMe = useCallback(async () => {
     const res = await call("me").catch(() => null);
-    setMe(res?.ok ? { ...(await res.json()) } : null);
+    if (res?.ok) return setMe({ ...(await res.json()) });
+    setMe(res?.status === 401 ? null : "offline");
   }, []);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- asks the server who is signed in, then stores the answer
-    if (API_MODE) void refreshMe();
+    void refreshMe();
   }, [refreshMe]);
 
-  if (!API_MODE) {
+  if (me === "offline") {
     return (
       <main className="mx-auto grid min-h-dvh max-w-md place-items-center px-4 text-center">
-        <p className="text-muted-foreground">The platform admin console needs the Postgres-backed server. Build the web app with NEXT_PUBLIC_DATA_MODE=api.</p>
+        <div className="grid gap-2">
+          <h1 className="text-lg font-semibold">Can&apos;t reach the server</h1>
+          <p className="text-muted-foreground">The admin console talks to the API. On Vercel, set BACKEND_URL to the API&apos;s address and redeploy, and make sure the API is running.</p>
+          <Button variant="outline" className="mx-auto mt-2" onClick={() => { setMe(undefined); void refreshMe(); }}>Try again</Button>
+        </div>
       </main>
     );
   }

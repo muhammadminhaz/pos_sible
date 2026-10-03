@@ -94,7 +94,11 @@ function ExpandedNav({ groups, onNavigate }: { groups: NavGroup[]; onNavigate?: 
                   <Link
                     key={i.key}
                     href={i.href}
-                    onClick={onNavigate}
+                    onClick={() => {
+                      // The page we land on makes this group "open" by itself; a leftover manual-open flag would flip it shut.
+                      setOpenGroups([]);
+                      onNavigate?.();
+                    }}
                     className={cn(itemBase, "h-7 font-normal", active.item?.key === i.key && itemActive)}
                   >
                     {t(i.key)}
