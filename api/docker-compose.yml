@@ -1,34 +1,54 @@
-# API + Postgres:  POSTGRES_PASSWORD=change-me ALLOWED_ORIGINS=https://pos.example.com docker compose up -d --build
-# Database only, for `npm run dev`:  docker compose up -d db   then   cp .env.example .env.local
-# On Coolify: use this file as a Docker Compose resource (Base Directory = api) and set the variables below there.
+# Coolify-managed deployment (API + Postgres), direct git.
+#
+# Coolify owns routing + TLS (via SERVICE_FQDN_API_3000), injects secrets/env vars from its UI, no Traefik labels,
+# no external `coolify` network, no `env_file` here. The api service publishes no host port; Coolify's proxy
+# reaches it on 3000.
+#
+# Coolify resource: Build Pack Docker Compose, Base Directory = /api, file = /docker-compose.yml.
+# Set in the Coolify UI: POSTGRES_PASSWORD (required). ALLOWED_ORIGINS defaults to the Vercel app's origin.
+# Optional: POS_SEED_DEMO, POS_ALLOW_SIGNUP, DB_PORT.
+#
+# Local: cp .env.example .env, then
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   (API on http://localhost:3001)
+#   docker compose up -d db                                                          (database only, for `npm run dev`)
 services:
-  api:
-    build: .
-    environment:
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/pos_sible
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
-      POS_SEED_DEMO: ${POS_SEED_DEMO:-false}
-      POS_ALLOW_SIGNUP: ${POS_ALLOW_SIGNUP:-false}
-    ports:
-      - "${API_PORT:-3001}:3000"
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
   db:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: pos_sible
     ports:
-      - "127.0.0.1:${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5435}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pos_sible"]
       interval: 5s
+      timeout: 5s
       retries: 10
+  api:
+    build:
+      context: .
     restart: unless-stopped
+    environment:
+      # https:// scheme => Coolify routes on the TLS entrypoint and issues a Let's Encrypt cert for this host.
+      # Drop the scheme and it may serve plain http.
+      SERVICE_FQDN_API_3000: https://pos-sible.158.178.146.95.sslip.io
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/pos_sible
+      # The web app (Vercel) proxies /api/* here, so its origin must be allowed. Exact scheme + host, no trailing slash.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://pos-sible.vercel.app}
+      POS_SEED_DEMO: ${POS_SEED_DEMO:-false}
+      POS_ALLOW_SIGNUP: ${POS_ALLOW_SIGNUP:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health | grep -q '\"ok\":true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 volumes:
   pgdata:

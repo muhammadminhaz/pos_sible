@@ -69,7 +69,7 @@ One git repo, two projects that deploy separately:
 In API mode the browser only ever talks to the web origin. `web/next.config.ts` rewrites `/api/*` to `BACKEND_URL` (the `api` project), so session cookies stay first-party and no CORS setup is needed. The API accepts those requests because the web origin is listed in its `ALLOWED_ORIGINS`.
 
 ```
-browser --> https://pos.example.com (Vercel, web/) --/api/*--> https://api.example.com (Coolify, api/) --> Postgres
+browser --> https://pos-sible.vercel.app (Vercel, web/) --/api/*--> https://pos-sible.158.178.146.95.sslip.io (Coolify, api/) --> Postgres
 ```
 
 The business rules (`lib/data`, `lib/domain`) exist in both projects: `web/` runs them in the browser for the demo mode, `api/` runs them on the server. They are copies, so a rule change must be made in both (the API test suite and the web test suite each cover their own copy).
@@ -92,7 +92,8 @@ Production build: `npm run build && npm start`.
 ```bash
 # terminal 1: API + Postgres on http://localhost:3001
 cd api
-POS_SEED_DEMO=true docker compose up -d --build
+cp .env.example .env            # POSTGRES_PASSWORD, ALLOWED_ORIGINS=http://localhost:3000, ...
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 
 # terminal 2: the UI on http://localhost:3000
 cd web
@@ -102,26 +103,27 @@ npm run dev:api
 ```
 Migrations run on the API's first request. Sign in as `admin` / `112233` (the demo shop). The API reads `ALLOWED_ORIGINS` (default `http://localhost:3000`); change it if the UI runs on another port. The API sets `Secure` cookies, which Chrome and Firefox accept on `http://localhost`; Safari does not, so use HTTPS there.
 
-To work on the API without Docker for the app itself: `cd api && docker compose up -d db && cp .env.example .env.local && npm install && npm run dev` (port 3001).
+To work on the API without Docker for the app itself: `cd api && cp .env.example .env && docker compose up -d db && npm install && npm run dev` (port 3001, database on `127.0.0.1:5435`).
 
 ### C. Deploying: web on Vercel, API on Coolify
 
-**API on Coolify.** Create a Docker Compose resource from this repo with Base Directory `api` (it uses `api/docker-compose.yml`, which runs the API and Postgres 16). Give the `api` service a domain such as `api.example.com`. Set:
+**API on Coolify.** Create a Docker Compose resource from this repo with Base Directory `api` (it uses `api/docker-compose.yml`, which runs the API and Postgres 16). The compose file already declares the public domain (`SERVICE_FQDN_API_3000: https://pos-sible.158.178.146.95.sslip.io`), which Coolify uses for routing and the TLS certificate. Change that line if the domain changes. Set these variables in Coolify:
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `POSTGRES_PASSWORD` | `postgres` | Database password. Set a long random one. It only applies when the data volume is first created; changing it later needs `ALTER USER postgres PASSWORD '...'` in the db container, or `docker compose down -v` (wipes all data). |
-| `ALLOWED_ORIGINS` | `http://localhost:3000` | The exact origin(s) of the web app, comma separated, e.g. `https://pos.example.com`. A Vercel preview URL is a different origin and must be added to be allowed. |
+| `POSTGRES_PASSWORD` | none, required | Database password. The compose file refuses to start without it. Set a long random one in Coolify. It only applies when the data volume is first created; changing it later needs `ALTER USER postgres PASSWORD '...'` in the db container, or `docker compose down -v` (wipes all data). |
+| `ALLOWED_ORIGINS` | `https://pos-sible.vercel.app` | The exact origin(s) of the web app, comma separated, no trailing slash. A Vercel preview URL is a different origin and must be added to be allowed. For local development `.env` sets `http://localhost:3000`. |
 | `POS_SEED_DEMO` | `false` | `true` creates the demo shop (`admin` / `112233`). Leave off for real use. |
 | `POS_ALLOW_SIGNUP` | `false` | `true` offers `/signup`. The image has no CLI, so create your first business with this (then turn it off), or run `npm run db:create-business` from `api/` with `DATABASE_URL` pointing at the database. |
-| `API_PORT`, `DB_PORT` | `3001`, `5432` | Host ports for local use. Postgres listens on `127.0.0.1` only. |
+| `DB_PORT` | `5435` | Host port for Postgres, bound to `127.0.0.1` only (not 5432, so it cannot clash with another database on a shared Coolify server). |
+| `API_PORT` | `3001` | Local only (`docker-compose.local.yml`). The compose file Coolify uses publishes no host port. |
 
 **Web on Vercel.** Import the repo with Root Directory `web`. Set these in the project settings (they are read at build time, so redeploy after changing them):
 
 | Variable | Value |
 |---|---|
 | `NEXT_PUBLIC_DATA_MODE` | `api` |
-| `BACKEND_URL` | `https://api.example.com` (no trailing slash) |
+| `BACKEND_URL` | `https://pos-sible.158.178.146.95.sslip.io` (no trailing slash) |
 | `NEXT_PUBLIC_ALLOW_SIGNUP` | `true` only if the API has `POS_ALLOW_SIGNUP=true` |
 | `NEXT_PUBLIC_SHOW_DEMO_LOGINS` | `true` only if the API seeds the demo shop |
 

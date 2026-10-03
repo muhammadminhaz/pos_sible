@@ -52,3 +52,8 @@ next-env.d.ts
 # framework-generated agent files
 web/AGENTS.md
 web/CLAUDE.md
+
+# private keys, never commit
+ssh/
+*.key
+*.pem
