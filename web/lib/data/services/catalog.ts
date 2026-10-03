@@ -21,6 +21,8 @@ export type CrudService<T extends { id: string }> = {
 type Rules = {
   /** One permission for every write, or one per action. */
   permission?: WritePermission;
+  /** Needed to list or open rows. Left off for reference tables every form reads (units, tax rates...). */
+  view?: string;
   /** Throws if `row` (the merged result of a create/update) is invalid. `id` is set on update. */
   check?: (db: DB, row: Record<string, unknown>, id?: string) => void;
   /** Returns an error code if something still points at the row. */
@@ -168,6 +170,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
   barcodeSettings: { permission: "settings.barcode" },
   printers: {
     permission: "settings.printer",
+    view: "settings.printer",
     // Receipt printers aren't referenced by other rows in this mock.
   },
   invoiceSchemes: {
@@ -197,6 +200,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
   },
   roles: {
     permission: crudPerm("role"),
+    view: "role.view",
     check: (db, row, id) => {
       const name = (row.name as string)?.trim();
       if (!name) throw new ValidationError({ name: "required" });
@@ -210,6 +214,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
   },
   users: {
     permission: crudPerm("user"),
+    view: "user.view",
     prepare: (row) => (typeof row.password === "string" && row.password ? { ...row, password: passwordHasher.hash(row.password) } : row),
     check: (db, row, id) => {
       const name = (row.username as string)?.trim();
@@ -243,6 +248,9 @@ function crudLocal<N extends TableName, T extends Row<N> & { id: string } = Row<
   const guard = (action: CrudAction) => {
     if (rules.permission) assertCan(permissionFor(rules.permission, action));
   };
+  const guardView = () => {
+    if (rules.view) assertCan(rules.view);
+  };
   const rows = () => getDB()[table] as unknown as T[];
   const find = (id: string) => {
     const row = rows().find((r) => r.id === id);
@@ -252,6 +260,7 @@ function crudLocal<N extends TableName, T extends Row<N> & { id: string } = Row<
   return {
     async list(q = {}) {
       await delay();
+      guardView();
       const filtered = rows().filter((r) => {
         const o = r as unknown as Record<string, string | undefined>;
         return matches(q.search, o.name, o.code, o.shortName);
@@ -260,10 +269,12 @@ function crudLocal<N extends TableName, T extends Row<N> & { id: string } = Row<
     },
     async all() {
       await delay();
+      guardView();
       return rows();
     },
     async get(id) {
       await delay();
+      guardView();
       return find(id);
     },
     async create(input) {

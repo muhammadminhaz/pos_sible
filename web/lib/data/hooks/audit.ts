@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { crud } from "@/lib/data/services/catalog";
-import { keys } from "./keys";
+import { useLookups } from "./lookups";
 
 /** The four "who touched this" fields of a record. User ids; times are ISO strings. */
 export type AuditInfo = { createdBy?: string | null; createdAt?: string | null; updatedBy?: string | null; updatedAt?: string | null };
@@ -18,7 +16,8 @@ export function auditOf(row: unknown): AuditInfo | null {
 
 /** User id → full name, for showing who did something. */
 export function useUserNames(enabled = true): (id: string | null | undefined) => string | null {
-  const q = useQuery({ queryKey: [...keys.table("users").all, "names"], queryFn: () => crud("users").all(), enabled, staleTime: 30_000 });
-  const names = useMemo(() => new Map((q.data ?? []).map((u) => [u.id, `${u.firstName} ${u.lastName}`.trim() || u.username])), [q.data]);
+  const q = useLookups();
+  const users = enabled ? q.data?.users : undefined;
+  const names = useMemo(() => new Map((users ?? []).map((u) => [u.id, `${u.firstName} ${u.lastName}`.trim() || u.username])), [users]);
   return (id) => (id ? (names.get(id) ?? null) : null);
 }
