@@ -35,23 +35,33 @@ function useAlertText() {
   };
 }
 
-/** Marks an unread row as read once most of it has been on screen for a moment, so the count falls as you read down the list. */
-function SeenWhenVisible({ id, unread, root, onSeen, children }: { id: string; unread: boolean; root: HTMLElement | null; onSeen: (id: string) => void; children: ReactNode }) {
-  const ref = useRef<HTMLLIElement>(null);
+/** Marks an unread row as read only after the user deliberately hovers it for a moment. */
+function ReadOnHover({ id, unread, onRead, children }: { id: string; unread: boolean; onRead: (id: string) => void; children: ReactNode }) {
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const marked = useRef(false);
   useEffect(() => {
-    if (!unread || !root || !ref.current) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        clearTimeout(timer);
-        if (e.isIntersecting) timer = setTimeout(() => onSeen(id), 700);
-      },
-      { root, threshold: 0.75 },
-    );
-    io.observe(ref.current);
-    return () => { clearTimeout(timer); io.disconnect(); };
-  }, [id, unread, root, onSeen]);
-  return <li ref={ref}>{children}</li>;
+    if (!unread) marked.current = true;
+    return () => clearTimeout(timer.current);
+  }, [unread]);
+
+  const read = () => {
+    if (!unread || marked.current) return;
+    marked.current = true;
+    clearTimeout(timer.current);
+    onRead(id);
+  };
+
+  return (
+    <li
+      onMouseEnter={() => {
+        if (!unread || marked.current) return;
+        timer.current = setTimeout(read, 1000);
+      }}
+      onMouseLeave={() => clearTimeout(timer.current)}
+    >
+      {children}
+    </li>
+  );
 }
 
 export function Notifications() {
@@ -62,7 +72,6 @@ export function Notifications() {
   const { markAllRead, markRead } = useNotificationMutations();
   const unread = data?.unread ?? 0;
   const [open, setOpen] = useState(false);
-  const [list, setList] = useState<HTMLDivElement | null>(null);
   const seen = (id: string) => markRead.mutate(id);
 
   return (
@@ -88,7 +97,7 @@ export function Notifications() {
           )}
         </div>
         {data?.items.length ? (
-          <div ref={setList} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <ul className="divide-y">
               {data.items.map((n) => {
                 const { title, body: detail } = text(n);
@@ -108,7 +117,7 @@ export function Notifications() {
                   </div>
                 );
                 return (
-                  <SeenWhenVisible key={n.id} id={n.id} unread={open && !n.readAt} root={list} onSeen={seen}>
+                  <ReadOnHover key={n.id} id={n.id} unread={open && !n.readAt} onRead={seen}>
                     {n.href ? (
                       <Link href={n.href} onClick={() => markRead.mutate(n.id)}>
                         {body}
@@ -118,7 +127,7 @@ export function Notifications() {
                         {body}
                       </button>
                     )}
-                  </SeenWhenVisible>
+                  </ReadOnHover>
                 );
               })}
             </ul>
