@@ -19,40 +19,89 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 | 7 | ✅ Reports and Dashboard | ✅ Done | [plan](docs/superpowers/plans/2026-10-05-possible-reports-dashboard.md) |
 | 8 | ✅ Settings and Admin, plus POS follow-ups | ✅ Done | [plan](docs/superpowers/plans/2026-10-06-possible-settings-admin.md) |
 
-### What works today
-- Sign in (demo `admin` / `112233`), app shell, collapsible sidebar, command palette (⌘K), notifications, location switcher, one-click light/dark theme, EN/BN toggle.
-- Home dashboard KPI tiles with location and date filters.
-- Products list with filters, stock report tab, bulk actions and CSV export.
-- Full POS at `/pos`: register open/close, barcode/SKU scanning, grid, variations, serials, line discounts, order discount/tax/shipping, reward points, split payments (cash, card, bKash, Nagad and more), suspend/resume, draft, quotation, credit sale, recent transactions, thermal and A4 receipts with Code 128, keyboard shortcuts, weighing-scale barcodes.
-- Sales: all sales, drafts and quotations lists, add/edit sale (shipping, additional expenses, payments, subscriptions, linked orders), sale detail, payments, convert to invoice, sell returns, sales orders, shipments, discounts and CSV import with revert.
+## Features
 
-- Settings and admin: business settings (16 tabs, driven by the settings schema, with a shortcut recorder and mocked test email/SMS), locations, invoice schemes and layouts (with a live preview), barcode sheets, printers, tax rates and groups, users and roles (permission matrix), backup and restore, module switches (hide menu items and routes), profile and calendar.
+**Selling**
+- **POS** (`/pos`): open/close a cash register, barcode/SKU scanning, product grid with category/brand/featured filters, variations, serial/IMEI numbers, line discounts, order discount/tax/shipping zones, reward points, split payments (cash, card, cheque, bank, bKash, Nagad, Rocket, Upay and custom), suspend/resume, draft, quotation, credit sale, recent transactions, thermal (58/80 mm) and A4 receipts with Code 128, customizable keyboard shortcuts, weighing-scale barcodes, technician and service-staff pickers, walk-in customers, quick add customer. Works on tablets (Products/Cart switch) and desktops.
+- **Sales**: all sales, drafts, quotations, proforma; add/edit sale (shipping, extra expenses, payments, subscriptions/recurring, commission agent, documents); sale detail with payments and printing; convert draft/quotation to invoice; sell returns; sales orders (view, convert to a sale, delete); shipments; rule-based discounts; CSV import with revert history.
+- **Customers**: groups with price lists, credit limits and pay terms, opening/advance balance, reward points that **expire** after a configurable period.
+
+**Catalog and stock**
+- Products (single, variable, combo), units with sub-units, categories, brands, warranties, variation templates, selling price groups, tax rates and groups, SKU/barcode types, expiry dates and lots, images, rack/row/position.
+- Print barcode labels (sheet presets), update prices by spreadsheet, import products and opening stock from CSV, bulk actions, product history.
+- Stock per location with FIFO/LIFO costing, stock transfers (pending / in transit / completed), stock adjustments (normal/abnormal), low-stock and expiry alerts, optional "stop selling expired stock".
+
+**Buying**
+- Suppliers, purchases (statuses, lots, expiry, partial payments, additional expenses, attach a document, **import lines from CSV**), purchase returns, pay-due flows.
+
+**Money**
+- Expenses (categories, sub-categories, refunds, recurring), payment accounts and account types, deposits, transfers, account book, balance sheet, trial balance, cash flow, payment account report. Books are double-entry and reconcile with stock to the cent.
+
+**Reports and dashboard**
+- Home dashboard (KPIs with location/date filters, sales chart, top products, dues), profit & loss (by product, category, brand, location, invoice, date, customer), purchase & sale, tax, customers & suppliers, customer groups, stock, stock expiry, stock adjustment, trending products, items, product purchase/sell, purchase/sell payment, expense, register, sales representative, table. Print and CSV export everywhere.
+
+**Settings and admin**
+- Business settings (16 tabs: business, tax, product, contact, sale, POS, purchases, payment, dashboard, system, prefixes, reward points, modules, custom labels, email, SMS), locations, invoice schemes and layouts (live preview), barcode sheets, receipt printers, tax rates, **users and roles** with a permission matrix, backup/restore (JSON), module switches, profile (password, photo, bank details), calendar. Every setting takes effect immediately.
+
+**Platform**
+- English and Bangla (digits, units, AM/PM), light/dark themes, accent colours, command palette (⌘K), notifications, installable PWA, accessible (axe-checked), reduced-motion friendly micro animations.
+- **First-run onboarding**: choose sample data or an empty shop, enter business details; a self-ticking "Get started" checklist.
+- **Two modes**: browser-only demo, or **Postgres-backed API mode** with real sign-in (scrypt, sessions, throttling), many users/devices/businesses, server-enforced permissions, audit log, optional public sign-up. See [docs/backend.md](docs/backend.md).
 
 ### Good to know
-- **Two modes.** The default is the original browser-only demo (IndexedDB, single device; a banner appears if the browser refuses to save, and **Backup** exports everything). With `NEXT_PUBLIC_DATA_MODE=api` the same app runs against **Postgres inside this Next.js project**: real sign-in, many users and devices, many businesses. See [docs/backend.md](docs/backend.md).
-- **Devices.** Back office works from phone to desktop. The POS works on tablets (768px and up) with a Products/Cart switch, and shows the full two-pane layout from 1024px. The app is installable as a PWA.
-- **Settings are live.** Every switch in Business Settings changes behaviour straight away (edit window, minimum selling price, default discount/tax, expiry stop-selling, theme colour, page size, module switches...). Settings with no feature behind them yet (restaurant modules, payment links, purchase orders/requisitions, reward expiry) are hidden rather than shown as dead switches.
-- **Email/SMS** "test" buttons are mocked; there is no real gateway without a backend.
+- **Two modes.** The default is the browser-only demo (IndexedDB, single device; a banner appears if the browser refuses to save, and **Backup** exports everything). API mode needs Postgres and is chosen at build time.
+- **Settings with no feature behind them yet** (restaurant modules, payment links, purchase orders/requisitions) are hidden rather than shown as dead switches.
+- **Email/SMS** "test" buttons are mocked; a real gateway needs a provider key and a worker.
 - **Field labels** inside some Business Settings tabs are generated from the setting names and are English-only in Bangla mode.
 
 ## Tech stack
-Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand (persisted), next-intl, next-themes, zod, recharts, sonner, lucide-react, vitest. Fonts: Inter and Anek Bangla.
+Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand, next-intl, next-themes, zod, recharts, sonner, lucide-react, PostgreSQL (`pg`), vitest, Playwright-core + axe-core for browser checks. Fonts: Inter and Anek Bangla.
 
-## Getting started
+## Running the project
+
+**Requirements:** Node.js 20.9+ (22 recommended) and npm. Postgres 14+ only for API mode (Docker is the easiest way).
+
+### A. Browser-only demo (no database)
 ```bash
 npm install
-npm run dev        # http://localhost:3000
+npm run dev            # http://localhost:3000
 ```
-Sign in with `admin` / `112233` (also `cashier`, `rafiq`, `nazmul`, all with `112233`). Data is seeded on first load (about six months of history). Clear site storage to reset it.
+Sign in as `admin` / `112233` (also `cashier`, `rafiq`, `nazmul`, all `112233`). A welcome wizard appears the first time: keep the sample shop or start empty. Data is generated on first load (about six months of history) and saved in the browser; clear site data to reset.
 
+Production build: `npm run build && npm start`.
+
+### B. With Postgres (real sign-in, many users and devices)
 ```bash
-npm test           # vitest, 439 tests incl. Postgres integration tests (skipped without a database) and a workflow fuzz that runs 1,000 random user actions and checks the books reconcile
-npx tsc --noEmit   # typecheck
-npm run lint
-npm run build
-npm run e2e:api    # browser journey against the Postgres-backed build (see docs/backend.md)
-npm run e2e        # browser smoke + accessibility (axe) over every route, EN/light and BN/dark; needs a running build
+npm install
+docker compose up -d                 # Postgres 16 on :5432 (or point DATABASE_URL at your own)
+cp .env.example .env.local           # DATABASE_URL, demo seeding, sign-up switch
+npm run dev:api                      # http://localhost:3000, migrations run on first request
 ```
+Or build for production: `npm run db:migrate && npm run db:seed && npm run build:api && npm start`. `NEXT_PUBLIC_DATA_MODE` is baked in at build time, so build the mode you intend to run.
+
+Sign in as `admin` / `112233` (the demo shop). Create your own business with
+`npm run db:create-business -- "My Shop" myname 'a good password' "My Name"`, or set `POS_ALLOW_SIGNUP=true` and `NEXT_PUBLIC_ALLOW_SIGNUP=true` to offer `/signup`. Set `POS_SEED_DEMO=false` (and never publish the demo passwords) for a real deployment. All variables are explained in [docs/backend.md](docs/backend.md).
+
+### Checks
+```bash
+npx tsc --noEmit    # typecheck
+npm run lint
+npm test            # 439 unit/integration tests. tests/server/* need Postgres (TEST_DATABASE_URL,
+                    # default postgres://postgres@127.0.0.1:5433/pos_sible_test) and are skipped without one
+npm run build
+# with a built app running (npm start):
+npm run e2e                           # every route, EN/light + BN/dark + tablet, axe accessibility
+npm run e2e:onboarding                # first-run wizard and checklist
+E2E_API=1 npm run e2e                 # same sweep against the Postgres build
+npm run e2e:api                       # sign-in, multi-device, permissions, cashier POS sale
+```
+The e2e scripts drive Chromium through `playwright-core`; set `CHROMIUM_PATH` if it is not at `/opt/pw-browsers/chromium`, and `E2E_URL` for another port.
+
+### Troubleshooting
+- *"DATABASE_URL is not set"*: you built API mode without it; copy `.env.example` to `.env.local`.
+- *Sign-in page shows no demo buttons in API mode*: set `NEXT_PUBLIC_SHOW_DEMO_LOGINS=true` and rebuild.
+- *Changed mode but nothing changed*: `NEXT_PUBLIC_DATA_MODE` is read at build time; rebuild.
+- *Data looks stale after upgrading*: clear site data (demo) or run `npm run db:migrate` (Postgres).
 
 ## How the code is organised
 ```
