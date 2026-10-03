@@ -2,7 +2,7 @@
 
 A modern point-of-sale and back-office app for retail shops: selling, catalog, contacts, purchases, stock, expenses, accounts, reports and settings, in English and Bangla.
 
-It runs in two modes from one codebase: a **browser-only demo** (mock data generated in the browser, no server needed) and an **API mode backed by Postgres** inside the same Next.js project (see [docs/backend.md](docs/backend.md)). Screens talk to services; in API mode the same services run on the server, so every business rule is enforced there.
+It runs in two modes from one codebase: a **browser-only demo** (mock data generated in the browser, no server needed) and an **API mode backed by Postgres**, where the UI (`web/`, Vercel) talks to a separate backend project (`api/`, Coolify; see [docs/backend.md](docs/backend.md)). Screens talk to services; in API mode the same services run on the server, so every business rule is enforced there.
 
 ## Status
 
@@ -49,7 +49,7 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 - **Two modes**: browser-only demo, or **Postgres-backed API mode** with real sign-in (scrypt, sessions, throttling), many users/devices/businesses, server-enforced permissions, audit log, optional public sign-up. See [docs/backend.md](docs/backend.md).
 
 ### Good to know
-- **Two modes.** The default is the browser-only demo (IndexedDB, single device; a banner appears if the browser refuses to save, and **Backup** exports everything). API mode needs Postgres and is chosen at build time.
+- **Two modes.** The default is the browser-only demo (IndexedDB, single device; a banner appears if the browser refuses to save, and **Backup** exports everything). API mode needs the `api` project and Postgres and is chosen at build time.
 - **Settings with no feature behind them yet** (restaurant modules, payment links, purchase orders/requisitions) are hidden rather than shown as dead switches.
 - **Email/SMS** "test" buttons are mocked; a real gateway needs a provider key and a worker.
 - **Field labels** inside some Business Settings tabs are generated from the setting names and are English-only in Bangla mode.
@@ -57,12 +57,30 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 ## Tech stack
 Next.js 16 (App Router, Turbopack), React 19 with the React Compiler, TypeScript, Tailwind CSS v4, shadcn/ui on Radix, TanStack Query and Table, Zustand, next-intl, next-themes, zod, recharts, sonner, lucide-react, PostgreSQL (`pg`), vitest, Playwright-core + axe-core for browser checks. Fonts: Inter and Anek Bangla.
 
+## Repository layout
+
+One git repo, two projects that deploy separately:
+
+| Folder | What it is | Deploys to |
+|---|---|---|
+| `web/` | The Next.js UI (screens, POS, i18n). Also contains the browser-only demo mode. | Vercel, Root Directory = `web` |
+| `api/` | The backend: HTTP routes, services, Postgres access, sessions, migrations. | Coolify, Base Directory = `api` (app + Postgres in `api/docker-compose.yml`) |
+
+In API mode the browser only ever talks to the web origin. `web/next.config.ts` rewrites `/api/*` to `BACKEND_URL` (the `api` project), so session cookies stay first-party and no CORS setup is needed. The API accepts those requests because the web origin is listed in its `ALLOWED_ORIGINS`.
+
+```
+browser --> https://pos.example.com (Vercel, web/) --/api/*--> https://api.example.com (Coolify, api/) --> Postgres
+```
+
+The business rules (`lib/data`, `lib/domain`) exist in both projects: `web/` runs them in the browser for the demo mode, `api/` runs them on the server. They are copies, so a rule change must be made in both (the API test suite and the web test suite each cover their own copy).
+
 ## Running the project
 
-**Requirements:** Node.js 20.9+ (22 recommended) and npm. Postgres 14+ only for API mode (Docker is the easiest way).
+**Requirements:** Node.js 20.9+ (22 recommended), npm, and Docker for the API.
 
-### A. Browser-only demo (no database)
+### A. Browser-only demo (no backend)
 ```bash
+cd web
 npm install
 npm run dev            # http://localhost:3000
 ```
@@ -70,52 +88,95 @@ Sign in as `admin` / `112233` (also `cashier`, `rafiq`, `nazmul`, all `112233`).
 
 Production build: `npm run build && npm start`.
 
-### B. With Postgres (real sign-in, many users and devices)
+### B. Both projects locally (real sign-in, many users and devices)
 ```bash
-npm install
-docker compose up -d                 # Postgres 16 on :5432 (or point DATABASE_URL at your own)
-cp .env.example .env.local           # DATABASE_URL, demo seeding, sign-up switch
-npm run dev:api                      # http://localhost:3000, migrations run on first request
-```
-Or build for production: `npm run db:migrate && npm run db:seed && npm run build:api && npm start`. `NEXT_PUBLIC_DATA_MODE` is baked in at build time, so build the mode you intend to run.
+# terminal 1: API + Postgres on http://localhost:3001
+cd api
+POS_SEED_DEMO=true docker compose up -d --build
 
-Sign in as `admin` / `112233` (the demo shop). Create your own business with
-`npm run db:create-business -- "My Shop" myname 'a good password' "My Name"`, or set `POS_ALLOW_SIGNUP=true` and `NEXT_PUBLIC_ALLOW_SIGNUP=true` to offer `/signup`. Set `POS_SEED_DEMO=false` (and never publish the demo passwords) for a real deployment. All variables are explained in [docs/backend.md](docs/backend.md).
+# terminal 2: the UI on http://localhost:3000
+cd web
+npm install
+cp .env.example .env.local      # NEXT_PUBLIC_DATA_MODE=api, BACKEND_URL=http://localhost:3001
+npm run dev:api
+```
+Migrations run on the API's first request. Sign in as `admin` / `112233` (the demo shop). The API reads `ALLOWED_ORIGINS` (default `http://localhost:3000`); change it if the UI runs on another port. The API sets `Secure` cookies, which Chrome and Firefox accept on `http://localhost`; Safari does not, so use HTTPS there.
+
+To work on the API without Docker for the app itself: `cd api && docker compose up -d db && cp .env.example .env.local && npm install && npm run dev` (port 3001).
+
+### C. Deploying: web on Vercel, API on Coolify
+
+**API on Coolify.** Create a Docker Compose resource from this repo with Base Directory `api` (it uses `api/docker-compose.yml`, which runs the API and Postgres 16). Give the `api` service a domain such as `api.example.com`. Set:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `POSTGRES_PASSWORD` | `postgres` | Database password. Set a long random one. It only applies when the data volume is first created; changing it later needs `ALTER USER postgres PASSWORD '...'` in the db container, or `docker compose down -v` (wipes all data). |
+| `ALLOWED_ORIGINS` | `http://localhost:3000` | The exact origin(s) of the web app, comma separated, e.g. `https://pos.example.com`. A Vercel preview URL is a different origin and must be added to be allowed. |
+| `POS_SEED_DEMO` | `false` | `true` creates the demo shop (`admin` / `112233`). Leave off for real use. |
+| `POS_ALLOW_SIGNUP` | `false` | `true` offers `/signup`. The image has no CLI, so create your first business with this (then turn it off), or run `npm run db:create-business` from `api/` with `DATABASE_URL` pointing at the database. |
+| `API_PORT`, `DB_PORT` | `3001`, `5432` | Host ports for local use. Postgres listens on `127.0.0.1` only. |
+
+**Web on Vercel.** Import the repo with Root Directory `web`. Set these in the project settings (they are read at build time, so redeploy after changing them):
+
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_DATA_MODE` | `api` |
+| `BACKEND_URL` | `https://api.example.com` (no trailing slash) |
+| `NEXT_PUBLIC_ALLOW_SIGNUP` | `true` only if the API has `POS_ALLOW_SIGNUP=true` |
+| `NEXT_PUBLIC_SHOW_DEMO_LOGINS` | `true` only if the API seeds the demo shop |
+
+Run a single API replica (each business's data is cached in server memory). Sessions use `Secure` cookies, which is fine on Vercel's HTTPS domain. Full-database restore uploads can reach 30 MB; this was checked at 12 MB through the rewrite when self-hosted, but not on Vercel, whose request body limits apply there.
 
 ### Checks
 ```bash
-npx tsc --noEmit    # typecheck
+# web/
+npx next typegen && npm run typecheck   # typegen creates the generated LayoutProps type on a clean checkout
 npm run lint
-npm test            # 439 unit/integration tests. tests/server/* need Postgres (TEST_DATABASE_URL,
-                    # default postgres://postgres@127.0.0.1:5433/pos_sible_test) and are skipped without one
+npm test                                # unit tests (no database needed)
 npm run build
 # with a built app running (npm start):
-npm run e2e                           # every route, EN/light + BN/dark + tablet, axe accessibility
-npm run e2e:onboarding                # first-run wizard and checklist
-E2E_API=1 npm run e2e                 # same sweep against the Postgres build
-npm run e2e:api                       # sign-in, multi-device, permissions, cashier POS sale
+npm run e2e                             # every route, EN/light + BN/dark + tablet, axe accessibility
+npm run e2e:onboarding                  # first-run wizard and checklist
+
+# api/
+npm run typecheck
+npm test                                # tests/server/* need Postgres (TEST_DATABASE_URL, default
+                                        # postgres://postgres@127.0.0.1:5433/pos_sible_test), skipped without one
+
+# both running (section B), from web/:
+E2E_API=1 npm run e2e                   # same sweep against the Postgres-backed stack
+npm run e2e:api                         # sign-in, multi-device, permissions, cashier POS sale
 ```
 The e2e scripts drive Chromium through `playwright-core`; set `CHROMIUM_PATH` if it is not at `/opt/pw-browsers/chromium`, and `E2E_URL` for another port.
 
 ### Troubleshooting
-- *"DATABASE_URL is not set"*: you built API mode without it; copy `.env.example` to `.env.local`.
-- *Sign-in page shows no demo buttons in API mode*: set `NEXT_PUBLIC_SHOW_DEMO_LOGINS=true` and rebuild.
+- *Sign-in says "origin" or every request returns 403 `forbidden_origin`*: the web origin is missing from the API's `ALLOWED_ORIGINS` (scheme and host must match exactly, no trailing slash).
+- */api calls return 404 on Vercel*: `BACKEND_URL` was not set at build time; set it and redeploy.
+- *"DATABASE_URL is not set"*: set it for the API (compose does this for you).
+- *Sign-in page shows no demo buttons in API mode*: set `NEXT_PUBLIC_SHOW_DEMO_LOGINS=true` on the web project and rebuild.
 - *Changed mode but nothing changed*: `NEXT_PUBLIC_DATA_MODE` is read at build time; rebuild.
-- *Data looks stale after upgrading*: clear site data (demo) or run `npm run db:migrate` (Postgres).
+- *Data looks stale after upgrading*: clear site data (demo) or run `npm run db:migrate` from `api/` (Postgres).
 
 ## How the code is organised
 ```
-app/            routes: (auth) login, (app) back-office screens, (pos) full-screen POS
-components/     ui (shadcn), shared (DataTable, FilterBar, PageHeader, Money, dialogs), layout
-features/       one folder per module: pos, products, sales ...
-lib/data/       schemas (zod), seed, services (the "API"), hooks (TanStack Query), store
-lib/domain/     pure business maths: totals, pricing, stock allocation, payments, rewards, ledger
-lib/pos/        cart operations, selectors, hotkeys, barcode
-lib/auth/       session, permissions, assertCan
-lib/i18n/       formatting and locale
-messages/       generated en.json and bn.json
-scripts/        messages.mjs, the single source of all UI text
-docs/           design specs and implementation plans
+web/                  the Next.js UI project
+  app/                routes: (auth) login, (app) back-office screens, (pos) full-screen POS
+  components/         ui (shadcn), shared (DataTable, FilterBar, PageHeader, Money, dialogs), layout
+  features/           one folder per module: pos, products, sales ...
+  lib/data/           schemas (zod), seed, services (the "API"), hooks (TanStack Query), store
+  lib/domain/         pure business maths: totals, pricing, stock allocation, payments, rewards, ledger
+  lib/pos/            cart operations, selectors, hotkeys, barcode
+  lib/auth/           session, permissions, assertCan
+  lib/i18n/           formatting and locale
+  messages/           generated en.json and bn.json
+  scripts/            messages.mjs, the single source of all UI text
+api/                  the backend project
+  app/api/            route handlers: rpc, auth (login, logout, me, signup), health
+  lib/server/         Postgres pool, schema and migrations, sessions, per-business store, RPC dispatch
+  lib/data, lib/domain, lib/pos, lib/auth/   copies of the shared business rules the services need
+  scripts/db.ts       migrate, seed, create-business
+  tests/server/       backend, tenant isolation and fuzz tests (real Postgres)
+docs/                 design specs, implementation plans, backend notes
 ```
 
 ### Conventions
