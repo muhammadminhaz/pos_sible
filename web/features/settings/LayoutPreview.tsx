@@ -14,7 +14,7 @@ export function LayoutPreview({ values }: { values: Values }) {
       <article className={`mx-auto bg-white p-3 font-mono text-[10px] leading-snug text-black shadow-sm ${a4 ? "w-full max-w-sm" : "w-[60mm]"}`}>
         <header className="text-center">
           {on("showLogo") && <div className="mx-auto mb-1 h-6 w-12 rounded bg-black/10" />}
-          {on("showBusinessName") && <p className="font-bold">pos_sible</p>}
+          {on("showBusinessName") && <p className="font-bold">Pos-sible</p>}
           {on("showLocationName") && <p>Rango Electronics</p>}
           {on("showAddress") && <p>Mirpur 10, Dhaka</p>}
           {on("showMobile") && <p>01711223344</p>}

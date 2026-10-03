@@ -3,7 +3,7 @@
 import { cn } from "cn";
 import { useSettings } from "@/lib/data/hooks/settings";
 
-/** The business logo when one is uploaded, otherwise the pos_sible mark: an indigo tile, a receipt, and a rising sales line (same artwork as app/icon.svg). */
+/** The business logo when one is uploaded, otherwise the Pos-sible mark: an indigo tile, a receipt, and a rising sales line (same artwork as app/icon.svg). */
 export function LogoMark({ className }: { className?: string }) {
   const logo = useSettings().data?.business.logo;
   if (logo) {

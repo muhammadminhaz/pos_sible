@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { SITE } from "@/lib/site";
 import { call, type Business, type Me, type ModuleDef, type Plan } from "./api";
 
 type AdminState = { me: Me; plans: Plan[]; modules: ModuleDef[]; businesses: Business[] | null; reload: () => Promise<void>; signOut: () => Promise<void> };
@@ -57,6 +58,16 @@ function SidebarBody({ me, onNavigate, onSignOut }: { me: Me; onNavigate?: () =>
       </div>
     </div>
   );
+}
+
+/** Titles the tab after the admin page you are on. */
+function AdminTitle() {
+  const path = usePathname();
+  const label = NAV.find((n) => (n.href === "/admin" ? path === "/admin" : path.startsWith(n.href)))?.label ?? "Platform admin";
+  useEffect(() => {
+    document.title = `${label} · Platform admin · ${SITE.name}`;
+  }, [label]);
+  return null;
 }
 
 /** Sign-in, then the console frame (sidebar + page). Businesses are loaded once here and shared with every page. */
@@ -109,6 +120,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={value}>
+      <AdminTitle />
       <div className="flex min-h-dvh bg-muted/30">
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-r lg:block">
           <SidebarBody me={me} onSignOut={signOut} />

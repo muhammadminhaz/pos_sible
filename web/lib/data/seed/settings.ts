@@ -3,7 +3,7 @@ import type { Settings } from "@/lib/data/schemas";
 export function defaultSettings(startDate: string): Settings {
   return {
     business: {
-      name: "pos_sible",
+      name: "Pos-sible",
       startDate,
       defaultProfitPercent: 25,
       currencyCode: "BDT",
@@ -140,7 +140,7 @@ export function defaultSettings(startDate: string): Settings {
       password: "",
       encryption: "tls",
       fromAddress: "",
-      fromName: "pos_sible",
+      fromName: "Pos-sible",
     },
     sms: {
       service: "other",

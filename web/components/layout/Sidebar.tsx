@@ -161,7 +161,7 @@ function OpenPosButton({ collapsed }: { collapsed?: boolean }) {
 
 function Brand({ collapsed }: { collapsed?: boolean }) {
   const business = useSettings().data?.business;
-  const name = business?.logo && business.name ? business.name : "pos_sible";
+  const name = business?.logo && business.name ? business.name : "Pos-sible";
   return (
     <Link href="/home" className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
       <LogoMark />

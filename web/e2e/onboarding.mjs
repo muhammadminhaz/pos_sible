@@ -26,7 +26,7 @@ if (process.env.E2E_API === "1") {
   await page.waitForURL(/\/home/);
 }
 
-await page.getByText("Welcome to pos_sible").waitFor({ timeout: 10000 });
+await page.getByText("Welcome to Pos-sible").waitFor({ timeout: 10000 });
 check(true, "wizard opens on first run");
 await page.getByRole("button", { name: /Start my own shop/ }).click();
 check(await page.getByText(/sample data will be replaced/i).isVisible(), "fresh start warns about replacing the demo");
@@ -38,7 +38,7 @@ await page.getByRole("radio", { name: "green" }).click();
 await page.getByRole("button", { name: "Finish setup" }).click();
 await page.getByRole("heading", { name: /Welcome back/ }).waitFor({ timeout: 10000 });
 
-check(!(await page.getByText("Welcome to pos_sible").isVisible().catch(() => false)), "wizard closes");
+check(!(await page.getByText("Welcome to Pos-sible").isVisible().catch(() => false)), "wizard closes");
 check((await page.evaluate(() => document.documentElement.getAttribute("data-accent"))) === "green", "chosen colour applied");
 check(await page.getByText("Get started").first().isVisible(), "checklist is shown");
 await page.goto(`${BASE}/products`);
@@ -55,6 +55,6 @@ await page.getByText("Get started").first().waitFor();
 const ticked = await page.getByRole("progressbar").getAttribute("aria-valuenow");
 check(ticked === "1", `adding a product ticks the checklist (got ${ticked})`);
 await page.reload();
-check(!(await page.getByText("Welcome to pos_sible").isVisible().catch(() => false)), "choice survives a reload");
+check(!(await page.getByText("Welcome to Pos-sible").isVisible().catch(() => false)), "choice survives a reload");
 check(errors.length === 0, `no page errors ${errors.join(" | ")}`);
 await browser.close();

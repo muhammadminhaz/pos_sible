@@ -15,7 +15,7 @@ function Splash() {
     <div className="grid min-h-dvh place-items-center">
       <div className="flex items-center gap-3 text-muted-foreground">
         <span className="size-7 animate-pulse rounded-lg bg-primary" />
-        <span className="text-sm font-medium">pos_sible</span>
+        <span className="text-sm font-medium">Pos-sible</span>
       </div>
     </div>
   );

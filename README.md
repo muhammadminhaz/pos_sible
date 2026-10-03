@@ -1,4 +1,4 @@
-# pos_sible
+# Pos-sible
 
 A modern point-of-sale and back-office app for retail shops: selling, catalog, contacts, purchases, stock, expenses, accounts, reports and settings, in English and Bangla.
 
@@ -56,6 +56,7 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 - You see each business's package, user count and storage only: no products, customers, sales or staff, and there is no way to sign in as a business. Businesses are fully isolated from each other (every query is scoped to the signed-in user's business).
 
 **Platform**
+- **SEO and sharing**: proper page titles ("Products · Pos-sible", in the current language), description, keywords, canonical links, Open Graph and Twitter cards with a generated 1200×630 preview image, JSON-LD (software application), `robots.txt`, `sitemap.xml` and a web manifest. Sign-in pages are indexable; the shop and the admin console are `noindex`.
 - English and Bangla (digits, units, AM/PM), light/dark themes, accent colours, command palette (⌘K), notifications, installable PWA, accessible (axe-checked), reduced-motion friendly micro animations (pointer-following spotlight on cards, count-up figures, shine and press on buttons, staggered table rows, shimmer loading, tick/pop on checkboxes, animated active-page markers).
 - **First-run onboarding**: choose sample data or an empty shop, enter business details; a self-ticking "Get started" checklist.
 - **Two modes**: browser-only demo, or **Postgres-backed API mode** with real sign-in (scrypt, sessions, throttling), many users/devices/businesses, server-enforced permissions, audit log, optional public sign-up. See [docs/backend.md](docs/backend.md).
@@ -150,6 +151,7 @@ To work on the API without Docker for the app itself: `cd api && cp .env.example
 | `NEXT_PUBLIC_DATA_MODE` | `api` |
 | `BACKEND_URL` | `https://pos-sible.158.178.146.95.sslip.io` (no trailing slash) |
 | `NEXT_PUBLIC_ALLOW_SIGNUP` | `true` only if the API has `POS_ALLOW_SIGNUP=true` |
+| `NEXT_PUBLIC_SITE_URL` | The public address of the web app, e.g. `https://pos-sible.vercel.app` (default). Used for canonical links, the Open Graph / Twitter preview image, the sitemap and robots.txt. Set it when you move to your own domain. |
 | `NEXT_PUBLIC_SHOW_DEMO_LOGINS` | `true` only if the API seeds the demo shop |
 
 Run a single API replica (each business's data is cached in server memory). Sessions use `Secure` cookies, which is fine on Vercel's HTTPS domain. Full-database restore uploads can reach 30 MB; this was checked at 12 MB through the rewrite when self-hosted, but not on Vercel, whose request body limits apply there.

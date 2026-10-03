@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 // [en, bn] pairs; split into two JSON files so key parity is guaranteed.
 const M = {
   common: {
-    appName: ["pos_sible", "pos_sible"],
+    appName: ["Pos-sible", "Pos-sible"],
     save: ["Save", "সংরক্ষণ"],
     saveChanges: ["Save changes", "পরিবর্তন সংরক্ষণ"],
     cancel: ["Cancel", "বাতিল"],
@@ -212,7 +212,7 @@ const M = {
     heroPoint1: ["A fast POS with bKash, Nagad and card payments", "বিকাশ, নগদ ও কার্ড পেমেন্টসহ দ্রুত POS"],
     heroPoint2: ["Live stock across every shop and warehouse", "প্রতিটি দোকান ও গুদামের লাইভ স্টক"],
     heroPoint3: ["Profit, tax and cash reports in English and বাংলা", "ইংরেজি ও বাংলায় লাভ, কর ও ক্যাশ রিপোর্ট"],
-    footer: ["© 2026 pos_sible. All rights reserved.", "© ২০২৬ pos_sible। সর্বস্বত্ব সংরক্ষিত।"],
+    footer: ["© 2026 Pos-sible. All rights reserved.", "© ২০২৬ Pos-sible। সর্বস্বত্ব সংরক্ষিত।"],
     invalid: ["Wrong username or password", "ভুল ইউজারনেম অথবা পাসওয়ার্ড"],
     demoHint: ["Demo: admin / 112233 or cashier / 112233", "ডেমো: admin / 112233 অথবা cashier / 112233"],
     forbiddenTitle: ["You don't have access", "আপনার অনুমতি নেই"],
@@ -1863,7 +1863,7 @@ const M = {
     },
   },
   onboarding: {
-    welcomeTitle: ["Welcome to pos_sible", "pos_sible এ স্বাগতম"],
+    welcomeTitle: ["Welcome to Pos-sible", "Pos-sible এ স্বাগতম"],
     welcomeBody: ["Two minutes to set up. How would you like to start?", "সেটআপ করতে মাত্র দুই মিনিট। কীভাবে শুরু করতে চান?"],
     demoTitle: ["Explore with sample data", "নমুনা ডেটা দিয়ে ঘুরে দেখুন"],
     demoBody: ["Six months of sales, stock and customers so every screen and report has something to show.", "ছয় মাসের বিক্রয়, স্টক ও গ্রাহক, যাতে প্রতিটি স্ক্রিন ও রিপোর্টে কিছু দেখা যায়।"],

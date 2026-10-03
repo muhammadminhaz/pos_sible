@@ -53,7 +53,7 @@ export async function seedDemoIfEmpty(): Promise<void> {
     const db = createSeed();
     const hashed = hashPassword("112233"); // one hash for every demo account keeps start-up quick
     for (const u of db.users) u.password = hashed;
-    db.settings.business.name = "pos_sible demo";
+    db.settings.business.name = "Pos-sible demo";
     await insertBusiness(randomUUID(), db, "demo");
   } finally {
     await client.query("SELECT pg_advisory_unlock(727002)").catch(() => {});
