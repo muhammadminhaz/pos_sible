@@ -2,7 +2,6 @@
 
 **Goal:** A top-level **Analytics** tab (`/analytics`) that gathers every useful business insight in one place: sales, profit, products, inventory, customers, suppliers, staff, payments, expenses, cash flow and forecasts. Each insight gets the chart type that suits it best.
 **Architecture:** An `analyticsService` (`web/lib/data/services/analytics/*`) of pure, typed query functions over the same store and services the reports use (`sales`, `returns`, `purchases`, `expenses`, `_stock`, `_ledger`, `registers`, `contacts`, `ledgerReports`, `reports/*`). It runs in the browser for demo mode and on the server for API mode, the same as the other services. The UI lives in `web/features/analytics/*`. It reuses `ReportShell` filters, `print.tsx` and CSV export from `features/reports`, and adds a chart kit built on `recharts` (already installed). This is read-only: no new tables and no write paths.
-**Branch:** `claude/intelligent-albattani-rjcav5`.
 
 ## Global Constraints
 - Every widget uses the shared URL filters: `location` (or all), `range` (preset or custom) and `compare` (previous period / same period last year / none). Date ranges include both end dates.
