@@ -257,4 +257,13 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 CREATE INDEX IF NOT EXISTS rate_limits_window ON rate_limits (window_start);
 `,
   },
+  {
+    id: 13,
+    name: "record every activation",
+    sql: `
+-- An activation with no money (a free account, or an amount of 0) is still the day the business was activated.
+ALTER TABLE subscription_payments DROP CONSTRAINT IF EXISTS subscription_payments_amount_check;
+ALTER TABLE subscription_payments ADD CONSTRAINT subscription_payments_amount_check CHECK (amount >= 0);
+`,
+  },
 ];

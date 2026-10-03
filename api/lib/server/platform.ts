@@ -195,7 +195,7 @@ export async function listBusinesses(): Promise<BusinessSummary[]> {
       JOIN plans p ON p.id = b.plan
       LEFT JOIN plans np ON np.id = b.next_plan
       LEFT JOIN logins l ON l.business_id = b.id AND l.user_id = 'user_admin'
-      LEFT JOIN (SELECT business_id, MAX(paid_at) AS last_paid FROM subscription_payments GROUP BY business_id) pay ON pay.business_id = b.id
+      LEFT JOIN (SELECT business_id, MAX(paid_at) AS last_paid FROM subscription_payments WHERE amount > 0 GROUP BY business_id) pay ON pay.business_id = b.id
       LEFT JOIN (SELECT business_id, COUNT(*) AS n FROM users WHERE (data->>'allowLogin')::boolean IS NOT FALSE GROUP BY business_id) u ON u.business_id = b.id
       LEFT JOIN (SELECT business_id, SUM(bytes) AS bytes FROM (${ENTITY_SIZES}) x GROUP BY business_id) s ON s.business_id = b.id
       LEFT JOIN (SELECT business_id, MAX(at) AS last_active FROM audit_log GROUP BY business_id) a ON a.business_id = b.id
@@ -274,13 +274,13 @@ export type Activation = {
   plan?: string;
   /** Start a fresh term today instead of extending the current one (an immediate upgrade or downgrade). */
   restart?: boolean;
-  /** What was actually received; the package price times the terms when left out. 0 (or a free business) records no payment. */
+  /** What was actually received; the package price times the terms when left out. 0 (or a free business) is recorded as an activation with no money. */
   amount?: number;
   /** The transaction id the customer gave. A payment needs this or a proof image. */
   reference?: string;
   proof?: { data: Buffer; type: string };
 };
-export type ActivationResult = { ok: true; expiresAt: string; paymentId: number | null } | { ok: false; reason: "not_found" | "unknown_plan" | "proof_required" };
+export type ActivationResult = { ok: true; expiresAt: string; paymentId: number } | { ok: false; reason: "not_found" | "unknown_plan" | "proof_required" };
 
 /**
  * Switches a subscription on after the platform owner received the money, and writes the payment down: the day it is
@@ -317,13 +317,11 @@ export async function activateSubscription(businessId: string, a: Activation): P
               subscription_expires_at = (CASE WHEN NOT $3::boolean AND subscription_status = 'active' AND subscription_expires_at > now() THEN subscription_expires_at ELSE now() END) + $4::interval
         WHERE id = $1
     RETURNING subscription_expires_at`, [businessId, target, !!a.restart, termInterval(p, a.terms)]);
-    let paymentId: number | null = null;
-    if (amount > 0) {
-      paymentId = Number((await client.query<{ id: string }>(
-        `INSERT INTO subscription_payments (business_id, business_name, plan, plan_label, terms, period_unit, period_count, amount, reference, proof, proof_type)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-        [businessId, b.name, target, p.label, a.terms, p.periodUnit, p.periodCount, amount, reference, a.proof?.data ?? null, a.proof?.type ?? null])).rows[0].id);
-    }
+    // Every activation is written down, even at 0: the day it happened is the day the business was paid.
+    const paymentId = Number((await client.query<{ id: string }>(
+      `INSERT INTO subscription_payments (business_id, business_name, plan, plan_label, terms, period_unit, period_count, amount, reference, proof, proof_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+      [businessId, b.name, target, p.label, a.terms, p.periodUnit, p.periodCount, amount, reference, a.proof?.data ?? null, a.proof?.type ?? null])).rows[0].id);
     await client.query("COMMIT");
     return { ok: true, expiresAt: r.rows[0].subscription_expires_at.toISOString(), paymentId };
   } catch (e) {
@@ -413,12 +411,12 @@ export async function revenueReport(now = new Date()): Promise<RevenueReport> {
   const db = pool();
   const [monthly, plans, recent, totals] = await Promise.all([
     db.query<{ month: string; amount: string; payments: string }>(
-      `SELECT to_char(paid_at AT TIME ZONE $1, 'YYYY-MM') AS month, SUM(amount) AS amount, COUNT(*) AS payments FROM subscription_payments GROUP BY 1`, [REPORT_ZONE]),
+      `SELECT to_char(paid_at AT TIME ZONE $1, 'YYYY-MM') AS month, SUM(amount) AS amount, COUNT(*) AS payments FROM subscription_payments WHERE amount > 0 GROUP BY 1`, [REPORT_ZONE]),
     db.query<{ plan: string; label: string | null; amount: string }>(
-      `SELECT sp.plan, COALESCE(p.label, MAX(sp.plan_label)) AS label, SUM(sp.amount) AS amount FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan GROUP BY sp.plan, p.label ORDER BY SUM(sp.amount) DESC`),
+      `SELECT sp.plan, COALESCE(p.label, MAX(sp.plan_label)) AS label, SUM(sp.amount) AS amount FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan WHERE sp.amount > 0 GROUP BY sp.plan, p.label ORDER BY SUM(sp.amount) DESC`),
     db.query<{ id: string; business_id: string | null; business_name: string; plan: string; label: string | null; terms: number; period_unit: PeriodUnit; period_count: number; amount: string; paid_at: Date; reference: string | null; has_proof: boolean }>(
-      `SELECT sp.id, sp.business_id, sp.business_name, sp.plan, COALESCE(sp.plan_label, p.label) AS label, sp.terms, sp.period_unit, sp.period_count, sp.amount, sp.paid_at, sp.reference, sp.proof IS NOT NULL AS has_proof FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan ORDER BY sp.paid_at DESC, sp.id DESC LIMIT 12`),
-    db.query<{ total: string | null; n: string; first: Date | null }>(`SELECT SUM(amount) AS total, COUNT(*) AS n, MIN(paid_at) AS first FROM subscription_payments`),
+      `SELECT sp.id, sp.business_id, sp.business_name, sp.plan, COALESCE(sp.plan_label, p.label) AS label, sp.terms, sp.period_unit, sp.period_count, sp.amount, sp.paid_at, sp.reference, sp.proof IS NOT NULL AS has_proof FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan WHERE sp.amount > 0 ORDER BY sp.paid_at DESC, sp.id DESC LIMIT 12`),
+    db.query<{ total: string | null; n: string; first: Date | null }>(`SELECT SUM(amount) AS total, COUNT(*) AS n, MIN(paid_at) AS first FROM subscription_payments WHERE amount > 0`),
   ]);
   const { months, thisMonth, lastMonth } = revenueMonths(monthly.rows.map((r) => ({ month: r.month, amount: Number(r.amount), payments: Number(r.payments) })), now);
   return {

@@ -114,12 +114,12 @@ export function ActivateForm({ business, plans, onClose, onDone }: { business: B
             <Input id="a-terms" type="number" min={1} max={60} step={1} value={terms} onChange={(e) => setTerms(e.target.value)} required />
           </div>
           <p className="text-sm text-muted-foreground">Active until <span className="font-medium text-foreground">{day(until.toISOString())}</span></p>
-          {business.free ? <p className="text-sm text-muted-foreground">This is a free account, so no payment is recorded.</p> : (
+          {business.free ? <p className="text-sm text-muted-foreground">This is a free account: the activation is recorded today with no amount.</p> : (
             <>
               <div className="grid gap-1.5">
                 <Label htmlFor="a-amount">Amount received</Label>
                 <Input id="a-amount" inputMode="decimal" autoComplete="off" value={received} onChange={(e) => setReceived(e.target.value)} placeholder={String(list)} aria-invalid={badAmount} aria-describedby="a-amount-hint" />
-                <p id="a-amount-hint" className={badAmount ? "text-sm text-danger" : "text-xs text-muted-foreground"}>{badAmount ? "Enter an amount of zero or more." : `Counts as revenue. Leave it empty for the price, ${formatMoney(list)}. Send 0 to record nothing.`}</p>
+                <p id="a-amount-hint" className={badAmount ? "text-sm text-danger" : "text-xs text-muted-foreground"}>{badAmount ? "Enter an amount of zero or more." : `Counts as revenue. Leave it empty for the price, ${formatMoney(list)}. 0 records the activation with no money.`}</p>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="a-ref">Transaction ID</Label>

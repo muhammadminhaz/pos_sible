@@ -99,14 +99,14 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect((await auth.login(`pay${tag}`, "owner-pass-1", true, "ip-pay1")).ok).toBe(true);
     expect((await activate(id, { terms: "1", amount: "100" }, PNG)).status).toBe(200); // a proof image alone is enough
     expect(await paid()).toBe(price * 2 + 100);
-    expect((await activate(id, { terms: "1", amount: "0" })).status).toBe(200); // zero records nothing
+    expect((await activate(id, { terms: "1", amount: "0" })).status).toBe(200); // zero adds no money (but is still an activation)
     expect(await paid()).toBe(price * 2 + 100);
     expect((await activate(id, { terms: "1", amount: "-5" })).status).toBe(400);
     expect((await activate(id, { terms: "1", amount: "50", reference: "x" }, Buffer.from("<svg onload=alert(1)>"))).status).toBe(415); // only real images
     expect((await activate(id, { terms: "0", reference: "x" })).status).toBe(400);
 
     const payments = await platform.listPayments(id);
-    expect(payments).toHaveLength(2);
+    expect(payments).toHaveLength(3); // including the zero-amount activation
     expect(payments.find((p) => p.reference === "TXN-123")).toMatchObject({ amount: price * 2, terms: 2, hasProof: false });
     const withProof = payments.find((p) => p.hasProof)!;
     expect(withProof.amount).toBe(100);
@@ -122,16 +122,17 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     // Revenue already earned stays in the books when the customer goes.
     await poolMod.pool().query("DELETE FROM businesses WHERE id = $1", [id]);
     const kept = await poolMod.pool().query("SELECT business_id, business_name FROM subscription_payments WHERE business_name = $1", [`Pay ${tag}`]);
-    expect(kept.rowCount).toBe(2);
+    expect(kept.rowCount).toBe(3);
     expect(kept.rows[0].business_id).toBeNull();
     await poolMod.pool().query("DELETE FROM subscription_payments WHERE business_name = $1", [`Pay ${tag}`]);
   });
 
-  it("does not record a payment for a free business", async () => {
+  it("records an activation of a free business with no amount, and it never counts as revenue", async () => {
     const id = await open(`Free ${tag}`, `free${tag}`);
     await platform.setSubscription(id, { free: true });
     expect((await activate(id, { terms: "3" })).status).toBe(200);
-    expect((await poolMod.pool().query("SELECT 1 FROM subscription_payments WHERE business_id = $1", [id])).rowCount).toBe(0);
+    expect((await platform.listPayments(id)).map((p) => p.amount)).toEqual([0, 0]); // the helper's activation and this one
+    expect((await summary(id)).lastPaidAt).toBeNull(); // no money, so never "last paid"
   });
 
   it("refuses everything without an admin session, including a business user's session", async () => {
@@ -271,7 +272,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect(days).toBeGreaterThan(27);
     expect(days).toBeLessThan(32);
     expect((await activate(id, { terms: "1", plan: "nope", reference: "x" })).status).toBe(400);
-    const paid = (await platform.listPayments(id)).map((p) => p.reference);
+    const paid = (await platform.listPayments(id)).map((p) => p.reference).filter(Boolean);
     expect(paid).toEqual(["DOWN1", "UP1"]);
   });
 
