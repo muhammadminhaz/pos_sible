@@ -4,7 +4,7 @@ import { MODULE_IDS } from "@/lib/server/plans";
 import { requireAdmin } from "@/lib/server/adminRoute";
 import { businessCode, defaultCode } from "@/lib/server/code";
 import { contactEmail, contactPhone } from "@/lib/server/contact";
-import { getPlans, listBusinesses, recordPayment, setSubscription } from "@/lib/server/platform";
+import { getPlans, listBusinesses, setSubscription } from "@/lib/server/platform";
 import { pool, ready } from "@/lib/server/pool";
 import { createBusiness } from "@/lib/server/tenants";
 
@@ -27,22 +27,19 @@ const create = z.object({
   email: contactEmail.optional(),
   phone: contactPhone.optional(),
   plan: z.string().min(1).max(40),
-  expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
-  /** A first term in months (1, 3, 6, 12…); leave out for no end date. */
-  months: z.number().int().min(1).max(60).nullable().optional(),
   modules: z.array(z.enum(MODULE_IDS)).optional(),
   free: z.boolean().optional(),
   /** A showcase account: three months of random sample data and no welcome wizard. */
   demo: z.boolean().optional(),
 });
 
-/** Opens a business account: its name, the sign-in the owner will use, and a package. */
+/** Opens a business account: its name, the sign-in the owner will use, and a package. It cannot sign in until a subscription is activated. */
 export async function POST(req: NextRequest) {
   const denied = await requireAdmin(req, true);
   if (denied) return denied;
   const parsed = create.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, reason: "invalid", fields: parsed.error.flatten().fieldErrors }, { status: 400 });
-  const { businessName, username, password, code, plan, expiresAt, months, email, phone, modules, free, demo } = parsed.data;
+  const { businessName, username, password, code, plan, email, phone, modules, free, demo } = parsed.data;
   await ready();
   if (!(await getPlans()).some((p) => p.id === plan)) return NextResponse.json({ ok: false, reason: "invalid", fields: { plan: ["unknown"] } }, { status: 400 });
   // Owners sign in with just their username, so that must be free everywhere; staff names only need to be free inside their business.
@@ -54,12 +51,11 @@ export async function POST(req: NextRequest) {
   }
   let businessId: string;
   try {
-    ({ businessId } = await createBusiness({ name: businessName, admin: { username, password, firstName: businessName }, code, demo }));
+    ({ businessId } = await createBusiness({ name: businessName, admin: { username, password, firstName: businessName }, code, demo, plan }));
   } catch {
     return NextResponse.json({ ok: false, reason: "username_taken" }, { status: 409 });
   }
-  await setSubscription(businessId, { plan, status: "active", expiresAt: free ? null : months ? new Date(new Date().setMonth(new Date().getMonth() + months)).toISOString() : (expiresAt ?? null), contactEmail: email ?? null, contactPhone: phone ?? null, modules, free });
-  // A term paid up front is money received now; an explicit end date alone says nothing about what was paid.
-  if (months && !free) await recordPayment(businessId, months);
+  // A new account has not paid yet: it stays switched off until the platform owner activates it (a free one needs no payment).
+  await setSubscription(businessId, { status: "active", expiresAt: free ? null : new Date().toISOString(), contactEmail: email ?? null, contactPhone: phone ?? null, modules, free });
   return NextResponse.json({ ok: true, id: businessId }, { status: 201 });
 }

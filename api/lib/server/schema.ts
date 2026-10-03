@@ -215,4 +215,33 @@ CREATE INDEX IF NOT EXISTS subscription_payments_time ON subscription_payments (
 ALTER TABLE plans ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '', ADD COLUMN IF NOT EXISTS benefits text[] NOT NULL DEFAULT '{}';
 `,
   },
+  {
+    id: 11,
+    name: "packages with terms and modules, activation payments with proof",
+    sql: `
+-- A package is priced per term (N days, weeks or months) and says which modules and how many users a business gets.
+ALTER TABLE plans RENAME COLUMN price_monthly TO price;
+ALTER TABLE plans
+  ADD COLUMN IF NOT EXISTS period_unit text NOT NULL DEFAULT 'month' CHECK (period_unit IN ('day', 'week', 'month')),
+  ADD COLUMN IF NOT EXISTS period_count integer NOT NULL DEFAULT 1 CHECK (period_count > 0),
+  ADD COLUMN IF NOT EXISTS modules text[] NOT NULL DEFAULT '{pos,sales,purchases,stock,expenses,accounts,reports}';
+-- Modules are no longer priced one by one: the package price covers the modules it includes.
+ALTER TABLE modules DROP COLUMN IF EXISTS price_monthly;
+-- A package change the platform owner scheduled for when the current term ends; it applies at the next activation.
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS next_plan text REFERENCES plans (id);
+-- New businesses start on the package they are created with (or the first one), never on a package that may have been deleted.
+ALTER TABLE businesses ALTER COLUMN plan DROP DEFAULT;
+
+-- One payment per activation: when it was received, the transaction id the platform owner typed, and a picture of the proof.
+ALTER TABLE subscription_payments RENAME COLUMN months TO terms;
+ALTER TABLE subscription_payments
+  ADD COLUMN IF NOT EXISTS plan_label text,
+  ADD COLUMN IF NOT EXISTS period_unit text NOT NULL DEFAULT 'month',
+  ADD COLUMN IF NOT EXISTS period_count integer NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS reference text,
+  ADD COLUMN IF NOT EXISTS proof bytea,
+  ADD COLUMN IF NOT EXISTS proof_type text;
+UPDATE subscription_payments sp SET plan_label = p.label FROM plans p WHERE p.id = sp.plan AND sp.plan_label IS NULL;
+`,
+  },
 ];

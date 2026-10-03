@@ -16,6 +16,8 @@ export type NewBusiness = {
   code?: string;
   /** A showcase account: a fresh random three months of sample data, and no welcome wizard. */
   demo?: boolean;
+  /** The package it starts on; defaults to Standard, or the first package if that is gone. */
+  plan?: string;
   /** Last chance to change the new business's data (names, roles, staff) before it is saved. */
   tailor?: (db: DB) => void;
 };
@@ -39,7 +41,7 @@ export async function createBusiness(input: NewBusiness): Promise<{ businessId: 
   db.settings.business.name = input.name.trim();
   input.tailor?.(db);
   db.meta.onboarding = input.demo ? { done: true, mode: "demo", completedAt: new Date().toISOString(), checklistDismissed: true, visited: [] } : { done: false };
-  await insertBusiness(id, db, input.code?.trim().toLowerCase() || defaultCode(input.admin.username));
+  await insertBusiness(id, db, input.code?.trim().toLowerCase() || defaultCode(input.admin.username), input.plan);
   return { businessId: id };
 }
 

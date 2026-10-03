@@ -4,7 +4,7 @@ import { MODULE_IDS } from "@/lib/server/plans";
 import { requireAdmin } from "@/lib/server/adminRoute";
 import { businessCode } from "@/lib/server/code";
 import { contactEmail, contactPhone } from "@/lib/server/contact";
-import { deleteBusiness, getPlans, resetOwnerPassword, setBusinessCode, setSubscription } from "@/lib/server/platform";
+import { deleteBusiness, resetOwnerPassword, setBusinessCode, setSubscription } from "@/lib/server/platform";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,9 +12,7 @@ export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
 const uuid = z.string().uuid();
 const patch = z.object({
-  plan: z.string().min(1).max(40).optional(),
   status: z.enum(["active", "cancelled"]).optional(),
-  expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
   /** What staff type at sign-in. */
   code: businessCode.optional(),
   contactEmail: contactEmail.optional(),
@@ -25,7 +23,7 @@ const patch = z.object({
   ownerPassword: z.string().min(8).max(200).optional(),
 });
 
-/** Package, on/off switch, end date and owner password reset: the only things the platform owner can change about a business. */
+/** Cancel or resume, modules, contact details, business code and owner password reset: the plain account edits. Packages and end dates change only by activating or scheduling a subscription. */
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const denied = await requireAdmin(req, true);
   if (denied) return denied;
@@ -33,8 +31,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   const parsed = patch.safeParse(await req.json().catch(() => null));
   if (!uuid.safeParse(id).success || !parsed.success) return NextResponse.json({ ok: false, reason: "invalid" }, { status: 400 });
   const { ownerPassword, code, ...subscription } = parsed.data;
-  if (subscription.plan && !(await getPlans()).some((p) => p.id === subscription.plan)) return NextResponse.json({ ok: false, reason: "invalid" }, { status: 400 });
-  const found = await setSubscription(id, subscription as Parameters<typeof setSubscription>[1]);
+  const found = await setSubscription(id, subscription);
   if (!found) return NextResponse.json({ ok: false, reason: "not_found" }, { status: 404 });
   if (code) {
     const r = await setBusinessCode(id, code);

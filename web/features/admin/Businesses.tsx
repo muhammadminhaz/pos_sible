@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { BanIcon, EyeIcon, EyeOffIcon, Loader2Icon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, SearchIcon, SettingsIcon, Trash2Icon } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { toast } from "@/lib/toast";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -15,10 +15,9 @@ import { Flag, isPhoneOk, PhoneInput } from "@/components/shared/PhoneInput";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminHeader, useAdmin } from "./AdminShell";
-import { call, day, formatBytes, formatMoney, TERMS, type Business, type ModuleDef, type Plan } from "./api";
+import { call, day, formatBytes, type Business, type ModuleDef, type Plan } from "./api";
 import { Pager, StateBadge, usePaged } from "./parts";
-
-const planText = (p: Plan) => `${p.label} · ${p.maxUsers === null ? "unlimited users" : `up to ${p.maxUsers} users`} · ${formatMoney(p.priceMonthly)}/month`;
+import { ActivateForm, CancelDialog, planText } from "./SubscriptionDialogs";
 
 function PlanSelect({ id, plans, value, onChange }: { id: string; plans: Plan[]; value: string; onChange: (v: string) => void }) {
   return (
@@ -43,35 +42,20 @@ function Contact({ email, phone }: { email: string | null; phone: string | null 
   );
 }
 
-function TermSelect({ id, label, value, onChange, withNone }: { id: string; label: string; value: string; onChange: (v: string) => void; withNone?: boolean }) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={id} aria-label={label} className="w-full"><SelectValue /></SelectTrigger>
-      <SelectContent>
-        {TERMS.map((t) => <SelectItem key={t.months} value={String(t.months)}>{t.label}</SelectItem>)}
-        {withNone && <SelectItem value="none">No end date</SelectItem>}
-      </SelectContent>
-    </Select>
-  );
-}
-
-/** One switch per sellable module, with what it adds to the monthly price. */
+/** One switch per module the package includes. */
 function ModulePicker({ modules, value, onChange, disabled }: { modules: ModuleDef[]; value: string[]; onChange: (v: string[]) => void; disabled?: boolean }) {
   return (
     <fieldset className="grid gap-2 disabled:opacity-50" disabled={disabled}>
-      <legend className="mb-1 text-sm font-medium">Modules</legend>
+      <legend className="mb-1 text-sm font-medium">Modules in use</legend>
       <div className="grid gap-2 sm:grid-cols-2">
         {modules.map((m) => (
           <label key={m.id} htmlFor={`mod-${m.id}`} className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2">
-            <span className="grid min-w-0 text-sm leading-tight">
-              <span className="truncate font-medium">{m.label}</span>
-              <span className="text-xs text-muted-foreground">+{formatMoney(m.priceMonthly)}/month</span>
-            </span>
+            <span className="truncate text-sm font-medium">{m.label}</span>
             <Switch id={`mod-${m.id}`} checked={value.includes(m.id)} onCheckedChange={(on) => onChange(on ? [...value, m.id] : value.filter((x) => x !== m.id))} />
           </label>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">Switched-off modules are hidden and blocked. Dashboard, products, contacts and settings are always included.</p>
+      <p className="text-xs text-muted-foreground">Only the modules in the package can be switched on. Switched-off modules are hidden and blocked. Dashboard, products, contacts and settings are always included.</p>
     </fieldset>
   );
 }
@@ -107,7 +91,7 @@ export function BusinessesPage() {
   const [adding, setAdding] = useState(false);
   const [managing, setManaging] = useState<Business | null>(null);
   const [deleting, setDeleting] = useState<Business | null>(null);
-  const [renewing, setRenewing] = useState<Business | null>(null);
+  const [activating, setActivating] = useState<Business | null>(null);
   const [cancelling, setCancelling] = useState<Business | null>(null);
   const term = q.trim().toLowerCase();
   const rows = (businesses ?? []).filter((b) => !term || b.name.toLowerCase().includes(term) || (b.ownerUsername ?? "").toLowerCase().includes(term) || b.code.includes(term));
@@ -165,7 +149,7 @@ export function BusinessesPage() {
                     <DropdownMenuTrigger asChild><Button size="icon-sm" variant="ghost" aria-label={`Actions for ${b.name}`}><MoreHorizontalIcon /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-56">
                       <DropdownMenuItem onSelect={() => setManaging(b)}><SettingsIcon />Manage account</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setRenewing(b)}><RefreshCwIcon />Renew subscription</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setActivating(b)}><RefreshCwIcon />Activate subscription</DropdownMenuItem>
                       {b.state !== "cancelled" && <DropdownMenuItem variant="destructive" onSelect={() => setCancelling(b)}><BanIcon />Cancel subscription</DropdownMenuItem>}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem variant="destructive" onSelect={() => setDeleting(b)}><Trash2Icon />Delete business</DropdownMenuItem>
@@ -181,13 +165,13 @@ export function BusinessesPage() {
       </div>
 
       <Dialog open={adding} onOpenChange={setAdding}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">{adding && <AddForm plans={plans} modules={modules} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">{adding && <AddForm plans={plans} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
       </Dialog>
       <Dialog open={managing !== null} onOpenChange={(o) => !o && setManaging(null)}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">{managing && <ManageForm key={managing.id} business={managing} plans={plans} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onRenew={() => { setRenewing(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">{managing && <ManageForm key={managing.id} business={managing} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onActivate={() => { setActivating(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
       </Dialog>
-      <Dialog open={renewing !== null} onOpenChange={(o) => !o && setRenewing(null)}>
-        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-sm">{renewing && <RenewForm key={renewing.id} business={renewing} onClose={() => setRenewing(null)} onDone={async () => { setRenewing(null); await reload(); }} />}</DialogContent>
+      <Dialog open={activating !== null} onOpenChange={(o) => !o && setActivating(null)}>
+        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">{activating && <ActivateForm key={activating.id} business={activating} plans={plans} onClose={() => setActivating(null)} onDone={async () => { setActivating(null); await reload(); }} />}</DialogContent>
       </Dialog>
       <CancelDialog business={cancelling} onClose={() => setCancelling(null)} onDone={async () => { setCancelling(null); await reload(); }} />
       <DeleteDialog business={deleting} onClose={() => setDeleting(null)} onDone={async () => { setDeleting(null); await reload(); }} />
@@ -195,7 +179,7 @@ export function BusinessesPage() {
   );
 }
 
-function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: ModuleDef[]; onClose: () => void; onDone: () => void }) {
+function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => void; onDone: () => void }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [code, setCode] = useState("");
@@ -203,8 +187,6 @@ function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [plan, setPlan] = useState(plans.find((p) => p.id === "standard")?.id ?? plans[0]?.id ?? "");
-  const [term, setTerm] = useState("1");
-  const [picked, setPicked] = useState(modules.map((m) => m.id));
   const [free, setFree] = useState(false);
   const [demo, setDemo] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -214,7 +196,7 @@ function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: 
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, ...(code.trim() ? { code: code.trim() } : {}), password, email, phone, plan, months: term === "none" ? null : Number(term), modules: picked, free, demo }) }).catch(() => null);
+    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, ...(code.trim() ? { code: code.trim() } : {}), password, email, phone, plan, free, demo }) }).catch(() => null);
     setBusy(false);
     if (res?.ok) {
       toast.success("Business account created");
@@ -238,8 +220,7 @@ function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: 
       <div className="grid gap-1.5"><Label htmlFor="b-email">Email (optional)</Label><Input id="b-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
       <div className="grid gap-1.5"><Label htmlFor="b-phone">Phone (optional)</Label><PhoneInput id="b-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
       <div className="grid gap-1.5"><Label htmlFor="b-plan">Package</Label><PlanSelect id="b-plan" plans={plans} value={plan} onChange={setPlan} /></div>
-      <div className="grid gap-1.5"><Label htmlFor="b-term">Subscription term</Label><TermSelect id="b-term" label="Subscription term" value={term} onChange={setTerm} withNone /></div>
-      <ModulePicker modules={modules} value={picked} onChange={setPicked} disabled={free} />
+      <p className="text-xs text-muted-foreground">The account is switched off until you activate its subscription, after its first payment arrives. It starts with every module its package includes.</p>
       <FreeSwitch id="b-free" value={free} onChange={setFree} />
       <div className="flex items-start justify-between gap-4">
         <div className="grid gap-0.5">
@@ -256,8 +237,7 @@ function AddForm({ plans, modules, onClose, onDone }: { plans: Plan[]; modules: 
   );
 }
 
-function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCancel }: { business: Business; plans: Plan[]; modules: ModuleDef[]; onClose: () => void; onDone: () => void; onRenew: () => void; onCancel: () => void }) {
-  const [plan, setPlan] = useState(business.plan);
+function ManageForm({ business, modules, onClose, onDone, onActivate, onCancel }: { business: Business; modules: ModuleDef[]; onClose: () => void; onDone: () => void; onActivate: () => void; onCancel: () => void }) {
   const [code, setCode] = useState(business.code);
   const [email, setEmail] = useState(business.contactEmail ?? "");
   const [phone, setPhone] = useState(business.contactPhone ?? "");
@@ -270,7 +250,7 @@ function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCanc
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ plan, ...(code.trim().toLowerCase() !== business.code ? { code: code.trim() } : {}), contactEmail: email, contactPhone: phone, modules: picked, free, ...(free ? { expiresAt: null } : {}) }) }).catch(() => null);
+    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ ...(code.trim().toLowerCase() !== business.code ? { code: code.trim() } : {}), contactEmail: email, contactPhone: phone, modules: picked, free }) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) {
       const body = await res?.json().catch(() => null);
@@ -302,12 +282,12 @@ function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCanc
             <div className="flex items-center justify-between gap-3">
               <div className="grid gap-0.5">
                 <span className="text-sm font-medium">Subscription</span>
-                <span className="text-xs text-muted-foreground">{business.state === "cancelled" ? "Cancelled. Nobody in this business can sign in." : business.expiresAt ? `${business.state === "expired" ? "Ended" : "Ends"} ${day(business.expiresAt)}` : "No end date"}</span>
+                <span className="text-xs text-muted-foreground">{business.state === "cancelled" ? "Cancelled. Nobody in this business can sign in." : business.free ? "Free account, no end date" : business.expiresAt ? `${business.state === "expired" ? "Ended" : "Ends"} ${day(business.expiresAt)}` : "No end date"}</span>
               </div>
               <StateBadge state={business.state} />
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Button type="button" className="h-8" onClick={onRenew}><RefreshCwIcon />Renew</Button>
+              <Button type="button" className="h-8" onClick={onActivate}><RefreshCwIcon />Activate or change package</Button>
               {business.state !== "cancelled" && <Button type="button" variant="destructive" className="h-8" onClick={onCancel}><BanIcon />Cancel subscription</Button>}
             </div>
           </div>
@@ -321,9 +301,9 @@ function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCanc
 
         <form id="manage-form" onSubmit={save} className="grid content-start gap-4">
           <div className="grid gap-1.5"><Label htmlFor="m-code">Business code</Label><Input id="m-code" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={40} autoComplete="off" /><p className="text-xs text-muted-foreground">What staff type at sign-in. Changing it means staff must use the new one straight away.</p></div>
-          <div className="grid gap-1.5"><Label htmlFor="m-plan">Package</Label><PlanSelect id="m-plan" plans={plans} value={plan} onChange={setPlan} /></div>
+          <div className="grid gap-0.5 text-sm"><span className="font-medium">Package</span><span className="text-muted-foreground">{business.planLabel}{business.nextPlanLabel ? `, then ${business.nextPlanLabel}` : ""}. Change it with Activate or change package.</span></div>
           <FreeSwitch id="m-free" value={free} onChange={setFree} />
-          <ModulePicker modules={modules} value={picked} onChange={setPicked} disabled={free} />
+          <ModulePicker modules={modules.filter((m) => business.planModules.includes(m.id))} value={picked} onChange={setPicked} disabled={free} />
           <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
           <div className="grid gap-1.5"><Label htmlFor="m-phone">Phone</Label><PhoneInput id="m-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
         </form>
@@ -333,82 +313,6 @@ function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCanc
         <Button type="submit" form="manage-form" disabled={busy || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Save changes</Button>
       </DialogFooter>
     </div>
-  );
-}
-
-function RenewForm({ business, onClose, onDone }: { business: Business; onClose: () => void; onDone: () => void }) {
-  const [term, setTerm] = useState("1");
-  const [busy, setBusy] = useState(false);
-  const months = Number(term);
-  // Mirrors the server: an active subscription is extended from its end date, anything else starts today.
-  const from = business.state === "active" && business.expiresAt && new Date(business.expiresAt) > new Date() ? new Date(business.expiresAt) : new Date();
-  const until = new Date(from);
-  until.setMonth(until.getMonth() + months);
-
-  const list = business.priceMonthly * months;
-  const [received, setReceived] = useState<string | null>(null);
-  // Blank means "the list price"; a number records what actually came in (a discount, a part payment, or 0 for nothing).
-  const amount = received === null || received.trim() === "" ? undefined : Number(received);
-  const badAmount = amount !== undefined && (!Number.isFinite(amount) || amount < 0);
-
-  const renew = async (e: FormEvent) => {
-    e.preventDefault();
-    if (badAmount) return;
-    setBusy(true);
-    const res = await call(`businesses/${business.id}/renew`, { method: "POST", body: JSON.stringify({ months, amount }) }).catch(() => null);
-    setBusy(false);
-    if (!res?.ok) return void toast.error("Couldn't renew the subscription.");
-    toast.success(`${business.name} is renewed until ${day((await res.json()).expiresAt)}`);
-    onDone();
-  };
-
-  return (
-    <form onSubmit={renew} className="grid gap-4">
-      <DialogHeader>
-        <DialogTitle>Renew {business.name}</DialogTitle>
-        <DialogDescription>{business.state === "active" ? "Adds time to the current term." : "Switches the subscription back on, counting from today."} Everyone in the business can sign in again.</DialogDescription>
-      </DialogHeader>
-      <div className="grid gap-1.5"><Label htmlFor="r-term">Renew for</Label><TermSelect id="r-term" label="Renew for" value={term} onChange={setTerm} /></div>
-      <p className="text-sm text-muted-foreground">New end date: <span className="font-medium text-foreground">{day(until.toISOString())}</span></p>
-      {!business.free && business.priceMonthly > 0 && (
-        <div className="grid gap-1.5">
-          <Label htmlFor="r-amount">Amount received</Label>
-          <Input id="r-amount" inputMode="decimal" autoComplete="off" value={received ?? ""} onChange={(e) => setReceived(e.target.value)} placeholder={String(list)} aria-invalid={badAmount} aria-describedby="r-amount-hint" />
-          <p id="r-amount-hint" className={badAmount ? "text-sm text-danger" : "text-xs text-muted-foreground"}>{badAmount ? "Enter an amount of zero or more." : `Added to your revenue. Leave it empty to record the list price, ${formatMoney(list)}.`}</p>
-        </div>
-      )}
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit" disabled={busy || badAmount}>{busy && <Loader2Icon className="animate-spin" />}Renew subscription</Button>
-      </DialogFooter>
-    </form>
-  );
-}
-
-function CancelDialog({ business, onClose, onDone }: { business: Business | null; onClose: () => void; onDone: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const cancel = async () => {
-    if (!business) return;
-    setBusy(true);
-    const res = await call(`businesses/${business.id}/cancel`, { method: "POST" }).catch(() => null);
-    setBusy(false);
-    if (!res?.ok) return void toast.error("Couldn't cancel the subscription.");
-    toast.success(`${business.name}'s subscription is cancelled`);
-    onDone();
-  };
-  return (
-    <AlertDialog open={business !== null} onOpenChange={(o) => !o && onClose()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Cancel {business?.name}&apos;s subscription?</AlertDialogTitle>
-          <AlertDialogDescription>Everyone in this business is signed out now and cannot sign in until you renew. Their data is kept.</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Keep subscription</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" disabled={busy} onClick={(e) => { e.preventDefault(); void cancel(); }}>{busy && <Loader2Icon className="animate-spin" />}Cancel subscription</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
 

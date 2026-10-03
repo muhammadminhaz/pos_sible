@@ -19,12 +19,23 @@ describe.runIf(up)("platform admin and subscriptions", () => {
   const asAdmin = (url: string, init: { method?: string; body?: string } = {}) =>
     new NextRequest(`http://localhost:3000${url}`, { ...init, headers: { cookie: `posible_admin=${adminToken}`, "content-type": "application/json" } });
 
-  const open = async (name: string, username: string, plan = "starter", expiresAt: string | null = null) => {
-    const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password: "owner-pass-1", plan, expiresAt }) }));
+  /** Opens a business and, unless told not to, activates one term with no payment so its users can sign in. */
+  const open = async (name: string, username: string, plan = "starter", activate = true) => {
+    const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, password: "owner-pass-1", plan }) }));
     expect(res.status).toBe(201);
     const id = (await res.json()).id as string;
     ids.push(id);
+    if (activate) expect((await platform.activateSubscription(id, { terms: 1, amount: 0 })).ok).toBe(true);
     return id;
+  };
+  const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+  const activateRoute = async () => (await import("@/app/api/admin/businesses/[id]/activate/route")).POST;
+  const activate = async (id: string, fields: Record<string, string>, proof?: Buffer) => {
+    const form = new FormData();
+    for (const [k, v] of Object.entries(fields)) form.set(k, v);
+    if (proof) form.set("proof", new File([new Uint8Array(proof)], "proof.png", { type: "image/png" }));
+    const req = new NextRequest(`http://localhost:3000/api/admin/businesses/${id}/activate`, { method: "POST", body: form, headers: { cookie: `posible_admin=${adminToken}` } });
+    return (await activateRoute())(req, { params: Promise.resolve({ id }) });
   };
   const summary = async (id: string) => {
     const body = await (await list.GET(asAdmin("/api/admin/businesses"))).json();
@@ -73,21 +84,34 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     [process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD] = keep as [string, string];
   });
 
-  it("records money received when a paid subscription is renewed, and keeps it after the business is deleted", async () => {
-    const id = await open(`Pay ${tag}`, `pay${tag}`, "starter", new Date(Date.now() + 10 * 86_400_000).toISOString());
-    const renew = (await import("@/app/api/admin/businesses/[id]/renew/route")).POST;
-    const ctx = { params: Promise.resolve({ id }) };
-    const post = (body: object) => asAdmin(`/api/admin/businesses/${id}/renew`, { method: "POST", body: JSON.stringify(body) });
+  it("a new business cannot sign in until the admin activates it; activating records the payment with its transaction id and proof", async () => {
+    const id = await open(`Pay ${tag}`, `pay${tag}`, "starter", false);
+    expect(await auth.login(`pay${tag}`, "owner-pass-1", true, "ip-pay0")).toMatchObject({ ok: false, reason: "expired" });
+    const price = (await platform.getPlans()).find((p) => p.id === "starter")!.price;
     const paid = async () => Number((await poolMod.pool().query("SELECT COALESCE(SUM(amount), 0) AS s FROM subscription_payments WHERE business_id = $1", [id])).rows[0].s);
-    const price = (await platform.getPlans()).find((p) => p.id === "starter")!.priceMonthly;
 
-    expect((await renew(post({ months: 2 }), ctx)).status).toBe(200);
-    expect(await paid()).toBe(price * 2); // list price times the months
-    expect((await renew(post({ months: 1, amount: 100 }), ctx)).status).toBe(200);
-    expect(await paid()).toBe(price * 2 + 100); // what was actually received
-    expect((await renew(post({ months: 1, amount: 0 }), ctx)).status).toBe(200);
-    expect(await paid()).toBe(price * 2 + 100); // zero records nothing
-    expect((await renew(post({ months: 1, amount: -5 }), ctx)).status).toBe(400);
+    expect((await activate(id, { terms: "2" })).status).toBe(422); // money without a transaction id or proof is refused
+    expect(await paid()).toBe(0);
+    const res = await activate(id, { terms: "2", reference: "TXN-123" });
+    expect(res.status).toBe(200);
+    expect(await paid()).toBe(price * 2); // list price times the terms
+    expect((await auth.login(`pay${tag}`, "owner-pass-1", true, "ip-pay1")).ok).toBe(true);
+    expect((await activate(id, { terms: "1", amount: "100" }, PNG)).status).toBe(200); // a proof image alone is enough
+    expect(await paid()).toBe(price * 2 + 100);
+    expect((await activate(id, { terms: "1", amount: "0" })).status).toBe(200); // zero records nothing
+    expect(await paid()).toBe(price * 2 + 100);
+    expect((await activate(id, { terms: "1", amount: "-5" })).status).toBe(400);
+    expect((await activate(id, { terms: "1", amount: "50", reference: "x" }, Buffer.from("<svg onload=alert(1)>"))).status).toBe(415); // only real images
+    expect((await activate(id, { terms: "0", reference: "x" })).status).toBe(400);
+
+    const payments = await platform.listPayments(id);
+    expect(payments).toHaveLength(2);
+    expect(payments.find((p) => p.reference === "TXN-123")).toMatchObject({ amount: price * 2, terms: 2, hasProof: false });
+    const withProof = payments.find((p) => p.hasProof)!;
+    expect(withProof.amount).toBe(100);
+    const proof = await (await import("@/app/api/admin/payments/[id]/proof/route")).GET(asAdmin(`/api/admin/payments/${withProof.id}/proof`), { params: Promise.resolve({ id: String(withProof.id) }) });
+    expect(proof.headers.get("content-type")).toBe("image/png");
+    expect(Buffer.from(await proof.arrayBuffer()).equals(PNG)).toBe(true);
 
     const report = await platform.revenueReport();
     expect(report.months).toHaveLength(12);
@@ -105,8 +129,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
   it("does not record a payment for a free business", async () => {
     const id = await open(`Free ${tag}`, `free${tag}`);
     await platform.setSubscription(id, { free: true });
-    const renew = (await import("@/app/api/admin/businesses/[id]/renew/route")).POST;
-    expect((await renew(asAdmin(`/api/admin/businesses/${id}/renew`, { method: "POST", body: JSON.stringify({ months: 3 }) }), { params: Promise.resolve({ id }) })).status).toBe(200);
+    expect((await activate(id, { terms: "3" })).status).toBe(200);
     expect((await poolMod.pool().query("SELECT 1 FROM subscription_payments WHERE business_id = $1", [id])).rowCount).toBe(0);
   });
 
@@ -126,8 +149,8 @@ describe.runIf(up)("platform admin and subscriptions", () => {
   it("shows plan, users and storage per business and nothing from inside it", async () => {
     const id = await open(`Counted ${tag}`, `counted${tag}`, "standard");
     const s = await summary(id);
-    expect(Object.keys(s).sort()).toEqual(["code", "contactEmail", "contactPhone", "createdAt", "expiresAt", "free", "id", "lastActiveAt", "maxUsers", "modules", "name", "ownerUsername", "plan", "planLabel", "priceMonthly", "state", "status", "storageBytes", "users"]);
-    expect(s).toMatchObject({ name: `Counted ${tag}`, ownerUsername: `counted${tag}`, plan: "standard", planLabel: "Standard", priceMonthly: 1500, state: "active", users: 1, maxUsers: 10 });
+    expect(Object.keys(s).sort()).toEqual(["code", "contactEmail", "contactPhone", "createdAt", "expiresAt", "free", "id", "lastActiveAt", "lastPaidAt", "maxUsers", "modules", "name", "nextPlan", "nextPlanLabel", "ownerUsername", "periodCount", "periodUnit", "plan", "planLabel", "planModules", "price", "priceMonthly", "state", "status", "storageBytes", "users"]);
+    expect(s).toMatchObject({ name: `Counted ${tag}`, ownerUsername: `counted${tag}`, plan: "standard", planLabel: "Standard", price: 1500, periodUnit: "month", priceMonthly: 1500, state: "active", users: 1, maxUsers: 10 });
     expect(s.storageBytes).toBeGreaterThan(10_000);
     const before = s.storageBytes;
     const { p } = await principal(`counted${tag}`);
@@ -151,52 +174,104 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect(await auth.login(`gate${tag}`, "owner-pass-1", true, "ip-g1")).toMatchObject({ ok: false, reason: "cancelled" });
     expect(await auth.login(`gate${tag}`, "wrong", true, "ip-g2")).toMatchObject({ ok: false, reason: "invalid" }); // a wrong password learns nothing
 
-    expect((await patch({ status: "active", expiresAt: "2020-01-01T00:00:00Z" })).status).toBe(200);
+    expect((await patch({ status: "active" })).status).toBe(200);
+    await platform.setSubscription(id, { expiresAt: "2020-01-01T00:00:00Z" });
     expect(await auth.login(`gate${tag}`, "owner-pass-1", true, "ip-g3")).toMatchObject({ ok: false, reason: "expired" });
     expect((await summary(id)).state).toBe("expired");
 
-    expect((await patch({ expiresAt: new Date(Date.now() + 86_400_000).toISOString() })).status).toBe(200);
+    await platform.setSubscription(id, { expiresAt: new Date(Date.now() + 86_400_000).toISOString() });
     expect((await auth.login(`gate${tag}`, "owner-pass-1", true, "ip-g4")).ok).toBe(true);
-    expect((await patch({ plan: "nonsense" })).status).toBe(400);
     expect((await patchRoute.PATCH(asAdmin("/api/admin/businesses/00000000-0000-4000-8000-000000000000", { method: "PATCH", body: JSON.stringify({ status: "active" }) }), { params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000000" }) })).status).toBe(404);
   });
 
-  it("renewing extends from the end date, restarts a lapsed one, and switches a cancelled one back on", async () => {
-    const id = await open(`Renew ${tag}`, `renew${tag}`, "starter", new Date(Date.now() + 10 * 86_400_000).toISOString());
-    const post = (path: string, body: object = {}) => asAdmin(`/api/admin/businesses/${id}/${path}`, { method: "POST", body: JSON.stringify(body) });
-    const renew = (await import("@/app/api/admin/businesses/[id]/renew/route")).POST;
+  it("activating extends from the end date, restarts a lapsed one, and switches a cancelled one back on", async () => {
+    const id = await open(`Renew ${tag}`, `renew${tag}`);
     const cancel = (await import("@/app/api/admin/businesses/[id]/cancel/route")).POST;
     const ctx = { params: Promise.resolve({ id }) };
     const before = new Date((await summary(id)).expiresAt).getTime();
 
-    expect((await renew(post("renew", { months: 0 }), ctx)).status).toBe(400);
-    const r1 = await (await renew(post("renew", { months: 3 }), ctx)).json();
+    const r1 = await (await activate(id, { terms: "3", amount: "0" })).json();
     const gained = (new Date(r1.expiresAt).getTime() - before) / 86_400_000;
-    expect(gained).toBeGreaterThan(88); // three months added to the existing end date, not to today
+    expect(gained).toBeGreaterThan(88); // three terms added to the existing end date, not to today
     expect(gained).toBeLessThan(93);
 
     // Cancel: signed out, cannot sign in, and the message names the cause.
     const { cookie } = await principal(`renew${tag}`);
-    expect((await cancel(post("cancel"), ctx)).status).toBe(200);
+    expect((await cancel(asAdmin(`/api/admin/businesses/${id}/cancel`, { method: "POST" }), ctx)).status).toBe(200);
     expect(await auth.authenticate(new NextRequest("http://localhost:3000/api/rpc", { headers: { cookie: `posible_sid=${cookie}` } }))).toBeNull();
     expect(await auth.login(`renew${tag}`, "owner-pass-1", true, "ip-c1")).toMatchObject({ ok: false, reason: "cancelled" });
     expect((await summary(id)).state).toBe("cancelled");
 
-    // Renewing brings it back, counting from today because the old term was cancelled.
-    const r2 = await (await renew(post("renew", { months: 1 }), ctx)).json();
+    // Activating brings it back, counting from today because the old term was cancelled.
+    const r2 = await (await activate(id, { terms: "1", amount: "0" })).json();
     const fromToday = (new Date(r2.expiresAt).getTime() - Date.now()) / 86_400_000;
     expect(fromToday).toBeGreaterThan(27);
     expect(fromToday).toBeLessThan(32);
     expect((await auth.login(`renew${tag}`, "owner-pass-1", true, "ip-c2")).ok).toBe(true);
     expect((await summary(id)).state).toBe("active");
+  });
 
-    // A first term can be given in months when the business is created.
-    const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: `Term ${tag}`, username: `term${tag}`, password: "owner-pass-1", plan: "starter", months: 6 }) }));
-    const termId = (await res.json()).id as string;
-    ids.push(termId);
-    const term = (new Date((await summary(termId)).expiresAt).getTime() - Date.now()) / 86_400_000;
-    expect(term).toBeGreaterThan(178);
-    expect(term).toBeLessThan(186);
+  it("any number of packages, with day, week or month terms: a weekly package gives one week per activation", async () => {
+    const plansRoute = await import("@/app/api/admin/plans/route");
+    const make = (body: object) => plansRoute.POST(asAdmin("/api/admin/plans", { method: "POST", body: JSON.stringify(body) }));
+    expect((await make({ label: "", price: 10, periodUnit: "week", periodCount: 1, modules: [] })).status).toBe(400);
+    expect((await make({ label: "Bad", price: 10, periodUnit: "year", periodCount: 1, modules: [] })).status).toBe(400);
+    const weekly = (await (await make({ label: `Weekly ${tag}`, price: 120, periodUnit: "week", periodCount: 1, modules: ["pos", "sales"], maxUsers: 2 })).json()).plan;
+    const daily = (await (await make({ label: `Daily ${tag}`, price: 20, periodUnit: "day", periodCount: 3, modules: ["pos"] })).json()).plan;
+    expect(weekly).toMatchObject({ price: 120, periodUnit: "week", periodCount: 1, modules: ["pos", "sales"], maxUsers: 2 });
+    expect((await platform.getPlans()).length).toBeGreaterThanOrEqual(5); // the three defaults and these two
+
+    const id = await open(`Weekly ${tag}`, `weekly${tag}`, weekly.id, false);
+    const r = await (await activate(id, { terms: "1", reference: "W1" })).json();
+    expect((new Date(r.expiresAt).getTime() - Date.now()) / 86_400_000).toBeGreaterThan(6.9);
+    expect((new Date(r.expiresAt).getTime() - Date.now()) / 86_400_000).toBeLessThan(7.1);
+    expect(await summary(id)).toMatchObject({ plan: weekly.id, price: 120, periodUnit: "week", modules: ["pos", "sales"], maxUsers: 2 });
+    expect((await summary(id)).priceMonthly).toBeCloseTo((120 * 30) / 7, 5);
+
+    // The package decides the modules: a business can switch some off but never gets one the package lacks.
+    await platform.setSubscription(id, { modules: ["pos", "reports"] });
+    expect((await summary(id)).modules).toEqual(["pos"]);
+
+    // In use, a package cannot be deleted; unused, it can.
+    const planRoute = await import("@/app/api/admin/plans/[id]/route");
+    const del = (planId: string) => planRoute.DELETE(asAdmin(`/api/admin/plans/${planId}`, { method: "DELETE" }), { params: Promise.resolve({ id: planId }) });
+    expect((await del(weekly.id)).status).toBe(409);
+    expect((await del(daily.id)).status).toBe(200);
+    expect((await del(daily.id)).status).toBe(404);
+    await poolMod.pool().query("DELETE FROM businesses WHERE id = $1", [id]);
+    ids.splice(ids.indexOf(id), 1);
+    expect((await del(weekly.id)).status).toBe(200);
+  });
+
+  it("upgrade or downgrade immediately starts a fresh term; scheduled, it waits for the next activation", async () => {
+    const id = await open(`Move ${tag}`, `move${tag}`, "starter");
+    const starter = (await platform.getPlans()).find((p) => p.id === "starter")!;
+    const premium = (await platform.getPlans()).find((p) => p.id === "premium")!;
+    await activate(id, { terms: "3", amount: "0" }); // about 3 months of runway on Starter
+
+    // Scheduled: nothing changes today.
+    const schedule = (await import("@/app/api/admin/businesses/[id]/schedule/route")).POST;
+    const sched = (plan: string | null) => schedule(asAdmin(`/api/admin/businesses/${id}/schedule`, { method: "POST", body: JSON.stringify({ plan }) }), { params: Promise.resolve({ id }) });
+    expect((await sched("nope")).status).toBe(400);
+    expect((await sched(premium.id)).status).toBe(200);
+    expect(await summary(id)).toMatchObject({ plan: "starter", nextPlan: "premium", nextPlanLabel: premium.label });
+    expect((await sched(starter.id)).status).toBe(200); // choosing the current package clears it
+    expect((await summary(id)).nextPlan).toBeNull();
+    await sched(premium.id);
+    const before = new Date((await summary(id)).expiresAt).getTime();
+    const next = await (await activate(id, { terms: "1", reference: "UP1" })).json(); // the next activation applies it, after the old end date
+    expect(await summary(id)).toMatchObject({ plan: "premium", nextPlan: null, maxUsers: null });
+    expect((new Date(next.expiresAt).getTime() - before) / 86_400_000).toBeGreaterThan(27);
+
+    // Immediate: the old term is over and a fresh one starts today, paid for now.
+    const now = await (await activate(id, { terms: "1", plan: "starter", restart: "true", reference: "DOWN1" })).json();
+    expect(await summary(id)).toMatchObject({ plan: "starter", maxUsers: 3 });
+    const days = (new Date(now.expiresAt).getTime() - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(27);
+    expect(days).toBeLessThan(32);
+    expect((await activate(id, { terms: "1", plan: "nope", reference: "x" })).status).toBe(400);
+    const paid = (await platform.listPayments(id)).map((p) => p.reference);
+    expect(paid).toEqual(["DOWN1", "UP1"]);
   });
 
   it("the package limits how many users can sign in", async () => {
@@ -208,7 +283,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect(await make(3)).toMatchObject({ ok: false, error: { code: "plan_limit" } });
     expect((await summary(id)).users).toBe(3);
     // Upgrading the package lifts the limit.
-    await patchRoute.PATCH(asAdmin(`/api/admin/businesses/${id}`, { method: "PATCH", body: JSON.stringify({ plan: "premium" }) }), { params: Promise.resolve({ id }) });
+    await platform.activateSubscription(id, { terms: 1, plan: "premium", restart: true, amount: 0 });
     expect((await make(3)).ok).toBe(true);
     expect((await summary(id)).maxUsers).toBeNull();
   });
@@ -254,15 +329,15 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect(raw).not.toContain("a-new-password-9");
   });
 
-  it("package limits and prices are editable", async () => {
+  it("package limits, prices, terms and modules are editable", async () => {
     const plansRoute = await import("@/app/api/admin/plans/[id]/route");
     const edit = (id: string, body: object) => plansRoute.PATCH(asAdmin(`/api/admin/plans/${id}`, { method: "PATCH", body: JSON.stringify(body) }), { params: Promise.resolve({ id }) });
-    expect((await edit("nope", { priceMonthly: 5 })).status).toBe(404);
-    expect((await edit("starter", { priceMonthly: -1 })).status).toBe(400);
-    expect((await edit("starter", { priceMonthly: 650, maxUsers: 4 })).status).toBe(200);
-    const starter = (await platform.getPlans()).find((p) => p.id === "starter")!;
-    expect(starter).toMatchObject({ priceMonthly: 650, maxUsers: 4 });
-    await edit("starter", { priceMonthly: 500, maxUsers: 3 });
+    expect((await edit("nope", { price: 5 })).status).toBe(404);
+    expect((await edit("starter", { price: -1 })).status).toBe(400);
+    expect((await edit("starter", { periodCount: 0 })).status).toBe(400);
+    expect((await edit("starter", { price: 650, maxUsers: 4, periodUnit: "week", modules: ["pos"] })).status).toBe(200);
+    expect((await platform.getPlans()).find((p) => p.id === "starter")).toMatchObject({ price: 650, maxUsers: 4, periodUnit: "week", modules: ["pos"] });
+    await edit("starter", { price: 500, maxUsers: 3, periodUnit: "month", modules: ["pos", "sales", "purchases", "stock", "expenses", "accounts", "reports"] });
   });
 
   it("business A never sees business B", async () => {
@@ -279,13 +354,10 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect(a.p.businessId).not.toBe(b.p.businessId);
   });
 
-  it("modules and free accounts: price, hiding, server enforcement, no lapse", async () => {
+  it("modules and free accounts: package modules, hiding, server enforcement, no lapse", async () => {
     const id = await open(`Mods ${tag}`, `mods${tag}`, "starter");
     const user = `mods${tag}`;
     const patch = (body: object) => patchRoute.PATCH(asAdmin(`/api/admin/businesses/${id}`, { method: "PATCH", body: JSON.stringify(body) }), { params: Promise.resolve({ id }) });
-    await platform.updateModulePrice("pos", 100);
-    await platform.updateModulePrice("reports", 50);
-    const base = (await platform.getPlans()).find((p) => p.id === "starter")!.priceMonthly;
 
     expect((await patch({ modules: ["sales"] })).status).toBe(200);
     expect((await summary(id)).modules).toEqual(["sales"]);
@@ -294,26 +366,25 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect((await auth.authenticate(new NextRequest("http://localhost:3000/api/rpc", { headers: { cookie: `posible_sid=${p.cookie}` } })))?.modules).toEqual(["sales"]);
 
     expect((await patch({ modules: ["sales", "pos", "reports"] })).status).toBe(200);
-    const s = await summary(id);
-    expect(s.priceMonthly).toBe(base + 150 + (await platform.getModules()).find((m) => m.id === "sales")!.priceMonthly);
+    expect((await summary(id)).modules).toEqual(["pos", "sales", "reports"]);
     expect((await patch({ modules: ["nope"] })).status).toBe(400);
 
     // Free: no price, every module, no limit, and an end date in the past does not lock the business out.
-    expect((await patch({ free: true, expiresAt: "2020-01-01T00:00:00Z" })).status).toBe(200);
+    expect((await patch({ free: true })).status).toBe(200);
+    await platform.setSubscription(id, { expiresAt: "2020-01-01T00:00:00Z" });
     const f = await summary(id);
-    expect(f).toMatchObject({ free: true, priceMonthly: 0, state: "active", maxUsers: null });
+    expect(f).toMatchObject({ free: true, price: 0, priceMonthly: 0, state: "active", maxUsers: null });
     expect(f.modules).toHaveLength(7);
     expect((await auth.login(user, "owner-pass-1", true, "ip-free")).ok).toBe(true);
-    await patch({ free: false, expiresAt: null });
-    await platform.updateModulePrice("pos", 0);
-    await platform.updateModulePrice("reports", 0);
   });
 
   it("a demo business has no onboarding; a normal one still gets the wizard", async () => {
     const make = async (username: string, demo: boolean) => {
       const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: username, username, password: "owner-pass-1", plan: "starter", demo }) }));
       expect(res.status).toBe(201);
-      ids.push((await res.json()).id as string);
+      const made = (await res.json()).id as string;
+      ids.push(made);
+      await platform.activateSubscription(made, { terms: 1, amount: 0 });
       const r = await auth.login(username, "owner-pass-1", true, `ip-${username}`);
       if (!r.ok) throw new Error("login failed");
       const p = { businessId: r.principal.businessId, userId: r.principal.userId, role: r.principal.role };
@@ -371,6 +442,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect(res2.status).toBe(201);
     const id2 = (await res2.json()).id as string;
     ids.push(id2);
+    await platform.activateSubscription(id2, { terms: 1, amount: 0 });
     expect(await summary(id2)).toMatchObject({ code: `lotus-${tag}` });
     expect((await make({ code: `lotus-${tag}` }, `other${tag}`)).status).toBe(409);
     expect((await make({ code: "no spaces" }, `bad${tag}`)).status).toBe(400);

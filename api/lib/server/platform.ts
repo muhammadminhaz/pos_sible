@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { pool, ready } from "./pool";
-import { effectiveModules, MODULE_IDS, subscriptionState, type ModuleDef, type ModuleId, type Plan, type SubscriptionStatus } from "./plans";
+import { effectiveModules, MODULE_IDS, monthlyEquivalent, subscriptionState, termInterval, type ModuleDef, type ModuleId, type PeriodUnit, type Plan, type SubscriptionStatus } from "./plans";
 import { hashPassword } from "./passwords";
 import { sqlName, TABLE_NAMES } from "./tables";
 
@@ -22,41 +22,60 @@ export function adminCredentials(): { username: string; password: string } {
   return { username: process.env.ADMIN_USERNAME?.trim() ?? "", password: process.env.ADMIN_PASSWORD ?? "" };
 }
 
-type PlanRow = { id: string; label: string; max_users: number | null; price_monthly: string; description: string; benefits: string[] };
-const toPlan = (r: PlanRow): Plan => ({ id: r.id, label: r.label, maxUsers: r.max_users, priceMonthly: Number(r.price_monthly), description: r.description, benefits: r.benefits });
+type PlanRow = { id: string; label: string; max_users: number | null; price: string; period_unit: PeriodUnit; period_count: number; modules: string[]; description: string; benefits: string[] };
+const toPlan = (r: PlanRow): Plan => ({
+  id: r.id, label: r.label, maxUsers: r.max_users, price: Number(r.price), periodUnit: r.period_unit, periodCount: r.period_count,
+  modules: MODULE_IDS.filter((m) => r.modules.includes(m)), description: r.description, benefits: r.benefits,
+});
+const PLAN_COLUMNS = "id, label, max_users, price, period_unit, period_count, modules, description, benefits";
 
 export async function getPlans(): Promise<Plan[]> {
   await ready();
-  return (await pool().query<PlanRow>("SELECT id, label, max_users, price_monthly, description, benefits FROM plans ORDER BY sort, id")).rows.map(toPlan);
+  return (await pool().query<PlanRow>(`SELECT ${PLAN_COLUMNS} FROM plans ORDER BY sort, id`)).rows.map(toPlan);
 }
 
-export type PlanPatch = { label?: string; maxUsers?: number | null; priceMonthly?: number; description?: string; benefits?: string[] };
+export type PlanPatch = { label?: string; maxUsers?: number | null; price?: number; periodUnit?: PeriodUnit; periodCount?: number; modules?: ModuleId[]; description?: string; benefits?: string[] };
 
-/** Edits what a package is called, how many users it allows and what it costs. Returns false for an unknown package. */
+const slug = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24) || "package";
+
+/** Adds a package. Any number can exist; the id is made from the name plus a short random tail so it never collides. */
+export async function createPlan(input: Required<Pick<PlanPatch, "label" | "price" | "periodUnit" | "periodCount" | "modules">> & Pick<PlanPatch, "maxUsers" | "description" | "benefits">): Promise<Plan> {
+  await ready();
+  const id = `${slug(input.label)}-${randomBytes(3).toString("hex")}`;
+  const r = await pool().query<PlanRow>(
+    `INSERT INTO plans (id, label, max_users, price, period_unit, period_count, modules, description, benefits, sort)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE((SELECT MAX(sort) FROM plans), 0) + 1) RETURNING ${PLAN_COLUMNS}`,
+    [id, input.label, input.maxUsers ?? null, input.price, input.periodUnit, input.periodCount, MODULE_IDS.filter((m) => input.modules.includes(m)), input.description ?? "", input.benefits ?? []]);
+  return toPlan(r.rows[0]);
+}
+
+const PLAN_COLUMN_OF: Record<keyof PlanPatch, string> = { label: "label", maxUsers: "max_users", price: "price", periodUnit: "period_unit", periodCount: "period_count", modules: "modules", description: "description", benefits: "benefits" };
+
+/** Edits a package. It applies to every business on it straight away; a changed term length applies from the next activation. Returns false for an unknown package. */
 export async function updatePlan(id: string, patch: PlanPatch): Promise<boolean> {
   await ready();
   const sets: string[] = [];
   const args: unknown[] = [id];
-  if (patch.label !== undefined) { args.push(patch.label); sets.push(`label = $${args.length}`); }
-  if (patch.maxUsers !== undefined) { args.push(patch.maxUsers); sets.push(`max_users = $${args.length}`); }
-  if (patch.priceMonthly !== undefined) { args.push(patch.priceMonthly); sets.push(`price_monthly = $${args.length}`); }
-  if (patch.description !== undefined) { args.push(patch.description); sets.push(`description = $${args.length}`); }
-  if (patch.benefits !== undefined) { args.push(patch.benefits); sets.push(`benefits = $${args.length}`); }
+  for (const key of Object.keys(PLAN_COLUMN_OF) as (keyof PlanPatch)[]) {
+    if (patch[key] === undefined) continue;
+    args.push(key === "modules" ? MODULE_IDS.filter((m) => patch.modules!.includes(m)) : patch[key]);
+    sets.push(`${PLAN_COLUMN_OF[key]} = $${args.length}`);
+  }
   if (!sets.length) return (await pool().query("SELECT 1 FROM plans WHERE id = $1", [id])).rowCount === 1;
   return (await pool().query(`UPDATE plans SET ${sets.join(", ")} WHERE id = $1`, args)).rowCount === 1;
 }
 
-type ModuleRow = { id: ModuleId; label: string; price_monthly: string };
+/** Removes a package nobody is on and nobody is scheduled to move to. The last one stays, because new businesses need a package to start on. */
+export async function deletePlan(id: string): Promise<"deleted" | "in_use" | "last" | "not_found"> {
+  await ready();
+  if (Number((await pool().query<{ n: string }>("SELECT COUNT(*) AS n FROM plans")).rows[0].n) <= 1) return "last";
+  if ((await pool().query("SELECT 1 FROM businesses WHERE plan = $1 OR next_plan = $1 LIMIT 1", [id])).rowCount) return "in_use";
+  return (await pool().query("DELETE FROM plans WHERE id = $1", [id])).rowCount === 1 ? "deleted" : "not_found";
+}
 
 export async function getModules(): Promise<ModuleDef[]> {
   await ready();
-  return (await pool().query<ModuleRow>("SELECT id, label, price_monthly FROM modules ORDER BY sort, id")).rows.map((r) => ({ id: r.id, label: r.label, priceMonthly: Number(r.price_monthly) }));
-}
-
-/** Changes what a module adds to the monthly price. Returns false for an unknown module. */
-export async function updateModulePrice(id: string, priceMonthly: number): Promise<boolean> {
-  await ready();
-  return (await pool().query("UPDATE modules SET price_monthly = $2 WHERE id = $1", [id, priceMonthly])).rowCount === 1;
+  return (await pool().query<{ id: ModuleId; label: string }>("SELECT id, label FROM modules ORDER BY sort, id")).rows;
 }
 
 declare global {
@@ -134,10 +153,20 @@ export type BusinessSummary = {
   contactPhone: string | null;
   plan: string;
   planLabel: string;
-  /** What the business pays per month: package plus its modules, or 0 when free. */
+  /** What one term of the package costs (0 when free), and how long a term is. */
+  price: number;
+  periodUnit: PeriodUnit;
+  periodCount: number;
+  /** The price spread over 30 days, so daily, weekly and monthly packages can be added up. */
   priceMonthly: number;
-  /** Modules the business can use (all of them when free). */
+  /** Modules the package includes, and the ones the business actually uses (all of them when free). */
+  planModules: ModuleId[];
   modules: ModuleId[];
+  /** A package change waiting for the current term to end; it applies at the next activation. */
+  nextPlan: string | null;
+  nextPlanLabel: string | null;
+  /** When the last payment was received, or null if none was recorded. */
+  lastPaidAt: string | null;
   /** Waived by the platform owner: no price, no end date, every module, unlimited users. */
   free: boolean;
   status: SubscriptionStatus;
@@ -161,43 +190,48 @@ const ENTITY_SIZES = TABLE_NAMES.map((t) => `SELECT business_id, SUM(pg_column_s
 export async function listBusinesses(): Promise<BusinessSummary[]> {
   await ready();
   const { rows } = await pool().query<{
-    id: string; name: string; created_at: Date; plan: string; plan_label: string; price: string; max_users: number | null;
+    id: string; name: string; created_at: Date; plan: string; plan_label: string; price: string; period_unit: PeriodUnit; period_count: number; plan_modules: string[]; max_users: number | null;
+    next_plan: string | null; next_plan_label: string | null; last_paid: Date | null;
     subscription_status: SubscriptionStatus; subscription_expires_at: Date | null; owner: string | null; code: string; contact_email: string | null; contact_phone: string | null;
     modules: string[] | null; free: boolean; users: string; storage: string; last_active: Date | null;
   }>(`
-    SELECT b.id, b.name, b.created_at, b.plan, p.label AS plan_label, p.price_monthly AS price, p.max_users,
+    SELECT b.id, b.name, b.created_at, b.plan, p.label AS plan_label, p.price, p.period_unit, p.period_count, p.modules AS plan_modules, p.max_users,
+           b.next_plan, np.label AS next_plan_label, pay.last_paid,
            b.subscription_status, b.subscription_expires_at, l.username AS owner, b.code, b.contact_email, b.contact_phone, b.modules, b.free,
            COALESCE(u.n, 0) AS users,
            COALESCE(s.bytes, 0) + pg_column_size(b.settings) + pg_column_size(b.meta) AS storage,
            a.last_active
       FROM businesses b
       JOIN plans p ON p.id = b.plan
+      LEFT JOIN plans np ON np.id = b.next_plan
       LEFT JOIN logins l ON l.business_id = b.id AND l.user_id = 'user_admin'
+      LEFT JOIN (SELECT business_id, MAX(paid_at) AS last_paid FROM subscription_payments GROUP BY business_id) pay ON pay.business_id = b.id
       LEFT JOIN (SELECT business_id, COUNT(*) AS n FROM users WHERE (data->>'allowLogin')::boolean IS NOT FALSE GROUP BY business_id) u ON u.business_id = b.id
       LEFT JOIN (SELECT business_id, SUM(bytes) AS bytes FROM (${ENTITY_SIZES}) x GROUP BY business_id) s ON s.business_id = b.id
       LEFT JOIN (SELECT business_id, MAX(at) AS last_active FROM audit_log GROUP BY business_id) a ON a.business_id = b.id
      ORDER BY b.created_at DESC`);
-  const prices = new Map((await getModules()).map((m) => [m.id, m.priceMonthly]));
   return rows.map((r) => {
-    const modules = effectiveModules(r.modules, r.free);
+    const planModules = MODULE_IDS.filter((m) => r.plan_modules.includes(m));
+    const price = r.free ? 0 : Number(r.price);
     return {
       id: r.id, name: r.name, createdAt: r.created_at.toISOString(), ownerUsername: r.owner, code: r.code, contactEmail: r.contact_email, contactPhone: r.contact_phone,
-      plan: r.plan, planLabel: r.plan_label, priceMonthly: r.free ? 0 : Number(r.price) + modules.reduce((sum, m) => sum + (prices.get(m) ?? 0), 0),
-      modules, free: r.free, status: r.subscription_status, expiresAt: r.subscription_expires_at?.toISOString() ?? null,
+      plan: r.plan, planLabel: r.plan_label, price, periodUnit: r.period_unit, periodCount: r.period_count,
+      priceMonthly: monthlyEquivalent({ price, periodUnit: r.period_unit, periodCount: r.period_count }), planModules, modules: effectiveModules(r.modules, r.free, planModules),
+      nextPlan: r.next_plan, nextPlanLabel: r.next_plan_label, lastPaidAt: r.last_paid?.toISOString() ?? null,
+      free: r.free, status: r.subscription_status, expiresAt: r.subscription_expires_at?.toISOString() ?? null,
       state: subscriptionState(r.subscription_status, r.subscription_expires_at, new Date(), r.free), users: Number(r.users),
       maxUsers: r.free ? null : r.max_users, storageBytes: Number(r.storage), lastActiveAt: r.last_active?.toISOString() ?? null,
     };
   });
 }
 
-export type SubscriptionPatch = { plan?: string; status?: SubscriptionStatus; expiresAt?: string | null; contactEmail?: string | null; contactPhone?: string | null; modules?: ModuleId[]; free?: boolean };
+export type SubscriptionPatch = { status?: SubscriptionStatus; expiresAt?: string | null; contactEmail?: string | null; contactPhone?: string | null; modules?: ModuleId[]; free?: boolean };
 
-/** Changes only the package, the on/off switch, the end date, the contact details, its modules and the free flag. Returns false when there is no such business. */
+/** Changes only the on/off switch, the end date, the contact details, its modules and the free flag. Returns false when there is no such business. */
 export async function setSubscription(businessId: string, patch: SubscriptionPatch): Promise<boolean> {
   await ready();
   const sets: string[] = [];
   const args: unknown[] = [businessId];
-  if (patch.plan) { args.push(patch.plan); sets.push(`plan = $${args.length}`); }
   if (patch.status) { args.push(patch.status); sets.push(`subscription_status = $${args.length}`); }
   if (patch.expiresAt !== undefined) { args.push(patch.expiresAt); sets.push(`subscription_expires_at = $${args.length}`); }
   if (patch.contactEmail !== undefined) { args.push(patch.contactEmail); sets.push(`contact_email = $${args.length}`); }
@@ -240,44 +274,99 @@ export async function deleteBusiness(businessId: string, confirmUsername: string
   return "deleted";
 }
 
-/** What a business pays per month right now (package plus its modules, 0 when free), with the names a payment row keeps. */
-async function priceOf(businessId: string): Promise<{ name: string; plan: string; price: number } | null> {
-  const r = (await pool().query<{ name: string; plan: string; modules: string[] | null; free: boolean; price: string }>(
-    "SELECT b.name, b.plan, b.modules, b.free, p.price_monthly AS price FROM businesses b JOIN plans p ON p.id = b.plan WHERE b.id = $1", [businessId])).rows[0];
-  if (!r) return null;
-  const prices = new Map((await getModules()).map((m) => [m.id, m.priceMonthly]));
-  const price = r.free ? 0 : Number(r.price) + effectiveModules(r.modules, r.free).reduce((sum, m) => sum + (prices.get(m) ?? 0), 0);
-  return { name: r.name, plan: r.plan, price };
-}
+export const PROOF_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+export const MAX_PROOF_BYTES = 2 * 1024 * 1024;
+
+export type Activation = {
+  /** How many terms of the package this payment covers. */
+  terms: number;
+  /** Package to move to. Left out, a scheduled change applies, else the business keeps its package. */
+  plan?: string;
+  /** Start a fresh term today instead of extending the current one (an immediate upgrade or downgrade). */
+  restart?: boolean;
+  /** What was actually received; the package price times the terms when left out. 0 (or a free business) records no payment. */
+  amount?: number;
+  /** The transaction id the customer gave. A payment needs this or a proof image. */
+  reference?: string;
+  proof?: { data: Buffer; type: string };
+};
+export type ActivationResult = { ok: true; expiresAt: string; paymentId: number | null } | { ok: false; reason: "not_found" | "unknown_plan" | "proof_required" };
 
 /**
- * Writes down money received for `months` of a business's subscription. The amount defaults to the monthly price times
- * the months; pass one to record a discount or a part payment. Free businesses and zero amounts record nothing.
+ * Switches a subscription on after the platform owner received the money, and writes the payment down: the day it is
+ * activated is the day it was paid, with the transaction id and proof image kept beside it. An active term is extended
+ * from its end date; a cancelled or lapsed one (or `restart`) counts from today. A package change scheduled for the end of
+ * the term applies here, and any package change goes back to the new package's own modules.
  */
-export async function recordPayment(businessId: string, months: number, amount?: number): Promise<void> {
-  const info = await priceOf(businessId);
-  if (!info) return;
-  const paid = Math.round((amount ?? info.price * months) * 100) / 100;
-  if (!(paid > 0)) return;
-  await pool().query("INSERT INTO subscription_payments (business_id, business_name, plan, months, amount) VALUES ($1, $2, $3, $4, $5)", [businessId, info.name, info.plan, months, paid]);
-}
-
-/**
- * Renews a subscription for `months` and switches it back on, recording the payment (`amount` overrides the list price).
- * An active subscription is extended from its end date (so renewing early never loses days); a cancelled or lapsed one
- * starts counting from today. Returns the new end date, or null for an unknown business.
- */
-export async function renewSubscription(businessId: string, months: number, amount?: number): Promise<string | null> {
+export async function activateSubscription(businessId: string, a: Activation): Promise<ActivationResult> {
   await ready();
-  const r = await pool().query<{ subscription_expires_at: Date }>(
-    `UPDATE businesses
-        SET subscription_expires_at = (CASE WHEN subscription_status = 'active' THEN GREATEST(now(), COALESCE(subscription_expires_at, now())) ELSE now() END) + $2 * interval '1 month',
-            subscription_status = 'active'
-      WHERE id = $1
-  RETURNING subscription_expires_at`, [businessId, months]);
-  if (!r.rows[0]) return null;
-  await recordPayment(businessId, months, amount);
-  return r.rows[0].subscription_expires_at.toISOString();
+  const client = await pool().connect();
+  try {
+    await client.query("BEGIN");
+    const b = (await client.query<{ name: string; plan: string; next_plan: string | null; free: boolean }>("SELECT name, plan, next_plan, free FROM businesses WHERE id = $1 FOR UPDATE", [businessId])).rows[0];
+    if (!b) {
+      await client.query("ROLLBACK");
+      return { ok: false, reason: "not_found" };
+    }
+    const target = a.plan ?? b.next_plan ?? b.plan;
+    const plan = (await client.query<PlanRow>(`SELECT ${PLAN_COLUMNS} FROM plans WHERE id = $1`, [target])).rows[0];
+    if (!plan) {
+      await client.query("ROLLBACK");
+      return { ok: false, reason: "unknown_plan" };
+    }
+    const p = toPlan(plan);
+    const amount = b.free ? 0 : Math.round((a.amount ?? p.price * a.terms) * 100) / 100;
+    const reference = a.reference?.trim() || null;
+    if (amount > 0 && !reference && !a.proof) {
+      await client.query("ROLLBACK");
+      return { ok: false, reason: "proof_required" };
+    }
+    const r = await client.query<{ subscription_expires_at: Date }>(
+      `UPDATE businesses
+          SET plan = $2, next_plan = NULL, modules = CASE WHEN $2 <> plan THEN NULL ELSE modules END, subscription_status = 'active',
+              subscription_expires_at = (CASE WHEN NOT $3::boolean AND subscription_status = 'active' AND subscription_expires_at > now() THEN subscription_expires_at ELSE now() END) + $4::interval
+        WHERE id = $1
+    RETURNING subscription_expires_at`, [businessId, target, !!a.restart, termInterval(p, a.terms)]);
+    let paymentId: number | null = null;
+    if (amount > 0) {
+      paymentId = Number((await client.query<{ id: string }>(
+        `INSERT INTO subscription_payments (business_id, business_name, plan, plan_label, terms, period_unit, period_count, amount, reference, proof, proof_type)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+        [businessId, b.name, target, p.label, a.terms, p.periodUnit, p.periodCount, amount, reference, a.proof?.data ?? null, a.proof?.type ?? null])).rows[0].id);
+    }
+    await client.query("COMMIT");
+    return { ok: true, expiresAt: r.rows[0].subscription_expires_at.toISOString(), paymentId };
+  } catch (e) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+/** Schedules a package change for when the current term ends (it applies at the next activation), or clears it with null. */
+export async function scheduleChange(businessId: string, plan: string | null): Promise<"ok" | "not_found" | "unknown_plan"> {
+  await ready();
+  if (plan !== null && !(await pool().query("SELECT 1 FROM plans WHERE id = $1", [plan])).rowCount) return "unknown_plan";
+  const r = await pool().query("UPDATE businesses SET next_plan = CASE WHEN $2::text = plan THEN NULL ELSE $2::text END WHERE id = $1", [businessId, plan]);
+  return r.rowCount === 1 ? "ok" : "not_found";
+}
+
+export type Payment = { id: number; planLabel: string; terms: number; periodUnit: PeriodUnit; periodCount: number; amount: number; paidAt: string; reference: string | null; hasProof: boolean };
+
+/** Every payment recorded for a business, newest first. The proof image itself is fetched separately. */
+export async function listPayments(businessId: string): Promise<Payment[]> {
+  await ready();
+  const { rows } = await pool().query<{ id: string; label: string; terms: number; period_unit: PeriodUnit; period_count: number; amount: string; paid_at: Date; reference: string | null; has_proof: boolean }>(
+    `SELECT id, COALESCE(plan_label, plan) AS label, terms, period_unit, period_count, amount, paid_at, reference, proof IS NOT NULL AS has_proof
+       FROM subscription_payments WHERE business_id = $1 ORDER BY paid_at DESC, id DESC`, [businessId]);
+  return rows.map((r) => ({ id: Number(r.id), planLabel: r.label, terms: r.terms, periodUnit: r.period_unit, periodCount: r.period_count, amount: Number(r.amount), paidAt: r.paid_at.toISOString(), reference: r.reference, hasProof: r.has_proof }));
+}
+
+export async function paymentProof(id: number): Promise<{ data: Buffer; type: string } | null> {
+  await ready();
+  const r = (await pool().query<{ proof: Buffer | null; proof_type: string | null }>("SELECT proof, proof_type FROM subscription_payments WHERE id = $1", [id])).rows[0];
+  return r?.proof && r.proof_type ? { data: r.proof, type: r.proof_type } : null;
 }
 
 /** Ends a subscription: nobody in the business can sign in until it is renewed, and everyone is signed out now. */
@@ -310,7 +399,7 @@ export type RevenueReport = {
   /** The last 12 months, oldest first, with empty months as zero so the chart has no gaps. */
   months: RevenueMonth[];
   byPlan: { plan: string; label: string; amount: number }[];
-  recent: { id: number; businessId: string | null; businessName: string; plan: string; planLabel: string; months: number; amount: number; paidAt: string }[];
+  recent: { id: number; businessId: string | null; businessName: string; plan: string; planLabel: string; terms: number; periodUnit: PeriodUnit; periodCount: number; amount: number; paidAt: string; reference: string | null; hasProof: boolean }[];
 };
 
 const REPORT_ZONE = "Asia/Dhaka";
@@ -336,15 +425,15 @@ export async function revenueReport(now = new Date()): Promise<RevenueReport> {
     db.query<{ month: string; amount: string; payments: string }>(
       `SELECT to_char(paid_at AT TIME ZONE $1, 'YYYY-MM') AS month, SUM(amount) AS amount, COUNT(*) AS payments FROM subscription_payments GROUP BY 1`, [REPORT_ZONE]),
     db.query<{ plan: string; label: string | null; amount: string }>(
-      `SELECT sp.plan, p.label, SUM(sp.amount) AS amount FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan GROUP BY sp.plan, p.label ORDER BY SUM(sp.amount) DESC`),
-    db.query<{ id: string; business_id: string | null; business_name: string; plan: string; label: string | null; months: number; amount: string; paid_at: Date }>(
-      `SELECT sp.id, sp.business_id, sp.business_name, sp.plan, p.label, sp.months, sp.amount, sp.paid_at FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan ORDER BY sp.paid_at DESC, sp.id DESC LIMIT 12`),
+      `SELECT sp.plan, COALESCE(p.label, MAX(sp.plan_label)) AS label, SUM(sp.amount) AS amount FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan GROUP BY sp.plan, p.label ORDER BY SUM(sp.amount) DESC`),
+    db.query<{ id: string; business_id: string | null; business_name: string; plan: string; label: string | null; terms: number; period_unit: PeriodUnit; period_count: number; amount: string; paid_at: Date; reference: string | null; has_proof: boolean }>(
+      `SELECT sp.id, sp.business_id, sp.business_name, sp.plan, COALESCE(sp.plan_label, p.label) AS label, sp.terms, sp.period_unit, sp.period_count, sp.amount, sp.paid_at, sp.reference, sp.proof IS NOT NULL AS has_proof FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan ORDER BY sp.paid_at DESC, sp.id DESC LIMIT 12`),
     db.query<{ total: string | null; n: string; first: Date | null }>(`SELECT SUM(amount) AS total, COUNT(*) AS n, MIN(paid_at) AS first FROM subscription_payments`),
   ]);
   const { months, thisMonth, lastMonth } = revenueMonths(monthly.rows.map((r) => ({ month: r.month, amount: Number(r.amount), payments: Number(r.payments) })), now);
   return {
     total: Number(totals.rows[0].total ?? 0), thisMonth, lastMonth, payments: Number(totals.rows[0].n), firstPaymentAt: totals.rows[0].first?.toISOString() ?? null, months,
     byPlan: plans.rows.map((r) => ({ plan: r.plan, label: r.label ?? r.plan, amount: Number(r.amount) })),
-    recent: recent.rows.map((r) => ({ id: Number(r.id), businessId: r.business_id, businessName: r.business_name, plan: r.plan, planLabel: r.label ?? r.plan, months: r.months, amount: Number(r.amount), paidAt: r.paid_at.toISOString() })),
+    recent: recent.rows.map((r) => ({ id: Number(r.id), businessId: r.business_id, businessName: r.business_name, plan: r.plan, planLabel: r.label ?? r.plan, terms: r.terms, periodUnit: r.period_unit, periodCount: r.period_count, amount: Number(r.amount), paidAt: r.paid_at.toISOString(), reference: r.reference, hasProof: r.has_proof })),
   };
 }

@@ -8,7 +8,7 @@ import { CARD } from "@/components/shared/card-surface";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdminHeader, useAdmin } from "./AdminShell";
-import { day, formatMoney, monthlyRevenue, shortMonth } from "./api";
+import { day, formatMoney, monthlyRevenue, shortMonth, termText } from "./api";
 import { ColumnsChart, RevenueChart } from "./charts";
 import { BarRow, BigMoney, Delta, Empty, Panel, StatCard } from "./parts";
 
@@ -21,8 +21,8 @@ function NoPayments() {
   return (
     <Empty icon={BanknoteIcon} action={<Button asChild variant="outline" className="rounded-full"><Link href="/admin/businesses">See businesses</Link></Button>}>
       {allFree
-        ? "No money to show yet: every account is free right now. When a business is on a paid package and you renew it, what you receive shows up here."
-        : "No payments recorded yet. Renew a subscription, or add a business with a prepaid term, and what you received shows up here."}
+        ? "No money to show yet: every account is free right now. When a business is on a paid package and you activate it, what you receive shows up here."
+        : "No payments recorded yet. Activate a subscription after a payment arrives and what you received shows up here."}
     </Empty>
   );
 }
@@ -97,13 +97,13 @@ export function RevenuePage() {
       </section>
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Latest payments" description="The most recent money received.">
-          {loading ? <Skeleton className="h-40 w-full rounded-2xl" /> : !paid || paid.recent.length === 0 ? <Empty icon={ReceiptIcon}>No payments to list yet. Each renewal you record appears here.</Empty> : (
+          {loading ? <Skeleton className="h-40 w-full rounded-2xl" /> : !paid || paid.recent.length === 0 ? <Empty icon={ReceiptIcon}>No payments to list yet. Each activation you record appears here.</Empty> : (
             <ul className="grid gap-3">
               {paid.recent.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3 text-sm">
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{p.businessName}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{p.planLabel} · {p.months} month{p.months === 1 ? "" : "s"} · {day(p.paidAt)}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{p.planLabel} · {p.terms} × {termText(p.periodUnit, p.periodCount)} · {day(p.paidAt)}{p.reference ? ` · ${p.reference}` : ""}</span>
                   </span>
                   <span className="shrink-0 font-semibold tabular-nums">{formatMoney(p.amount)}</span>
                 </li>
@@ -119,7 +119,7 @@ export function RevenuePage() {
         <Panel title="New businesses" description="Accounts opened each month.">
           {loading ? <Skeleton className="h-40 w-full rounded-2xl" /> : <ColumnsChart data={joined} name="New businesses" height={170} />}
         </Panel>
-        <Panel title="Renewals due in 30 days" description="Subscriptions that end soon. Renew them to keep the revenue.">
+        <Panel title="Renewals due in 30 days" description="Subscriptions that end soon. Activate them again to keep the revenue.">
           {!businesses ? <Skeleton className="h-20 w-full rounded-2xl" /> : renewals.length === 0 ? <Empty icon={CalendarCheckIcon}>No renewals due in the next 30 days.</Empty> : (
             <ul className="grid gap-3">
               {renewals.map((b) => (
@@ -132,7 +132,7 @@ export function RevenuePage() {
           )}
         </Panel>
       </div>
-      <p className="px-1 text-xs text-muted-foreground">Only real payments count: one is recorded when you renew a paid subscription or add a business with a prepaid term. Free accounts never add to revenue.</p>
+      <p className="px-1 text-xs text-muted-foreground">Only real payments count: one is recorded, dated that day, each time you activate a paid subscription. Free accounts never add to revenue. Run rate spreads each package price over 30 days.</p>
     </>
   );
 }

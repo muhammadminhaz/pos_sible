@@ -132,11 +132,12 @@ async function applyDiff(client: PoolClient, businessId: string, d: Diff): Promi
 }
 
 /** Stores a brand-new business: its row plus every record, in one transaction. */
-export async function insertBusiness(id: string, db: DB, code: string): Promise<void> {
+/** `plan` is the package the business starts on; left out, "standard" (as before packages could be deleted) or else the first one. */
+export async function insertBusiness(id: string, db: DB, code: string, plan?: string): Promise<void> {
   const client = await pool().connect();
   try {
     await client.query("BEGIN");
-    await client.query("INSERT INTO businesses (id, name, code, settings, meta, version) VALUES ($1, $2, $3, $4, $5, 1)", [id, db.settings.business.name, code, db.settings, db.meta]);
+    await client.query("INSERT INTO businesses (id, name, code, settings, meta, version, plan) VALUES ($1, $2, $3, $4, $5, 1, COALESCE($6::text, (SELECT id FROM plans ORDER BY id <> 'standard', sort, id LIMIT 1)))", [id, db.settings.business.name, code, db.settings, db.meta, plan ?? null]);
     await applyDiff(client, id, diff({ tables: new Map(), settings: "", meta: "" }, db));
     await client.query("COMMIT");
   } catch (e) {

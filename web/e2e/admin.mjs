@@ -1,5 +1,5 @@
 // The platform owner's console against the Postgres stack: sign in with the env credentials, open a business, see
-// only totals, cancel and renew its subscription, reset its password, and delete it by typing its username.
+// only totals, activate (with a transaction ID) and cancel its subscription, reset its password, and delete it by typing its username.
 // Usage: both servers running (see README, section B), then E2E_URL=http://localhost:3111 npm run e2e:admin
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright-core";
@@ -56,11 +56,21 @@ await admin.getByRole("button", { name: "Create business" }).click();
 const row = admin.locator("tr", { hasText: name });
 await row.waitFor();
 const text = await row.innerText();
-check(text.includes(owner) && text.includes(`${owner}-shop`) && /Starter/.test(text) && /Active/.test(text) && /1 \/ 3/.test(text), "listed with username, package, status and 1 / 3 users");
+check(text.includes(owner) && text.includes(`${owner}-shop`) && /Starter/.test(text) && /Expired/.test(text) && /1 \/ 3/.test(text), "listed with username, package, an inactive status until activated, and 1 / 3 users");
 check(/\d+(\.\d+)? (KB|MB)/.test(text), "storage is shown");
 check(text.includes("+880 1711 000111") && text.includes("owner@zeta.example") && (await row.locator("svg.rounded-\\[3px\\]").count()) > 0, "the phone (with its flag) and email are listed");
 const body = await admin.locator("main").innerText();
 check(!body.includes("scrypt$") && !body.includes("zeta-owner-pass"), "no credentials or records on the page");
+
+// A new business is switched off until the subscription is activated, and a payment needs a transaction ID or proof.
+await row.getByRole("button", { name: /Actions for/ }).click();
+await admin.getByRole("menuitem", { name: "Activate subscription" }).click();
+check(/Active until/.test(await admin.getByRole("dialog").innerText()), "activating previews the end date");
+check(await admin.getByRole("button", { name: "Activate", exact: true }).isDisabled(), "activating a paid package needs a transaction ID or proof");
+await admin.getByLabel("Transaction ID").fill("TXN-E2E-1");
+await admin.getByRole("button", { name: "Activate", exact: true }).click();
+await admin.locator("tr", { hasText: name }).getByText("Active").waitFor();
+check(true, "after activating, the business shows as active");
 
 for (const [link, heading] of [["Users", "Users"], ["Subscriptions", "Subscriptions"], ["Revenue", "Revenue"], ["Dashboard", "Dashboard"]]) {
   await admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: link }).click();
@@ -110,17 +120,16 @@ const msg = shop.getByText(/renew your subscription/i);
 await msg.waitFor({ timeout: 8000 });
 check(/administrator/i.test(await msg.innerText()) && /cancelled/i.test(await msg.innerText()), "sign-in says the subscription is cancelled and to renew and contact the administrator");
 
-// Renewing brings it back without picking a date.
+// Activating again brings it back, with the payment written down.
 await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
-await admin.getByRole("menuitem", { name: "Renew subscription" }).click();
-await admin.getByLabel("Renew for").click();
-await admin.getByRole("option", { name: "3 months" }).click();
-check(/New end date/.test(await admin.getByRole("dialog").innerText()), "renewing previews the new end date");
-await admin.getByRole("button", { name: "Renew subscription" }).click();
+await admin.getByRole("menuitem", { name: "Activate subscription" }).click();
+check(/Active until/.test(await admin.getByRole("dialog").innerText()), "activating previews the new end date");
+await admin.getByLabel("Transaction ID").fill("TXN-E2E-2");
+await admin.getByRole("button", { name: "Activate", exact: true }).click();
 await admin.locator("tr", { hasText: name }).getByText("Active").waitFor();
 await signIn("zeta-owner-pass");
 await shop.waitForURL(/\/home/);
-check(true, "after renewing, the owner can sign in again");
+check(true, "after activating, the owner can sign in again");
 
 // A new password can be set (never read); the old one stops working.
 await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
