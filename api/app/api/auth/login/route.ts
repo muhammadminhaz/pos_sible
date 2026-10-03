@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { clientIp, COOKIE, cookieOptions, login, sameOrigin } from "@/lib/server/auth";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
