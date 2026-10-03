@@ -29,7 +29,7 @@ function Empty({ children }: { children: ReactNode }) {
 function Block({ title, href, children, className }: { title: string; href?: string; children: ReactNode; className?: string }) {
   const t = useTranslations("dashboard");
   return (
-    <section data-spotlight className={`${CARD} ${className ?? ""}`}>
+    <section className={`${CARD} ${className ?? ""}`}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold tracking-tight">{title}</h2>
         {href ? <GoButton href={href} label={`${t("open")}: ${title}`} /> : null}
@@ -80,9 +80,9 @@ export function Dashboard() {
   const defs: FilterDef[] = [
     { key: "location", label: common("common.location"), type: "select", options: (lookups?.locations ?? []).map((l) => ({ value: l.id, label: l.name })) },
   ];
-  // Charts read their colour from --chart-1: ink for the trend, a warm accent for the products.
+  // Charts read their colour from --chart-1: ink for the trend, the accent colour for the products.
   const ink = { "--chart-1": "var(--foreground)" } as CSSProperties;
-  const warm = { "--chart-1": "var(--warning)" } as CSSProperties;
+  const accent = { "--chart-1": "var(--primary)" } as CSSProperties;
   return (
     <>
       <GettingStarted />
@@ -102,7 +102,7 @@ export function Dashboard() {
             <div style={ink}>{x ? <AreaChart data={x.salesByDay} xKey="date" yKey="sales" label={t("salesTrend")} height={300} /> : <div className="h-75" />}</div>
           </Block>
           <Block title={r("topProducts")} href="/reports/trending-products" className="xl:col-span-4">
-            <div style={warm}>
+            <div style={accent}>
               {!x ? <div className="h-75" /> : x.topProducts.length === 0 ? <Empty>{r("empty")}</Empty> : (
                 <BarChart layout="vertical" data={x.topProducts.map((p) => ({ name: p.label, sold: p.sold }))} xKey="name" yKey="sold" label={r("topProducts")} height={300} format={(n) => f.qty(n)} axisTitle={r("unitsSold")} />
               )}

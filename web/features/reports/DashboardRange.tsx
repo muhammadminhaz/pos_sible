@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { DateRangePicker, useRangeContext } from "@/components/shared/DateRangePicker";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import RubberSegment from "@/components/ui/rubber-segment";
 import { matchPreset, presetRange, type DateRange, type RangePreset } from "@/lib/domain/dateRanges";
 
 const QUICK: { preset: RangePreset; label: "thisMonth" | "short3" | "short6" | "short12"; full: string }[] = [
@@ -22,26 +22,19 @@ export function DashboardRange({ value, onChange }: { value: DateRange; onChange
 
   return (
     <div data-print-hide className="flex max-w-full flex-wrap items-center gap-2">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        spacing={0}
-        value={selected}
-        onValueChange={(v) => v && onChange(presetRange(v as RangePreset, today, fyStartMonth))}
+      <RubberSegment
         aria-label={tr("quick")}
-        className="max-w-full overflow-x-auto"
-      >
-        {QUICK.map((q) => (
-          <ToggleGroupItem
-            key={q.preset}
-            value={q.preset}
-            aria-label={tr(q.full)}
-            className="px-3 text-[13px] pointer-coarse:h-11 data-[state=on]:bg-muted data-[state=on]:font-semibold data-[state=on]:text-foreground"
-          >
-            {q.label === "thisMonth" ? tr("thisMonth") : t(q.label)}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+        items={QUICK.map((q) => ({ value: q.preset, label: q.label === "thisMonth" ? tr("thisMonth") : t(q.label) }))}
+        value={selected}
+        onChange={(v) => onChange(presetRange(v as RangePreset, today, fyStartMonth))}
+        trackColor="var(--muted)"
+        thumbColor="var(--foreground)"
+        textColor="var(--foreground)"
+        activeTextColor="var(--background)"
+        radius={999}
+        inset={3}
+        size="md"
+      />
       <DateRangePicker value={value} onChange={onChange} align="end" showDates />
     </div>
   );

@@ -12,18 +12,15 @@ import { useFormat } from "@/lib/i18n/format";
 type Key = keyof Kpis;
 
 /** The surface every dashboard block sits on: big radius, no outline, a whisper of shadow. */
-export const CARD = "min-w-0 rounded-3xl bg-card p-5 shadow-[0_1px_0_rgb(0_0_0/0.03),0_14px_30px_-18px_rgb(0_0_0/0.18)] sm:p-6";
+export const CARD = "card-glow min-w-0 rounded-3xl bg-card p-5 shadow-[0_1px_0_rgb(0_0_0/0.03),0_14px_30px_-18px_rgb(0_0_0/0.18)] sm:p-6";
 
 /** Small round arrow that opens whatever the block summarises. */
-export function GoButton({ href, label, dark }: { href: string; label: string; dark?: boolean }) {
+export function GoButton({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
       aria-label={label}
-      className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-full border transition-all hover:-translate-y-0.5 hover:rotate-12 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-        dark ? "border-background/25 text-background hover:bg-background/15" : "border-border text-foreground hover:bg-foreground hover:text-background",
-      )}
+      className="grid size-8 shrink-0 place-items-center rounded-full border border-border text-foreground transition-all hover:-translate-y-0.5 hover:rotate-12 hover:bg-foreground hover:text-background focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       <ArrowUpRightIcon className="size-4" aria-hidden />
     </Link>
@@ -31,20 +28,20 @@ export function GoButton({ href, label, dark }: { href: string; label: string; d
 }
 
 /** A large figure with its currency symbol shrunk and lifted, easing up to its value. */
-export function BigMoney({ value, className, symbolClass }: { value: number; className?: string; symbolClass?: string }) {
+export function BigMoney({ value, className }: { value: number; className?: string }) {
   const f = useFormat();
   const shown = useCountUp(value) ?? value;
   const text = f.money(shown);
   const m = /^(\D*?)(\d.*)$/.exec(text);
   return (
     <span className={cn("tabular tracking-tight", className)}>
-      {m ? <><span className={cn("mr-1 align-[0.55em] text-[0.45em] font-medium text-muted-foreground", symbolClass)}>{m[1]}</span>{m[2]}</> : text}
+      {m ? <><span className="mr-1 align-[0.55em] text-[0.45em] font-medium text-muted-foreground">{m[1]}</span>{m[2]}</> : text}
     </span>
   );
 }
 
 /** Change against the previous period as a pill; the colour says whether the direction is good news. */
-export function DeltaPill({ now, before, good, dark }: { now: number; before?: number; good?: "up" | "down"; dark?: boolean }) {
+export function DeltaPill({ now, before, good }: { now: number; before?: number; good?: "up" | "down" }) {
   const t = useTranslations("dashboard");
   const f = useFormat();
   if (before === undefined || before === 0) return <span className="block h-6" aria-hidden />;
@@ -52,9 +49,7 @@ export function DeltaPill({ now, before, good, dark }: { now: number; before?: n
   const flat = Math.abs(pct) < 0.05;
   const up = pct > 0;
   const verdict = flat || !good ? "neutral" : (up ? "up" : "down") === good ? "good" : "bad";
-  const tone = dark
-    ? verdict === "bad" ? "bg-danger/25 text-background" : "bg-background/15 text-background"
-    : { neutral: "bg-muted text-muted-foreground", good: "bg-success-soft text-success-foreground", bad: "bg-danger-soft text-danger-foreground" }[verdict];
+  const tone = { neutral: "bg-muted text-muted-foreground", good: "bg-success-soft text-success-foreground", bad: "bg-danger-soft text-danger-foreground" }[verdict];
   const Icon = flat ? MinusIcon : up ? ArrowUpRightIcon : ArrowDownRightIcon;
   return (
     <span className="flex flex-wrap items-center gap-2 text-xs">
@@ -62,7 +57,7 @@ export function DeltaPill({ now, before, good, dark }: { now: number; before?: n
         <Icon className="size-3.5" aria-hidden />
         <span className="tabular">{`${up ? "+" : ""}${f.number(Math.round(pct * 10) / 10)}%`}</span>
       </span>
-      <span className={dark ? "text-background/60" : "text-muted-foreground"}>{t("vsPrevious")}</span>
+      <span className="text-muted-foreground">{t("vsPrevious")}</span>
     </span>
   );
 }
@@ -85,7 +80,7 @@ function Headline({ label, value, before, good, share, tone, href, loading }: {
   const t = useTranslations("dashboard");
   const f = useFormat();
   return (
-    <section className={`${CARD} h-full`} data-spotlight>
+    <section className={`${CARD} h-full`}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>
         <GoButton href={href} label={`${t("open")}: ${label}`} />
@@ -102,28 +97,26 @@ function Headline({ label, value, before, good, share, tone, href, loading }: {
   );
 }
 
-/** The dark focal card: what the business actually kept. */
+/** The focal card: what the business actually kept, on the usual surface with a faint accent wash. */
 function NetCard({ now, before, loading }: { now?: Kpis; before?: Kpis; loading: boolean }) {
   const t = useTranslations("dashboard");
   const f = useFormat();
   const net = now?.net;
   const margin = now && now.totalSales > 0 ? Math.round(((now.net / now.totalSales) * 100) * 10) / 10 : null;
   return (
-    <section className="relative h-full min-w-0 overflow-hidden rounded-3xl bg-foreground p-5 text-background shadow-[0_24px_40px_-24px_rgb(0_0_0/0.55)] sm:p-6">
+    <section className={`${CARD} h-full bg-gradient-to-br from-primary/12 via-card to-card`}>
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-sm font-medium text-background/65">{t("net")}</h3>
-        <GoButton href="/reports/profit-loss" label={`${t("open")}: ${t("net")}`} dark />
+        <h3 className="text-sm font-medium text-muted-foreground">{t("net")}</h3>
+        <GoButton href="/reports/profit-loss" label={`${t("open")}: ${t("net")}`} />
       </div>
       {loading || net === undefined ? (
-        <Skeleton className="mt-3 h-11 w-48 rounded-xl bg-background/20" />
+        <Skeleton className="mt-3 h-11 w-48 rounded-xl" />
       ) : (
-        <div className={cn("mt-2 text-3xl leading-tight sm:text-[2.5rem] font-semibold", net < 0 && "text-danger")}>
-          <BigMoney value={net} symbolClass="text-background/55" />
-        </div>
+        <div className={cn("mt-2 text-3xl leading-tight font-semibold sm:text-[2.5rem]", net < 0 && "text-danger")}><BigMoney value={net} /></div>
       )}
-      <div className="mt-1 min-h-6">{net !== undefined && !loading ? <DeltaPill now={net} before={before?.net} good="up" dark /> : null}</div>
+      <div className="mt-1 min-h-6">{net !== undefined && !loading ? <DeltaPill now={net} before={before?.net} good="up" /> : null}</div>
       {margin !== null && (
-        <p className="mt-6 rounded-2xl bg-background/10 px-4 py-3 text-sm text-background/80 tabular">{t("ofSales", { pct: f.number(margin) })}</p>
+        <p className="mt-6 rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground tabular">{t("ofSales", { pct: f.number(margin) })}</p>
       )}
     </section>
   );
@@ -154,7 +147,7 @@ export function MoneyOut({ now, before, loading }: { now?: Kpis; before?: Kpis; 
   ];
   return (
     <div className="grid min-w-0 grid-cols-1 gap-3">
-      <section className={CARD} data-spotlight>
+      <section className={CARD}>
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-sm font-medium text-muted-foreground">{t("expense")}</h3>
           <GoButton href="/expenses" label={`${t("open")}: ${t("expense")}`} />
@@ -162,7 +155,7 @@ export function MoneyOut({ now, before, loading }: { now?: Kpis; before?: Kpis; 
         {loading || now?.expense === undefined ? <Skeleton className="mt-3 h-10 w-40 rounded-xl" /> : <div className="mt-2 text-3xl font-semibold"><BigMoney value={now.expense} /></div>}
         <div className="mt-1 min-h-6">{now?.expense !== undefined && !loading ? <DeltaPill now={now.expense} before={before?.expense} good="down" /> : null}</div>
       </section>
-      <section className={CARD} data-spotlight aria-label={t("owedAndReturned")}>
+      <section className={CARD} aria-label={t("owedAndReturned")}>
         <h3 className="mb-2 text-sm font-medium text-muted-foreground">{t("owedAndReturned")}</h3>
         <ul className="divide-y divide-border/70">
           {rows.map((r) => {
