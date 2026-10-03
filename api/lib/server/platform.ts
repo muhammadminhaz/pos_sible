@@ -12,17 +12,14 @@ import { sqlName, TABLE_NAMES } from "./tables";
  * records or to sign in as one of its users.
  */
 export const ADMIN_COOKIE = "posible_admin";
-const DEFAULT_USERNAME = "minhaz";
-const DEFAULT_PASSWORD = "11111111";
 const TTL_MS = 8 * 3_600_000;
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 const same = (a: string, b: string) => timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest());
 
-export function adminCredentials(): { username: string; password: string; isDefault: boolean } {
-  const username = process.env.ADMIN_USERNAME?.trim() || DEFAULT_USERNAME;
-  const password = process.env.ADMIN_PASSWORD || DEFAULT_PASSWORD;
-  return { username, password, isDefault: password === DEFAULT_PASSWORD };
+/** Whatever the environment says; with no password set there is no admin account. */
+export function adminCredentials(): { username: string; password: string } {
+  return { username: process.env.ADMIN_USERNAME?.trim() ?? "", password: process.env.ADMIN_PASSWORD ?? "" };
 }
 
 type PlanRow = { id: string; label: string; max_users: number | null; price_monthly: string };
@@ -82,24 +79,17 @@ const bump = (key: string) => {
   else cur.n++;
 };
 
-/** In production the admin console stays shut while the password is still the published default. */
-export const adminLoginAllowed = (want = adminCredentials()) => process.env.NODE_ENV !== "production" || !want.isDefault;
-
 export async function adminLogin(username: string, password: string, ip: string): Promise<AdminLogin> {
   await ready();
   if (over(ip, 5) || over(ACCOUNT_KEY, ADMIN_ACCOUNT_LIMIT)) return { ok: false, reason: "throttled" };
 
   const want = adminCredentials();
-  if (!adminLoginAllowed(want)) {
+  if (!want.username || !want.password) {
     if (!globalThis.__posibleAdminWarned) {
       globalThis.__posibleAdminWarned = true;
-      console.error("[admin] Admin sign-in is disabled: ADMIN_PASSWORD is still the default. Set your own before going live.");
+      console.error("[admin] Admin sign-in is off: set ADMIN_USERNAME and ADMIN_PASSWORD.");
     }
     return { ok: false, reason: "invalid" };
-  }
-  if (process.env.NODE_ENV === "production" && want.password.length < 12 && !globalThis.__posibleAdminWarned) {
-    globalThis.__posibleAdminWarned = true;
-    console.warn("[admin] ADMIN_PASSWORD is shorter than 12 characters; use a longer one.");
   }
   // Both fields are always compared, so timing doesn't say which one was wrong.
   const good = same(username.trim(), want.username) && same(password, want.password);

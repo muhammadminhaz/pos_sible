@@ -64,11 +64,12 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect(await platform.adminLogin("owner-admin", "platform-secret", "ip-brute")).toMatchObject({ ok: false, reason: "throttled" });
   });
 
-  it("falls back to minhaz / 11111111 when nothing is configured", () => {
+  it("has no admin account when nothing is configured", async () => {
     const keep = [process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD];
     delete process.env.ADMIN_USERNAME;
     delete process.env.ADMIN_PASSWORD;
-    expect(platform.adminCredentials()).toMatchObject({ username: "minhaz", password: "11111111", isDefault: true });
+    expect(platform.adminCredentials()).toEqual({ username: "", password: "" });
+    expect((await platform.adminLogin("", "", "ip-none")).ok).toBe(false);
     [process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD] = keep as [string, string];
   });
 

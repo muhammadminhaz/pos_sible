@@ -6,7 +6,7 @@
 #
 # Coolify resource: Build Pack Docker Compose, Base Directory = /api, file = /docker-compose.yml.
 # Set in the Coolify UI: POSTGRES_PASSWORD (required). ALLOWED_ORIGINS defaults to the Vercel app's origin.
-# Optional: POS_SEED_DEMO, POS_ALLOW_SIGNUP, DB_PORT, ADMIN_USERNAME / ADMIN_PASSWORD (password required in production), TRUSTED_PROXY_HOPS.
+# Optional: POS_SEED_DEMO, POS_ALLOW_SIGNUP, DB_PORT, ADMIN_USERNAME / ADMIN_PASSWORD (admin sign-in is off until both are set), TRUSTED_PROXY_HOPS.
 #
 # Local: cp .env.example .env, then
 #   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   (API on http://localhost:3001)
@@ -42,8 +42,8 @@ services:
       POS_SEED_DEMO: ${POS_SEED_DEMO:-false}
       POS_ALLOW_SIGNUP: ${POS_ALLOW_SIGNUP:-false}
       # Platform owner login for the /admin console (create business accounts, set subscriptions, see usage).
-      # Required: admin sign-in stays disabled until ADMIN_PASSWORD is set (anything but the default).
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-minhaz}
+      # The admin signs in with exactly these values. Leave either empty and admin sign-in is off.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       # How many x-forwarded-for entries from the right your own proxies add (used for sign-in throttling).
       TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
