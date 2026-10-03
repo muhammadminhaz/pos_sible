@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { NextRequest } from "next/server";
-import { sameOrigin } from "@/lib/server/auth";
+import { clientIp, sameOrigin } from "@/lib/server/auth";
+import { adminLoginAllowed } from "@/lib/server/platform";
 
 const req = (headers: Record<string, string>) => ({ headers: new Headers(headers) }) as unknown as NextRequest;
 
@@ -32,5 +33,45 @@ describe("sameOrigin", () => {
 
   it("refuses a malformed Origin", () => {
     expect(sameOrigin(req({ origin: "not a url", host: "api.example.com" }))).toBe(false);
+  });
+});
+
+describe("clientIp", () => {
+  afterEach(() => {
+    delete process.env.TRUSTED_PROXY_HOPS;
+  });
+
+  it("ignores addresses the caller put on the left of x-forwarded-for", () => {
+    expect(clientIp(req({ "x-forwarded-for": "1.1.1.1, 2.2.2.2, 9.9.9.9" }))).toBe("9.9.9.9");
+  });
+
+  it("uses TRUSTED_PROXY_HOPS to pick the first address your proxies vouch for", () => {
+    process.env.TRUSTED_PROXY_HOPS = "2";
+    expect(clientIp(req({ "x-forwarded-for": "1.1.1.1, 2.2.2.2, 9.9.9.9" }))).toBe("2.2.2.2");
+    expect(clientIp(req({ "x-forwarded-for": "9.9.9.9" }))).toBe("9.9.9.9");
+  });
+
+  it("falls back to x-real-ip, then a fixed key", () => {
+    expect(clientIp(req({ "x-real-ip": "3.3.3.3" }))).toBe("3.3.3.3");
+    expect(clientIp(req({}))).toBe("local");
+  });
+});
+
+describe("adminLoginAllowed", () => {
+  const env = process.env as Record<string, string | undefined>;
+  const before = env.NODE_ENV;
+  afterEach(() => {
+    env.NODE_ENV = before;
+  });
+
+  it("shuts admin sign-in in production while the password is the default", () => {
+    env.NODE_ENV = "production";
+    expect(adminLoginAllowed({ username: "minhaz", password: "11111111", isDefault: true })).toBe(false);
+    expect(adminLoginAllowed({ username: "minhaz", password: "a-long-real-password", isDefault: false })).toBe(true);
+  });
+
+  it("keeps the default usable outside production", () => {
+    env.NODE_ENV = "test";
+    expect(adminLoginAllowed({ username: "minhaz", password: "11111111", isDefault: true })).toBe(true);
   });
 });

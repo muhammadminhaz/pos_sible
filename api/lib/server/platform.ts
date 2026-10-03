@@ -69,25 +69,47 @@ const WINDOW = 15 * 60_000;
 
 export type AdminLogin = { ok: true; token: string } | { ok: false; reason: "invalid" | "throttled" };
 
+/** There is only one admin account, so this caps wrong passwords from all addresses together. */
+const ADMIN_ACCOUNT_LIMIT = 20;
+const ACCOUNT_KEY = "|admin|";
+const over = (key: string, limit: number) => {
+  const f = fails().get(key);
+  return !!f && Date.now() - f.first <= WINDOW && f.n >= limit;
+};
+const bump = (key: string) => {
+  const cur = fails().get(key);
+  if (!cur || Date.now() - cur.first > WINDOW) fails().set(key, { n: 1, first: Date.now() });
+  else cur.n++;
+};
+
+/** In production the admin console stays shut while the password is still the published default. */
+export const adminLoginAllowed = (want = adminCredentials()) => process.env.NODE_ENV !== "production" || !want.isDefault;
+
 export async function adminLogin(username: string, password: string, ip: string): Promise<AdminLogin> {
   await ready();
-  const f = fails().get(ip);
-  if (f && Date.now() - f.first <= WINDOW && f.n >= 5) return { ok: false, reason: "throttled" };
+  if (over(ip, 5) || over(ACCOUNT_KEY, ADMIN_ACCOUNT_LIMIT)) return { ok: false, reason: "throttled" };
 
   const want = adminCredentials();
-  if (want.isDefault && process.env.NODE_ENV === "production" && !globalThis.__posibleAdminWarned) {
+  if (!adminLoginAllowed(want)) {
+    if (!globalThis.__posibleAdminWarned) {
+      globalThis.__posibleAdminWarned = true;
+      console.error("[admin] Admin sign-in is disabled: ADMIN_PASSWORD is still the default. Set your own before going live.");
+    }
+    return { ok: false, reason: "invalid" };
+  }
+  if (process.env.NODE_ENV === "production" && want.password.length < 12 && !globalThis.__posibleAdminWarned) {
     globalThis.__posibleAdminWarned = true;
-    console.warn("[admin] ADMIN_PASSWORD is still the default. Set ADMIN_USERNAME and ADMIN_PASSWORD before going live.");
+    console.warn("[admin] ADMIN_PASSWORD is shorter than 12 characters; use a longer one.");
   }
   // Both fields are always compared, so timing doesn't say which one was wrong.
   const good = same(username.trim(), want.username) && same(password, want.password);
   if (!good) {
-    const cur = fails().get(ip);
-    if (!cur || Date.now() - cur.first > WINDOW) fails().set(ip, { n: 1, first: Date.now() });
-    else cur.n++;
+    bump(ip);
+    bump(ACCOUNT_KEY);
     return { ok: false, reason: "invalid" };
   }
   fails().delete(ip);
+  fails().delete(ACCOUNT_KEY);
   const token = randomBytes(32).toString("base64url");
   await pool().query("INSERT INTO platform_sessions (token_hash, expires_at) VALUES ($1, now() + $2 * interval '1 millisecond')", [sha(token), TTL_MS]);
   void pool().query("DELETE FROM platform_sessions WHERE expires_at < now()").catch(() => {});

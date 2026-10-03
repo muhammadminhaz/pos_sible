@@ -29,7 +29,7 @@ API variables:
 | `ALLOWED_ORIGINS` | Exact browser origins allowed to call the API, comma separated (the web app's origin). Without it only same-host requests pass the origin check. |
 | `POS_SEED_DEMO` | `true`/`false`. Create the demo shop on an empty database. Defaults to on in development, off in production. |
 | `POS_ALLOW_SIGNUP` | Public business sign-up (server check). |
-| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Platform owner login for the `/admin` console. Default `minhaz` / `11111111`; docker-compose passes them through. Never stored in the database. |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Platform owner login for the `/admin` console. In production admin sign-in stays disabled while the password is still the default `11111111`. Never stored in the database. |
 | `PG_POOL_MAX` | Connection pool size (default 10). |
 
 Web variables (build time): `NEXT_PUBLIC_DATA_MODE`, `BACKEND_URL`, `NEXT_PUBLIC_ALLOW_SIGNUP` (the sign-up link),
@@ -41,7 +41,8 @@ The browser only talks to the web origin. `web/next.config.ts` rewrites `/api/:p
 the session cookie the API sets belongs to the web domain (first-party, no CORS, works with Safari's tracking
 protection). The API's origin check (`sameOrigin` in `api/lib/server/auth.ts`) accepts a request when its `Origin` is
 the API's own host or is listed in `ALLOWED_ORIGINS`; anything else gets `403 forbidden_origin`. Client IPs for
-sign-in throttling come from `x-forwarded-for`.
+sign-in throttling come from `x-forwarded-for`, counted from the right: `TRUSTED_PROXY_HOPS` (default 1) is how many
+entries your own proxies append. Each account also has a cap of 20 wrong passwords per 15 minutes from any address.
 
 ## How it works
 

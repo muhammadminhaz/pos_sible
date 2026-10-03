@@ -22,17 +22,20 @@ export const publicUser = ({ password: _password, ...rest }: User): PublicUser =
   return rest;
 };
 
-// --- sign-in throttling: five wrong passwords per user+address per quarter hour ---------------------------------
+// --- sign-in throttling ---------------------------------------------------------------------------------------
+// Five wrong passwords per user+address per quarter hour, and ACCOUNT_LIMIT per account from any address, so faking a
+// new address on every try can't buy unlimited guesses.
 const fails = new Map<string, { n: number; first: number }>();
 const WINDOW = 15 * 60_000;
-function throttled(key: string): boolean {
+export const ACCOUNT_LIMIT = 20;
+function throttled(key: string, limit = 5): boolean {
   const f = fails.get(key);
   if (!f) return false;
   if (Date.now() - f.first > WINDOW) {
     fails.delete(key);
     return false;
   }
-  return f.n >= 5;
+  return f.n >= limit;
 }
 const recordFail = (key: string) => {
   const f = fails.get(key);
@@ -50,7 +53,8 @@ export async function login(username: string, password: string, remember: boolea
   await ready();
   const code = business?.trim().toLowerCase();
   const key = `${ip}|${code ?? ""}|${username.trim().toLowerCase()}`;
-  if (throttled(key)) return { ok: false, reason: "throttled" };
+  const account = `account|${code ?? ""}|${username.trim().toLowerCase()}`;
+  if (throttled(key) || throttled(account, ACCOUNT_LIMIT)) return { ok: false, reason: "throttled" };
 
   const name = username.trim().toLowerCase();
   const row = (await pool().query<{ business_id: string; user_id: string }>(
@@ -65,9 +69,11 @@ export async function login(username: string, password: string, remember: boolea
   const good = verifyPassword(password, user?.password ?? "scrypt$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
   if (!row || !loaded || !user || !good || !user.isActive || !user.allowLogin) {
     recordFail(key);
+    recordFail(account);
     return { ok: false, reason: "invalid" };
   }
   fails.delete(key);
+  fails.delete(account);
   const role = loaded.db.roles.find((r) => r.id === user.roleId);
   if (!role) return { ok: false, reason: "invalid" };
   // Only someone who knows the right password learns that the subscription is the problem.
@@ -124,4 +130,14 @@ export function sameOrigin(req: NextRequest): boolean {
   }
 }
 
-export const clientIp = (req: NextRequest) => req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "local";
+/**
+ * The caller's address for throttling. The left of x-forwarded-for is whatever the caller sent, so it can't be trusted;
+ * each proxy appends the address it saw on the right. TRUSTED_PROXY_HOPS (default 1) is how many entries from the
+ * right were written by your own proxies, i.e. which one is the first address they vouch for.
+ */
+export function clientIp(req: Pick<NextRequest, "headers">): string {
+  const chain = (req.headers.get("x-forwarded-for") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (!chain.length) return req.headers.get("x-real-ip")?.trim() || "local";
+  const hops = Math.max(1, Math.floor(Number(process.env.TRUSTED_PROXY_HOPS) || 1));
+  return chain[Math.max(0, chain.length - hops)];
+}
