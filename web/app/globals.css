@@ -440,3 +440,17 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
 @media print {
   .react-grid-item > .react-resizable-handle { display: none; }
 }
+
+/* Scrollbars (page and every scrollable panel): accent coloured, thin, and only present while scrolling (see ScrollbarFade). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.5s ease;
+}
+[data-scrolling] {
+  scrollbar-color: var(--primary) transparent;
+  transition-duration: 0.15s;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none; }
+}

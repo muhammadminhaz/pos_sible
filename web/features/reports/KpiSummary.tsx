@@ -116,9 +116,8 @@ function NetCard({ now, before, loading }: { now?: Kpis; before?: Kpis; loading:
         <div className={cn("mt-2 text-3xl leading-tight font-semibold sm:text-[2.5rem]", net < 0 && "text-danger")}><BigMoney value={net} /></div>
       )}
       <div className="mt-1 min-h-6">{net !== undefined && !loading ? <DeltaPill now={net} before={before?.net} good="up" /> : null}</div>
-      {margin !== null && (
-        <p className="mt-6 rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground tabular">{t("ofSales", { pct: f.number(margin) })}</p>
-      )}
+      <div className="mt-4"><ShareBar pct={Math.min(100, Math.max(0, margin ?? 0))} tone="ink" /></div>
+      <p className="mt-2 text-xs text-muted-foreground tabular">{margin !== null ? t("ofSales", { pct: f.number(margin) }) : "\u00a0"}</p>
     </section>
   );
 }

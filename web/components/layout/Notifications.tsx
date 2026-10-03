@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { BellIcon, CheckCheckIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -9,7 +10,6 @@ import { useLocale } from "next-intl";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Notification } from "@/lib/data/schemas";
 import { useNotificationMutations, useNotifications } from "@/lib/data/hooks/notifications";
 import { useFormat } from "@/lib/i18n/format";
@@ -35,6 +35,25 @@ function useAlertText() {
   };
 }
 
+/** Marks an unread row as read once most of it has been on screen for a moment, so the count falls as you read down the list. */
+function SeenWhenVisible({ id, unread, root, onSeen, children }: { id: string; unread: boolean; root: HTMLElement | null; onSeen: (id: string) => void; children: ReactNode }) {
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (!unread || !root || !ref.current) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        clearTimeout(timer);
+        if (e.isIntersecting) timer = setTimeout(() => onSeen(id), 700);
+      },
+      { root, threshold: 0.75 },
+    );
+    io.observe(ref.current);
+    return () => { clearTimeout(timer); io.disconnect(); };
+  }, [id, unread, root, onSeen]);
+  return <li ref={ref}>{children}</li>;
+}
+
 export function Notifications() {
   const t = useTranslations("header");
   const text = useAlertText();
@@ -42,9 +61,12 @@ export function Notifications() {
   const { data } = useNotifications();
   const { markAllRead, markRead } = useNotificationMutations();
   const unread = data?.unread ?? 0;
+  const [open, setOpen] = useState(false);
+  const [list, setList] = useState<HTMLDivElement | null>(null);
+  const seen = (id: string) => markRead.mutate(id);
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" aria-label={`${t("notifications")} (${unread})`}>
           <BellIcon />
@@ -55,8 +77,8 @@ export function Notifications() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b px-4 py-3">
+      <PopoverContent align="end" className="flex max-h-[min(34rem,calc(100dvh-5rem))] w-[22rem] max-w-[calc(100vw-1rem)] flex-col overflow-hidden bg-popover p-0">
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
           <h3 className="font-semibold">{t("notifications")}</h3>
           {unread > 0 && (
             <Button variant="ghost" size="xs" onClick={() => markAllRead.mutate()}>
@@ -66,7 +88,7 @@ export function Notifications() {
           )}
         </div>
         {data?.items.length ? (
-          <ScrollArea className="max-h-96">
+          <div ref={setList} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <ul className="divide-y">
               {data.items.map((n) => {
                 const { title, body: detail } = text(n);
@@ -86,7 +108,7 @@ export function Notifications() {
                   </div>
                 );
                 return (
-                  <li key={n.id}>
+                  <SeenWhenVisible key={n.id} id={n.id} unread={open && !n.readAt} root={list} onSeen={seen}>
                     {n.href ? (
                       <Link href={n.href} onClick={() => markRead.mutate(n.id)}>
                         {body}
@@ -96,11 +118,11 @@ export function Notifications() {
                         {body}
                       </button>
                     )}
-                  </li>
+                  </SeenWhenVisible>
                 );
               })}
             </ul>
-          </ScrollArea>
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-2 px-4 py-10 text-sm text-muted-foreground">
             <BellIcon className="size-5" />

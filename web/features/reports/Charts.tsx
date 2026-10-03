@@ -23,11 +23,11 @@ type ChartProps = {
 function TextAlternative({ data, xKey, yKey, label, format }: Required<Pick<ChartProps, "data" | "xKey" | "yKey" | "label" | "format">>) {
   const t = useTranslations("reports");
   return (
-    <table className="sr-only">
+    <div className="sr-only"><table>
       <caption>{label}</caption>
       <thead><tr><th>{t("chartCategory")}</th><th>{t("chartValue")}</th></tr></thead>
       <tbody>{data.map((p, i) => <tr key={i}><td>{String(p[xKey])}</td><td>{format(Number(p[yKey]))}</td></tr>)}</tbody>
-    </table>
+    </table></div>
   );
 }
 

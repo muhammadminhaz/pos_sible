@@ -69,6 +69,8 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 ### Good to know
 - **Who can read what.** Listing or opening users, roles and printers needs `user.view`, `role.view` and `settings.printer`. Pickers (sales agent, "created by" names) still work for everyone: they get names only, without usernames, emails, bank details or role permissions.
+- **Notifications.** The bell lists alerts worked out from your data (overdue invoices and bills, low or expired stock, stuck transfers...). A row counts as read once it has been on screen for a moment, so the badge falls as you scroll through the list; **Mark all as read** does it at once. Alerts older than 30 days are deleted, and one you have read but not fixed comes back unread after 3 days.
+- **Scrollbars** (page, tables, lists) are thin and in the accent colour, fade out when nothing has scrolled for a moment, and fade back on scroll or when the pointer goes to the edge.
 - **Two modes.** The default is the browser-only demo (IndexedDB, single device; a banner appears if the browser refuses to save, and **Backup** exports everything). API mode needs the `api` project and Postgres and is chosen at build time.
 - **Settings with no feature behind them yet** (restaurant modules, payment links, purchase orders/requisitions) are hidden rather than shown as dead switches.
 - **Email/SMS** "test" buttons are mocked; a real gateway needs a provider key and a worker.

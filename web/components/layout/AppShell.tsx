@@ -5,6 +5,7 @@ import { CommandPalette } from "./CommandPalette";
 import { NavigationProgress } from "./NavigationProgress";
 import { NotificationSync } from "./NotificationSync";
 import { PageTransition } from "./PageTransition";
+import { ScrollbarFade } from "./ScrollbarFade";
 import { StorageBanner } from "./StorageBanner";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
@@ -21,6 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <CommandPalette />
       <OnboardingGate />
       <NotificationSync />
+      <ScrollbarFade />
     </div>
   );
 }

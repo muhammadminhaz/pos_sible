@@ -40,8 +40,8 @@ export const notificationsService = service("notificationsService", {
     const mine = getDB()
       .notifications.filter((n) => visibleTo(me, n))
       .map((n) => ({ ...n, readAt: readAtFor(me, n) }));
-    // Unread first, then the worse news, then the newer.
-    mine.sort((a, b) => Number(!!a.readAt) - Number(!!b.readAt) || SEVERITY[b.kind] - SEVERITY[a.kind] || b.createdAt.localeCompare(a.createdAt));
+    // The worse news first, then the newer. Read ones keep their place so the list does not shuffle while it is being read.
+    mine.sort((a, b) => SEVERITY[b.kind] - SEVERITY[a.kind] || b.createdAt.localeCompare(a.createdAt));
     return { items: mine.slice(0, limit), unread: mine.filter((n) => !n.readAt).length };
   },
   async markAllRead(): Promise<void> {

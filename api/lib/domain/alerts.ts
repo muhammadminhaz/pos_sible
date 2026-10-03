@@ -22,6 +22,12 @@ export type Alert = {
   signal: number;
 };
 
+/** Notifications older than this are deleted. */
+export const RETENTION_DAYS = 30;
+/** A still-true alert that has been read is raised again after this many days. */
+export const REMIND_DAYS = 3;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /** Days a transfer, shipment or held sale may sit before it is worth a nudge. */
 export const STALE_DAYS = 3;
 
@@ -148,7 +154,10 @@ const isLegacyAlert = (n: Notification) =>
  * new conditions appear, resolved ones disappear, and an alert that got worse becomes unread again.
  * Returns `null` when nothing needs to change so callers can skip a write.
  */
-export function reconcile(existing: Notification[], alerts: Alert[], now: string, newId: () => string): Notification[] | null {
+export function reconcile(all: Notification[], alerts: Alert[], now: string, newId: () => string): Notification[] | null {
+  const ageDays = (n: Notification) => (Date.parse(now) - Date.parse(n.createdAt)) / DAY_MS;
+  // Nothing is kept past the retention window; a condition that is still true simply raises a fresh notification below.
+  const existing = all.filter((n) => ageDays(n) <= RETENTION_DAYS);
   const live = new Map(existing.filter((n) => n.key).map((n) => [n.key!, n]));
   const next: Notification[] = existing.filter((n) => !n.key && !isLegacyAlert(n));
 
@@ -160,12 +169,15 @@ export function reconcile(existing: Notification[], alerts: Alert[], now: string
       continue;
     }
     const worse = a.signal > (old.signal ?? 0) || KIND_RANK[a.kind] > KIND_RANK[old.kind];
-    next.push({ ...old, ...fields, ...(worse ? { createdAt: now, readAt: null, readBy: {} } : {}) });
+    // A problem someone has seen but left alone comes back, quietly, every few days; unread ones are not repeated.
+    const seen = !!old.readAt || Object.keys(old.readBy ?? {}).length > 0;
+    const remind = seen && ageDays(old) >= REMIND_DAYS;
+    next.push({ ...old, ...fields, ...(worse || remind ? { createdAt: now, readAt: null, readBy: {} } : {}) });
   }
 
   const same = (a: Notification[], b: Notification[]) => {
     const sig = (xs: Notification[]) => JSON.stringify([...xs].sort((p, q) => p.id.localeCompare(q.id)));
     return sig(a) === sig(b);
   };
-  return same(existing, next) ? null : next;
+  return same(all, next) ? null : next;
 }

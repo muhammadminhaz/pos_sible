@@ -109,11 +109,11 @@ function Chart({ options, label, rows, xKey, series, format, height }: { options
       <div ref={wrap} aria-hidden style={{ height: h }}>
         {opts && <HighchartsReact highcharts={Highcharts} options={opts} callback={(c: Highcharts.Chart) => { chart.current = c; }} containerProps={{ style: { height: "100%" } }} />}
       </div>
-      <table className="sr-only">
+      <div className="sr-only"><table>
         <caption>{label}</caption>
         <thead><tr><th>{t("chartCategory")}</th>{series.map((s) => <th key={s.key}>{s.label}</th>)}</tr></thead>
         <tbody>{rows.map((r, i) => <tr key={i}><td>{String(r[xKey])}</td>{series.map((s) => <td key={s.key}>{format(Number(r[s.key]))}</td>)}</tr>)}</tbody>
-      </table>
+      </table></div>
     </figure>
   );
 }
@@ -252,10 +252,10 @@ export function Heatmap({ grid, rowLabels, label, format }: { grid: number[][]; 
           </div>
         ))}
       </div>
-      <table className="sr-only">
+      <div className="sr-only"><table>
         <caption>{label}</caption>
         <tbody>{grid.map((row, d) => <tr key={d}><th>{rowLabels[d]}</th>{row.map((v, h) => <td key={h}>{`${h}:00 ${format(v)}`}</td>)}</tr>)}</tbody>
-      </table>
+      </table></div>
     </figure>
   );
 }
