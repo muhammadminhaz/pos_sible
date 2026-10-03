@@ -1,5 +1,5 @@
 /** A subscription package. `maxUsers` counts accounts that can sign in; null means no limit. */
-export type Plan = { id: string; label: string; maxUsers: number | null; priceMonthly: number };
+export type Plan = { id: string; label: string; maxUsers: number | null; priceMonthly: number; description: string; benefits: string[] };
 
 /** "cancelled" is the owner switching a business off; an end date in the past ("expired") is derived, not stored. */
 export type SubscriptionStatus = "active" | "cancelled";

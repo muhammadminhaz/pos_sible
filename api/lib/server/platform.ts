@@ -22,15 +22,15 @@ export function adminCredentials(): { username: string; password: string } {
   return { username: process.env.ADMIN_USERNAME?.trim() ?? "", password: process.env.ADMIN_PASSWORD ?? "" };
 }
 
-type PlanRow = { id: string; label: string; max_users: number | null; price_monthly: string };
-const toPlan = (r: PlanRow): Plan => ({ id: r.id, label: r.label, maxUsers: r.max_users, priceMonthly: Number(r.price_monthly) });
+type PlanRow = { id: string; label: string; max_users: number | null; price_monthly: string; description: string; benefits: string[] };
+const toPlan = (r: PlanRow): Plan => ({ id: r.id, label: r.label, maxUsers: r.max_users, priceMonthly: Number(r.price_monthly), description: r.description, benefits: r.benefits });
 
 export async function getPlans(): Promise<Plan[]> {
   await ready();
-  return (await pool().query<PlanRow>("SELECT id, label, max_users, price_monthly FROM plans ORDER BY sort, id")).rows.map(toPlan);
+  return (await pool().query<PlanRow>("SELECT id, label, max_users, price_monthly, description, benefits FROM plans ORDER BY sort, id")).rows.map(toPlan);
 }
 
-export type PlanPatch = { label?: string; maxUsers?: number | null; priceMonthly?: number };
+export type PlanPatch = { label?: string; maxUsers?: number | null; priceMonthly?: number; description?: string; benefits?: string[] };
 
 /** Edits what a package is called, how many users it allows and what it costs. Returns false for an unknown package. */
 export async function updatePlan(id: string, patch: PlanPatch): Promise<boolean> {
@@ -40,6 +40,8 @@ export async function updatePlan(id: string, patch: PlanPatch): Promise<boolean>
   if (patch.label !== undefined) { args.push(patch.label); sets.push(`label = $${args.length}`); }
   if (patch.maxUsers !== undefined) { args.push(patch.maxUsers); sets.push(`max_users = $${args.length}`); }
   if (patch.priceMonthly !== undefined) { args.push(patch.priceMonthly); sets.push(`price_monthly = $${args.length}`); }
+  if (patch.description !== undefined) { args.push(patch.description); sets.push(`description = $${args.length}`); }
+  if (patch.benefits !== undefined) { args.push(patch.benefits); sets.push(`benefits = $${args.length}`); }
   if (!sets.length) return (await pool().query("SELECT 1 FROM plans WHERE id = $1", [id])).rowCount === 1;
   return (await pool().query(`UPDATE plans SET ${sets.join(", ")} WHERE id = $1`, args)).rowCount === 1;
 }
@@ -238,12 +240,34 @@ export async function deleteBusiness(businessId: string, confirmUsername: string
   return "deleted";
 }
 
+/** What a business pays per month right now (package plus its modules, 0 when free), with the names a payment row keeps. */
+async function priceOf(businessId: string): Promise<{ name: string; plan: string; price: number } | null> {
+  const r = (await pool().query<{ name: string; plan: string; modules: string[] | null; free: boolean; price: string }>(
+    "SELECT b.name, b.plan, b.modules, b.free, p.price_monthly AS price FROM businesses b JOIN plans p ON p.id = b.plan WHERE b.id = $1", [businessId])).rows[0];
+  if (!r) return null;
+  const prices = new Map((await getModules()).map((m) => [m.id, m.priceMonthly]));
+  const price = r.free ? 0 : Number(r.price) + effectiveModules(r.modules, r.free).reduce((sum, m) => sum + (prices.get(m) ?? 0), 0);
+  return { name: r.name, plan: r.plan, price };
+}
+
 /**
- * Renews a subscription for `months` and switches it back on. An active subscription is extended from its end date (so
- * renewing early never loses days); a cancelled or lapsed one starts counting from today. Returns the new end date, or
- * null for an unknown business.
+ * Writes down money received for `months` of a business's subscription. The amount defaults to the monthly price times
+ * the months; pass one to record a discount or a part payment. Free businesses and zero amounts record nothing.
  */
-export async function renewSubscription(businessId: string, months: number): Promise<string | null> {
+export async function recordPayment(businessId: string, months: number, amount?: number): Promise<void> {
+  const info = await priceOf(businessId);
+  if (!info) return;
+  const paid = Math.round((amount ?? info.price * months) * 100) / 100;
+  if (!(paid > 0)) return;
+  await pool().query("INSERT INTO subscription_payments (business_id, business_name, plan, months, amount) VALUES ($1, $2, $3, $4, $5)", [businessId, info.name, info.plan, months, paid]);
+}
+
+/**
+ * Renews a subscription for `months` and switches it back on, recording the payment (`amount` overrides the list price).
+ * An active subscription is extended from its end date (so renewing early never loses days); a cancelled or lapsed one
+ * starts counting from today. Returns the new end date, or null for an unknown business.
+ */
+export async function renewSubscription(businessId: string, months: number, amount?: number): Promise<string | null> {
   await ready();
   const r = await pool().query<{ subscription_expires_at: Date }>(
     `UPDATE businesses
@@ -251,7 +275,9 @@ export async function renewSubscription(businessId: string, months: number): Pro
             subscription_status = 'active'
       WHERE id = $1
   RETURNING subscription_expires_at`, [businessId, months]);
-  return r.rows[0]?.subscription_expires_at.toISOString() ?? null;
+  if (!r.rows[0]) return null;
+  await recordPayment(businessId, months, amount);
+  return r.rows[0].subscription_expires_at.toISOString();
 }
 
 /** Ends a subscription: nobody in the business can sign in until it is renewed, and everyone is signed out now. */
@@ -269,4 +295,56 @@ export async function setBusinessCode(businessId: string, code: string): Promise
     if ((e as { code?: string }).code === "23505") return "taken";
     throw e;
   }
+}
+
+// ── Revenue ─────────────────────────────────────────────────────────────
+
+export type RevenueMonth = { month: string; amount: number; payments: number };
+export type RevenueReport = {
+  /** Everything received since the first recorded payment. */
+  total: number;
+  thisMonth: number;
+  lastMonth: number;
+  payments: number;
+  firstPaymentAt: string | null;
+  /** The last 12 months, oldest first, with empty months as zero so the chart has no gaps. */
+  months: RevenueMonth[];
+  byPlan: { plan: string; label: string; amount: number }[];
+  recent: { id: number; businessId: string | null; businessName: string; plan: string; planLabel: string; months: number; amount: number; paidAt: string }[];
+};
+
+const REPORT_ZONE = "Asia/Dhaka";
+const monthKey = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: REPORT_ZONE, year: "numeric", month: "2-digit" }).format(d);
+
+/** Turns per-month sums into the last 12 months (oldest first, gaps filled with zero) plus this and last month. */
+export function revenueMonths(rows: { month: string; amount: number; payments: number }[], now: Date): { months: RevenueMonth[]; thisMonth: number; lastMonth: number } {
+  const byMonth = new Map(rows.map((r) => [r.month, r]));
+  const [y, m] = monthKey(now).split("-").map(Number);
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(Date.UTC(y, m - 1 - (11 - i), 1));
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const r = byMonth.get(key);
+    return { month: key, amount: r?.amount ?? 0, payments: r?.payments ?? 0 };
+  });
+  return { months, thisMonth: months[11].amount, lastMonth: months[10].amount };
+}
+
+export async function revenueReport(now = new Date()): Promise<RevenueReport> {
+  await ready();
+  const db = pool();
+  const [monthly, plans, recent, totals] = await Promise.all([
+    db.query<{ month: string; amount: string; payments: string }>(
+      `SELECT to_char(paid_at AT TIME ZONE $1, 'YYYY-MM') AS month, SUM(amount) AS amount, COUNT(*) AS payments FROM subscription_payments GROUP BY 1`, [REPORT_ZONE]),
+    db.query<{ plan: string; label: string | null; amount: string }>(
+      `SELECT sp.plan, p.label, SUM(sp.amount) AS amount FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan GROUP BY sp.plan, p.label ORDER BY SUM(sp.amount) DESC`),
+    db.query<{ id: string; business_id: string | null; business_name: string; plan: string; label: string | null; months: number; amount: string; paid_at: Date }>(
+      `SELECT sp.id, sp.business_id, sp.business_name, sp.plan, p.label, sp.months, sp.amount, sp.paid_at FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan ORDER BY sp.paid_at DESC, sp.id DESC LIMIT 12`),
+    db.query<{ total: string | null; n: string; first: Date | null }>(`SELECT SUM(amount) AS total, COUNT(*) AS n, MIN(paid_at) AS first FROM subscription_payments`),
+  ]);
+  const { months, thisMonth, lastMonth } = revenueMonths(monthly.rows.map((r) => ({ month: r.month, amount: Number(r.amount), payments: Number(r.payments) })), now);
+  return {
+    total: Number(totals.rows[0].total ?? 0), thisMonth, lastMonth, payments: Number(totals.rows[0].n), firstPaymentAt: totals.rows[0].first?.toISOString() ?? null, months,
+    byPlan: plans.rows.map((r) => ({ plan: r.plan, label: r.label ?? r.plan, amount: Number(r.amount) })),
+    recent: recent.rows.map((r) => ({ id: Number(r.id), businessId: r.business_id, businessName: r.business_name, plan: r.plan, planLabel: r.label ?? r.plan, months: r.months, amount: Number(r.amount), paidAt: r.paid_at.toISOString() })),
+  };
 }

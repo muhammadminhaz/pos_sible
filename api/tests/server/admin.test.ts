@@ -73,6 +73,43 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     [process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD] = keep as [string, string];
   });
 
+  it("records money received when a paid subscription is renewed, and keeps it after the business is deleted", async () => {
+    const id = await open(`Pay ${tag}`, `pay${tag}`, "starter", new Date(Date.now() + 10 * 86_400_000).toISOString());
+    const renew = (await import("@/app/api/admin/businesses/[id]/renew/route")).POST;
+    const ctx = { params: Promise.resolve({ id }) };
+    const post = (body: object) => asAdmin(`/api/admin/businesses/${id}/renew`, { method: "POST", body: JSON.stringify(body) });
+    const paid = async () => Number((await poolMod.pool().query("SELECT COALESCE(SUM(amount), 0) AS s FROM subscription_payments WHERE business_id = $1", [id])).rows[0].s);
+    const price = (await platform.getPlans()).find((p) => p.id === "starter")!.priceMonthly;
+
+    expect((await renew(post({ months: 2 }), ctx)).status).toBe(200);
+    expect(await paid()).toBe(price * 2); // list price times the months
+    expect((await renew(post({ months: 1, amount: 100 }), ctx)).status).toBe(200);
+    expect(await paid()).toBe(price * 2 + 100); // what was actually received
+    expect((await renew(post({ months: 1, amount: 0 }), ctx)).status).toBe(200);
+    expect(await paid()).toBe(price * 2 + 100); // zero records nothing
+    expect((await renew(post({ months: 1, amount: -5 }), ctx)).status).toBe(400);
+
+    const report = await platform.revenueReport();
+    expect(report.months).toHaveLength(12);
+    expect(report.total).toBeGreaterThanOrEqual(price * 2 + 100);
+    expect(report.recent.some((r) => r.businessId === id && r.businessName === `Pay ${tag}`)).toBe(true);
+
+    // Revenue already earned stays in the books when the customer goes.
+    await poolMod.pool().query("DELETE FROM businesses WHERE id = $1", [id]);
+    const kept = await poolMod.pool().query("SELECT business_id, business_name FROM subscription_payments WHERE business_name = $1", [`Pay ${tag}`]);
+    expect(kept.rowCount).toBe(2);
+    expect(kept.rows[0].business_id).toBeNull();
+    await poolMod.pool().query("DELETE FROM subscription_payments WHERE business_name = $1", [`Pay ${tag}`]);
+  });
+
+  it("does not record a payment for a free business", async () => {
+    const id = await open(`Free ${tag}`, `free${tag}`);
+    await platform.setSubscription(id, { free: true });
+    const renew = (await import("@/app/api/admin/businesses/[id]/renew/route")).POST;
+    expect((await renew(asAdmin(`/api/admin/businesses/${id}/renew`, { method: "POST", body: JSON.stringify({ months: 3 }) }), { params: Promise.resolve({ id }) })).status).toBe(200);
+    expect((await poolMod.pool().query("SELECT 1 FROM subscription_payments WHERE business_id = $1", [id])).rowCount).toBe(0);
+  });
+
   it("refuses everything without an admin session, including a business user's session", async () => {
     const anon = new NextRequest("http://localhost:3000/api/admin/businesses");
     expect((await list.GET(anon)).status).toBe(401);

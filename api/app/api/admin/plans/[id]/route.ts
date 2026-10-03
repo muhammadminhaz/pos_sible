@@ -10,9 +10,11 @@ const patch = z.object({
   label: z.string().trim().min(1).max(40).optional(),
   maxUsers: z.number().int().min(1).max(100000).nullable().optional(),
   priceMonthly: z.number().min(0).max(100_000_000).optional(),
+  description: z.string().trim().max(200).optional(),
+  benefits: z.array(z.string().trim().min(1).max(120)).max(12).optional(),
 });
 
-/** Rename a package, change its user limit or its monthly price. */
+/** Rename a package, change its user limit, its monthly price, or what it says it includes. */
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const denied = await requireAdmin(req, true);
   if (denied) return denied;

@@ -4,7 +4,7 @@ import { MODULE_IDS } from "@/lib/server/plans";
 import { requireAdmin } from "@/lib/server/adminRoute";
 import { businessCode, defaultCode } from "@/lib/server/code";
 import { contactEmail, contactPhone } from "@/lib/server/contact";
-import { getPlans, listBusinesses, setSubscription } from "@/lib/server/platform";
+import { getPlans, listBusinesses, recordPayment, setSubscription } from "@/lib/server/platform";
 import { pool, ready } from "@/lib/server/pool";
 import { createBusiness } from "@/lib/server/tenants";
 
@@ -59,5 +59,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, reason: "username_taken" }, { status: 409 });
   }
   await setSubscription(businessId, { plan, status: "active", expiresAt: free ? null : months ? new Date(new Date().setMonth(new Date().getMonth() + months)).toISOString() : (expiresAt ?? null), contactEmail: email ?? null, contactPhone: phone ?? null, modules, free });
+  // A term paid up front is money received now; an explicit end date alone says nothing about what was paid.
+  if (months && !free) await recordPayment(businessId, months);
   return NextResponse.json({ ok: true, id: businessId }, { status: 201 });
 }

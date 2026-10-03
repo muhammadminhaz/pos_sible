@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { Building2Icon, CircleCheckIcon, DatabaseIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { AdminHeader, useAdmin } from "./AdminShell";
-import { day, formatBytes, formatMoney, monthlyRevenue } from "./api";
+import { day, formatBytes, monthlyRevenue } from "./api";
+import { RevenueSummary } from "./Revenue";
 import { BarRow, Empty, Panel, StateBadge, StatCard } from "./parts";
 
 const DAY = 86_400_000;
@@ -19,17 +22,17 @@ export function DashboardPage() {
   return (
     <>
       <AdminHeader title="Dashboard" description="How the platform is doing. Totals only: each business's own data stays private to it." />
-      <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard loading={!businesses} label="Businesses" count={list.length} />
-        <StatCard loading={!businesses} label="Active subscriptions" count={list.filter((b) => b.state === "active").length} />
+      <RevenueSummary compact />
+      <section aria-label="Totals" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard loading={!businesses} label="Businesses" count={list.length} hint={`${list.filter((b) => b.state === "active").length} with an active subscription`} />
+        <StatCard loading={!businesses} label="Monthly run rate" count={list.reduce((s, b) => s + monthlyRevenue(b), 0)} money hint="From active subscriptions" />
         <StatCard loading={!businesses} label="User accounts" count={list.reduce((s, b) => s + b.users, 0)} />
         <StatCard loading={!businesses} label="Storage used" count={list.reduce((s, b) => s + b.storageBytes, 0)} format={formatBytes} />
-        <StatCard loading={!businesses} label="Monthly revenue" count={list.reduce((s, b) => s + monthlyRevenue(b), 0)} format={formatMoney} hint="From active subscriptions" />
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Needs attention" description="Switched off, lapsed, or ending within two weeks.">
-          {attention.length === 0 ? <Empty>Nothing to chase right now.</Empty> : (
+          {attention.length === 0 ? <Empty icon={CircleCheckIcon}>Nothing to chase right now. Every subscription is in good shape.</Empty> : (
             <ul className="grid gap-2">
               {attention.slice(0, 6).map((b) => (
                 <li key={b.id} className="flex items-center justify-between gap-3 text-sm">
@@ -47,7 +50,7 @@ export function DashboardPage() {
           {mix.map(({ plan, n }) => <div key={plan.id} className="mb-3 last:mb-0"><BarRow label={plan.label} value={n} max={Math.max(1, ...mix.map((m) => m.n))} right={`${n} business${n === 1 ? "" : "es"}`} /></div>)}
         </Panel>
         <Panel title="Newest businesses">
-          {list.length === 0 ? <Empty>No business accounts yet.</Empty> : (
+          {list.length === 0 ? <Empty icon={Building2Icon} action={<Button asChild className="rounded-full"><Link href="/admin/businesses">Add a business</Link></Button>}>No business accounts yet. Add the first one to start.</Empty> : (
             <ul className="grid gap-2">
               {list.slice(0, 5).map((b) => (
                 <li key={b.id} className="flex items-center justify-between gap-3 text-sm">
@@ -60,7 +63,7 @@ export function DashboardPage() {
           <div className="mt-3 text-sm"><Link href="/admin/businesses" className="text-primary hover:underline">All businesses</Link></div>
         </Panel>
         <Panel title="Most storage" description="Space the records take in the database.">
-          {biggest.length === 0 ? <Empty>Nothing stored yet.</Empty> : biggest.map((b) => <div key={b.id} className="mb-3 last:mb-0"><BarRow label={b.name} value={b.storageBytes} max={biggest[0].storageBytes} right={formatBytes(b.storageBytes)} /></div>)}
+          {biggest.length === 0 ? <Empty icon={DatabaseIcon}>Nothing stored yet.</Empty> : biggest.map((b) => <div key={b.id} className="mb-3 last:mb-0"><BarRow label={b.name} value={b.storageBytes} max={biggest[0].storageBytes} right={formatBytes(b.storageBytes)} /></div>)}
         </Panel>
       </div>
     </>

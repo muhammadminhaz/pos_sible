@@ -16,6 +16,8 @@ export type NewBusiness = {
   code?: string;
   /** A showcase account: a fresh random three months of sample data, and no welcome wizard. */
   demo?: boolean;
+  /** Last chance to change the new business's data (names, roles, staff) before it is saved. */
+  tailor?: (db: DB) => void;
 };
 
 /** Seed data comes with throwaway passwords; a real business never keeps them. */
@@ -35,6 +37,7 @@ export async function createBusiness(input: NewBusiness): Promise<{ businessId: 
   });
   for (const u of db.users) if (u.id !== SEED_USER) u.password = hashPassword(randomUUID());
   db.settings.business.name = input.name.trim();
+  input.tailor?.(db);
   db.meta.onboarding = input.demo ? { done: true, mode: "demo", completedAt: new Date().toISOString(), checklistDismissed: true, visited: [] } : { done: false };
   await insertBusiness(id, db, input.code?.trim().toLowerCase() || defaultCode(input.admin.username));
   return { businessId: id };

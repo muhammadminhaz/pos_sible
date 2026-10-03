@@ -55,3 +55,23 @@ describe("clientIp", () => {
     expect(clientIp(req({}))).toBe("local");
   });
 });
+
+describe("revenueMonths", () => {
+  const now = new Date("2026-10-15T08:00:00Z");
+
+  it("returns the last 12 months, oldest first, with empty months as zero", async () => {
+    const { revenueMonths } = await import("@/lib/server/platform");
+    const r = revenueMonths([{ month: "2026-10", amount: 4500, payments: 3 }, { month: "2026-08", amount: 1500, payments: 1 }], now);
+    expect(r.months).toHaveLength(12);
+    expect(r.months[0].month).toBe("2025-11");
+    expect(r.months[11]).toEqual({ month: "2026-10", amount: 4500, payments: 3 });
+    expect(r.months[10]).toEqual({ month: "2026-09", amount: 0, payments: 0 });
+    expect(r).toMatchObject({ thisMonth: 4500, lastMonth: 0 });
+  });
+
+  it("reads the month in Bangladesh time, so 1 Nov 02:00 there still counts as November", async () => {
+    const { revenueMonths } = await import("@/lib/server/platform");
+    const r = revenueMonths([], new Date("2026-10-31T20:00:00Z"));
+    expect(r.months[11].month).toBe("2026-11");
+  });
+});

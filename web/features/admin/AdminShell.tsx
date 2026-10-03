@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { SITE } from "@/lib/site";
-import { call, type Business, type Me, type ModuleDef, type Plan } from "./api";
+import { call, type Business, type Me, type ModuleDef, type Plan, type RevenueReport } from "./api";
 
-type AdminState = { me: Me; plans: Plan[]; modules: ModuleDef[]; businesses: Business[] | null; reload: () => Promise<void>; signOut: () => Promise<void> };
+/** `revenue` is null while loading and undefined if it could not be loaded. */
+type AdminState = { me: Me; plans: Plan[]; modules: ModuleDef[]; businesses: Business[] | null; revenue: RevenueReport | null | undefined; reload: () => Promise<void>; signOut: () => Promise<void> };
 const Ctx = createContext<AdminState | null>(null);
 
 export function useAdmin(): AdminState {
@@ -75,6 +76,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   // undefined: asking · null: signed out · "offline": the backend didn't answer like the API (not configured or down)
   const [me, setMe] = useState<Me | null | undefined | "offline">(undefined);
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
+  const [revenue, setRevenue] = useState<RevenueReport | null | undefined>(null);
   const [menu, setMenu] = useState(false);
 
   const refreshMe = useCallback(async () => {
@@ -87,9 +89,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
     if (res?.status === 401) return setMe(null);
     if (res?.ok) setBusinesses((await res.json()).businesses);
   }, []);
+  const reloadRevenue = useCallback(async () => {
+    const res = await call("revenue").catch(() => null);
+    if (res?.status === 401) return setMe(null);
+    setRevenue(res?.ok ? ((await res.json()) as RevenueReport) : undefined);
+  }, []);
   const refreshAll = useCallback(async () => {
-    await Promise.all([refreshMe(), reload()]);
-  }, [refreshMe, reload]);
+    await Promise.all([refreshMe(), reload(), reloadRevenue()]);
+  }, [refreshMe, reload, reloadRevenue]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- asks the server who is signed in, then stores the answer
@@ -99,10 +106,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await call("logout", { method: "POST" }).catch(() => {});
     setBusinesses(null);
+    setRevenue(null);
     setMe(null);
   }, []);
 
-  const value = useMemo(() => (me && me !== "offline" ? { me, plans: me.plans, modules: me.modules, businesses, reload: async () => { await Promise.all([refreshMe(), reload()]); }, signOut } : null), [me, businesses, reload, refreshMe, signOut]);
+  const value = useMemo(() => (me && me !== "offline" ? { me, plans: me.plans, modules: me.modules, businesses, revenue, reload: async () => { await Promise.all([refreshMe(), reload(), reloadRevenue()]); }, signOut } : null), [me, businesses, revenue, reload, reloadRevenue, refreshMe, signOut]);
 
   if (me === "offline") {
     return (
@@ -121,7 +129,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={value}>
       <AdminTitle />
-      <div className="flex min-h-dvh bg-muted/30">
+      <div className="flex min-h-dvh bg-background">
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-r lg:block">
           <SidebarBody me={me} onSignOut={signOut} />
         </aside>
@@ -137,7 +145,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu" onClick={() => setMenu(true)}><MenuIcon /></Button>
             <ThemeToggle />
           </header>
-          <main className="mx-auto grid w-full max-w-6xl content-start gap-6 px-4 py-6">{children}</main>
+          <main className="mx-auto grid w-full max-w-6xl content-start gap-4 px-4 py-8 sm:px-6">{children}</main>
         </div>
       </div>
     </Ctx.Provider>
@@ -186,13 +194,13 @@ function SignIn({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** Page title block used by every admin page. */
+/** Page title block used by every admin page: the same as the business app's. */
 export function AdminHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+    <div className="mb-2 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+      <div className="min-w-0">
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {description && <p className="mt-1 text-muted-foreground">{description}</p>}
       </div>
       {actions}
     </div>

@@ -1,4 +1,4 @@
-export type Plan = { id: string; label: string; maxUsers: number | null; priceMonthly: number };
+export type Plan = { id: string; label: string; maxUsers: number | null; priceMonthly: number; description: string; benefits: string[] };
 export type ModuleDef = { id: string; label: string; priceMonthly: number };
 export type Business = {
   id: string; name: string; createdAt: string; ownerUsername: string | null; code: string; contactEmail: string | null; contactPhone: string | null; plan: string; planLabel: string; priceMonthly: number; modules: string[]; free: boolean;
@@ -6,6 +6,12 @@ export type Business = {
   users: number; maxUsers: number | null; storageBytes: number; lastActiveAt: string | null;
 };
 export type Me = { username: string; plans: Plan[]; modules: ModuleDef[] };
+export type RevenueReport = {
+  total: number; thisMonth: number; lastMonth: number; payments: number; firstPaymentAt: string | null;
+  months: { month: string; amount: number; payments: number }[];
+  byPlan: { plan: string; label: string; amount: number }[];
+  recent: { id: number; businessId: string | null; businessName: string; plan: string; planLabel: string; months: number; amount: number; paidAt: string }[];
+};
 
 export const call = (path: string, init?: RequestInit) =>
   fetch(`/api/admin/${path}`, { credentials: "same-origin", ...init, headers: { "content-type": "application/json", ...(init?.headers ?? {}) } });
@@ -20,6 +26,8 @@ export function formatBytes(n: number): string {
 }
 
 export const formatMoney = (n: number) => `৳${Math.round(n).toLocaleString("en-US")}`;
+/** "Oct 26" for a "2026-10" month key. */
+export const shortMonth = (key: string) => new Date(`${key}-01T12:00:00`).toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
 export const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—");
 
 /** yyyy-mm-dd in the browser's own time zone, for the date picker. */

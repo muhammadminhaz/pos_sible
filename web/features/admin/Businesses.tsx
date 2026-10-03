@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminHeader, useAdmin } from "./AdminShell";
 import { call, day, formatBytes, formatMoney, TERMS, type Business, type ModuleDef, type Plan } from "./api";
-import { StateBadge } from "./parts";
+import { Pager, StateBadge, usePaged } from "./parts";
 
 const planText = (p: Plan) => `${p.label} · ${p.maxUsers === null ? "unlimited users" : `up to ${p.maxUsers} users`} · ${formatMoney(p.priceMonthly)}/month`;
 
@@ -112,6 +112,8 @@ export function BusinessesPage() {
   const term = q.trim().toLowerCase();
   const rows = (businesses ?? []).filter((b) => !term || b.name.toLowerCase().includes(term) || (b.ownerUsername ?? "").toLowerCase().includes(term) || b.code.includes(term));
 
+  const paged = usePaged(rows, term);
+
   return (
     <>
       <AdminHeader
@@ -123,7 +125,8 @@ export function BusinessesPage() {
         <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input aria-label="Search businesses" placeholder="Search name or username…" className="pl-8" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-hidden rounded-2xl border bg-card">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -144,7 +147,7 @@ export function BusinessesPage() {
           <TableBody>
             {!businesses && <TableRow><TableCell colSpan={11} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
             {businesses && rows.length === 0 && <TableRow><TableCell colSpan={11} className="h-24 text-center text-muted-foreground">{businesses.length ? "No businesses match." : "No business accounts yet. Add the first one."}</TableCell></TableRow>}
-            {rows.map((b) => (
+            {paged.rows.map((b) => (
               <TableRow key={b.id}>
                 <TableCell className="font-medium">{b.name}</TableCell>
                 <TableCell><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{b.code}</code></TableCell>
@@ -173,6 +176,8 @@ export function BusinessesPage() {
             ))}
           </TableBody>
         </Table>
+        </div>
+        <Pager paged={paged} />
       </div>
 
       <Dialog open={adding} onOpenChange={setAdding}>
@@ -340,10 +345,17 @@ function RenewForm({ business, onClose, onDone }: { business: Business; onClose:
   const until = new Date(from);
   until.setMonth(until.getMonth() + months);
 
+  const list = business.priceMonthly * months;
+  const [received, setReceived] = useState<string | null>(null);
+  // Blank means "the list price"; a number records what actually came in (a discount, a part payment, or 0 for nothing).
+  const amount = received === null || received.trim() === "" ? undefined : Number(received);
+  const badAmount = amount !== undefined && (!Number.isFinite(amount) || amount < 0);
+
   const renew = async (e: FormEvent) => {
     e.preventDefault();
+    if (badAmount) return;
     setBusy(true);
-    const res = await call(`businesses/${business.id}/renew`, { method: "POST", body: JSON.stringify({ months }) }).catch(() => null);
+    const res = await call(`businesses/${business.id}/renew`, { method: "POST", body: JSON.stringify({ months, amount }) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) return void toast.error("Couldn't renew the subscription.");
     toast.success(`${business.name} is renewed until ${day((await res.json()).expiresAt)}`);
@@ -358,9 +370,16 @@ function RenewForm({ business, onClose, onDone }: { business: Business; onClose:
       </DialogHeader>
       <div className="grid gap-1.5"><Label htmlFor="r-term">Renew for</Label><TermSelect id="r-term" label="Renew for" value={term} onChange={setTerm} /></div>
       <p className="text-sm text-muted-foreground">New end date: <span className="font-medium text-foreground">{day(until.toISOString())}</span></p>
+      {!business.free && business.priceMonthly > 0 && (
+        <div className="grid gap-1.5">
+          <Label htmlFor="r-amount">Amount received</Label>
+          <Input id="r-amount" inputMode="decimal" autoComplete="off" value={received ?? ""} onChange={(e) => setReceived(e.target.value)} placeholder={String(list)} aria-invalid={badAmount} aria-describedby="r-amount-hint" />
+          <p id="r-amount-hint" className={badAmount ? "text-sm text-danger" : "text-xs text-muted-foreground"}>{badAmount ? "Enter an amount of zero or more." : `Added to your revenue. Leave it empty to record the list price, ${formatMoney(list)}.`}</p>
+        </div>
+      )}
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit" disabled={busy}>{busy && <Loader2Icon className="animate-spin" />}Renew subscription</Button>
+        <Button type="submit" disabled={busy || badAmount}>{busy && <Loader2Icon className="animate-spin" />}Renew subscription</Button>
       </DialogFooter>
     </form>
   );

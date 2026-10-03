@@ -189,4 +189,30 @@ CREATE TABLE IF NOT EXISTS goals (
 CREATE INDEX IF NOT EXISTS goals_order ON goals (business_id, seq);
 `,
   },
+  {
+    id: 9,
+    name: "subscription payments",
+    sql: `
+-- Money the platform owner received for subscriptions, one row per renewal or prepaid start. Kept when a business is
+-- deleted (the name is copied in), because revenue already earned does not go away with the customer.
+CREATE TABLE IF NOT EXISTS subscription_payments (
+  id bigserial PRIMARY KEY,
+  business_id uuid REFERENCES businesses(id) ON DELETE SET NULL,
+  business_name text NOT NULL,
+  plan text NOT NULL,
+  months integer NOT NULL CHECK (months > 0),
+  amount numeric(12, 2) NOT NULL CHECK (amount > 0),
+  paid_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS subscription_payments_time ON subscription_payments (paid_at DESC);
+`,
+  },
+  {
+    id: 10,
+    name: "plan descriptions and benefits",
+    sql: `
+-- What a package is, and what it includes, in the platform owner's own words. Shown on the Subscriptions page.
+ALTER TABLE plans ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '', ADD COLUMN IF NOT EXISTS benefits text[] NOT NULL DEFAULT '{}';
+`,
+  },
 ];

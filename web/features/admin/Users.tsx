@@ -7,13 +7,14 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminHeader, useAdmin } from "./AdminShell";
 import { day } from "./api";
-import { StatCard } from "./parts";
+import { Pager, StatCard, usePaged } from "./parts";
 
 export function UsersPage() {
   const { businesses } = useAdmin();
   const [q, setQ] = useState("");
   const list = businesses ?? [];
   const rows = list.filter((b) => b.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const paged = usePaged(rows, q.trim().toLowerCase());
   const total = list.reduce((s, b) => s + b.users, 0);
   const atLimit = list.filter((b) => b.maxUsers !== null && b.users >= b.maxUsers).length;
 
@@ -29,7 +30,8 @@ export function UsersPage() {
         <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input aria-label="Search businesses" placeholder="Search businesses…" className="pl-8" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-hidden rounded-2xl border bg-card">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -42,21 +44,30 @@ export function UsersPage() {
           <TableBody>
             {!businesses && <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
             {businesses && rows.length === 0 && <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No businesses match.</TableCell></TableRow>}
-            {rows.map((b) => (
+            {paged.rows.map((b) => (
               <TableRow key={b.id}>
                 <TableCell className="font-medium">{b.name}</TableCell>
                 <TableCell>{b.planLabel}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Progress value={b.maxUsers ? Math.min(100, (b.users / b.maxUsers) * 100) : 0} aria-label={`${b.name} user accounts`} className="flex-1" />
-                    <span className="w-14 text-right text-sm tabular-nums">{b.users}{b.maxUsers !== null ? ` / ${b.maxUsers}` : ""}</span>
-                  </div>
+                  {b.maxUsers === null ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm font-medium tabular-nums">{b.users}</span>
+                      <span className="text-xs text-muted-foreground">No limit</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <Progress value={Math.min(100, (b.users / b.maxUsers) * 100)} aria-label={`${b.name} user accounts`} className="flex-1" />
+                      <span className="w-14 text-right text-sm tabular-nums">{b.users} / {b.maxUsers}</span>
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">{day(b.lastActiveAt)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        </div>
+        <Pager paged={paged} />
       </div>
     </>
   );

@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "tsx scripts/db.ts migrate",
     "db:seed": "tsx scripts/db.ts seed",
-    "db:create-business": "tsx scripts/db.ts create-business"
+    "db:create-business": "tsx scripts/db.ts create-business",
+    "db:seed-platform": "tsx scripts/seed-platform.ts"
   },
   "dependencies": {
     "date-fns": "^4.4.0",

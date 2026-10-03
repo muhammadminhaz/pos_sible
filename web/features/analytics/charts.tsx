@@ -35,9 +35,9 @@ function resolve(token: string): { r: number; g: number; b: number } {
   const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
   return { r, g, b };
 }
-const rgba = (c: { r: number; g: number; b: number }, a = 1) => `rgba(${c.r},${c.g},${c.b},${a})`;
+export const rgba = (c: { r: number; g: number; b: number }, a = 1) => `rgba(${c.r},${c.g},${c.b},${a})`;
 
-type Theme = ReturnType<typeof readTheme>;
+export type Theme = ReturnType<typeof readTheme>;
 function readTheme() {
   const c = [1, 2, 3, 4, 5].map((n) => resolve(`--chart-${n}`));
   return {
@@ -58,7 +58,7 @@ function useTheme(): Theme | null {
   return theme;
 }
 
-function baseOptions(th: Theme, reduced: boolean): Highcharts.Options {
+export function baseOptions(th: Theme, reduced: boolean): Highcharts.Options {
   const label = { style: { color: rgba(th.muted), fontSize: "12px", textOutline: "none" } };
   return {
     chart: { backgroundColor: "transparent", spacing: [8, 4, 4, 0], style: { fontFamily: "inherit" }, animation: !reduced },
@@ -77,7 +77,7 @@ function baseOptions(th: Theme, reduced: boolean): Highcharts.Options {
   };
 }
 
-function Chart({ options, label, rows, xKey, series, format, height }: { options: (th: Theme, h: number, reduced: boolean) => Highcharts.Options; label: string; rows: Row[]; xKey: string; series: Series[]; format: (n: number) => string; height: number }) {
+export function Chart({ options, label, rows, xKey, series, format, height }: { options: (th: Theme, h: number, reduced: boolean) => Highcharts.Options; label: string; rows: Row[]; xKey: string; series: Series[]; format: (n: number) => string; height: number }) {
   const t = useTranslations("reports");
   const th = useTheme();
   const h = useChartHeight(height);
