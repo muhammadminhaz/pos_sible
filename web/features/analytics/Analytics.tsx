@@ -41,7 +41,7 @@ function Tile({ label, hint, now, before, good, kind = "money" }: { label: strin
 }
 
 /** Sizes on the 12-column grid: a headline tile, a half-width chart, a full-width chart or table. */
-const TILE = { w: 3, h: 4, minW: 2, minH: 4, maxW: 6, maxH: 7 } as const;
+const TILE = { w: 3, h: 4, minW: 2, minH: 4, maxW: 12, maxH: 7 } as const;
 const HALF = { w: 6, h: 10, minW: 4, minH: 7, maxW: 12, maxH: 22 } as const;
 const FULL = { w: 12, h: 10, minW: 6, minH: 7, maxW: 12, maxH: 22 } as const;
 
