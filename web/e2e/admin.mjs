@@ -66,7 +66,7 @@ for (const [link, heading] of [["Users", "Users"], ["Subscriptions", "Subscripti
   await admin.getByRole("heading", { name: heading, level: 1 }).waitFor();
   await admin.waitForTimeout(300);
   await admin.evaluate(axeSource);
-  const axe = await admin.evaluate(async () => (await window.axe.run({ exclude: [["[data-sonner-toaster]"]] })).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html.slice(0, 80)).join(" | ")}`));
+  const axe = await admin.evaluate(async () => (await window.axe.run({ exclude: [[".swipe-toast"]] })).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html.slice(0, 80)).join(" | ")}`));
   check(axe.length === 0, `${heading} page is accessible ${axe.join("; ")}`);
 }
 check(/Monthly revenue/.test(await admin.locator("main").innerText()), "the dashboard shows revenue");

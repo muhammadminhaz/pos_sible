@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { BanIcon, EyeIcon, EyeOffIcon, Loader2Icon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, SearchIcon, SettingsIcon, Trash2Icon } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -293,9 +293,9 @@ function ManageForm({ business, plans, modules, onClose, onDone, onRenew, onCanc
               </div>
               <StateBadge state={business.state} />
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" onClick={onRenew}><RefreshCwIcon />Renew</Button>
-              {business.state !== "cancelled" && <Button type="button" size="sm" variant="destructive" onClick={onCancel}><BanIcon />Cancel subscription</Button>}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Button type="button" className="h-8" onClick={onRenew}><RefreshCwIcon />Renew</Button>
+              {business.state !== "cancelled" && <Button type="button" variant="destructive" className="h-8" onClick={onCancel}><BanIcon />Cancel subscription</Button>}
             </div>
           </div>
           <div className="grid gap-3 rounded-lg border p-3">

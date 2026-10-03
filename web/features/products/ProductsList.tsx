@@ -15,7 +15,7 @@ import {
   UploadIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { DataTable, downloadCSV, toCSV, useTableQuery, type TableQuery } from "@/components/shared/DataTable";
+import { DataTable, downloadCSV, exportFileName, toCSV, useTableQuery, type TableQuery } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, useUrlFilters, type FilterDef } from "@/components/shared/FilterBar";
 import { Money } from "@/components/shared/Money";
@@ -34,6 +34,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { useCan } from "@/lib/auth/useCan";
 import { AppError } from "@/lib/data/errors";
 import { useLookups } from "@/lib/data/hooks/lookups";
+import { useSettings } from "@/lib/data/hooks/settings";
 import { useProductMutations, useProducts } from "@/lib/data/hooks/products";
 import { productsService, type ProductFilters, type ProductRow } from "@/lib/data/services/products";
 import { useUI } from "@/lib/data/store/ui";
@@ -77,6 +78,7 @@ const errorMessage = (e: unknown, t: ReturnType<typeof useTranslations>) =>
 
 export function ProductsList() {
   const t = useTranslations();
+  const { data: settings } = useSettings();
   const f = useFormat();
   const router = useRouter();
   const can = useCan();
@@ -166,7 +168,7 @@ export function ProductsList() {
       [t("products.locations")]: p.locationNames.join(", "),
       [t("common.status")]: p.active ? t("common.active") : t("common.inactive"),
     }));
-    downloadCSV(`products-${new Date().toISOString().slice(0, 10)}`, toCSV(records));
+    downloadCSV(exportFileName("products", settings?.business.name), toCSV(records));
   };
 
   const onPageChange = (q: Partial<TableQuery>) => (tab === "stock" ? setStockQuery(q) : setQuery(q));

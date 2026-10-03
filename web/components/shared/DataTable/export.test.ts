@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { toCSV } from "./export";
+import { exportFileName } from "./export";
 
-describe("toCSV", () => {
-  it("writes a header and quotes when needed", () => {
-    expect(toCSV([{ name: "Walton, fridge", qty: 2 }, { name: 'He said "hi"', note: "x" }])).toBe(
-      'name,qty,note\r\n"Walton, fridge",2,\r\n"He said ""hi""",,x',
-    );
+const at = new Date(2026, 9, 3, 14, 5);
+
+describe("exportFileName", () => {
+  it("says business, what, date and time", () => {
+    expect(exportFileName("sales", "Acme Traders", at)).toBe("acme-traders_sales_2026-10-03_14-05");
   });
-  it("joins arrays and blanks nullish", () => {
-    expect(toCSV([{ locs: ["A", "B"], n: null }])).toBe('locs,n\r\n"A, B",');
+  it("turns camelCase table names and unsafe characters into dashes", () => {
+    expect(exportFileName("taxRates", "Sosa's Shop / Dhaka", at)).toBe("sosa-s-shop-dhaka_tax-rates_2026-10-03_14-05");
+    expect(exportFileName("account-book-Cash: Main?", undefined, at)).toBe("account-book-cash-main_2026-10-03_14-05");
+  });
+  it("keeps non-Latin business names (Bangla)", () => {
+    expect(exportFileName("customers", "সোসা স্টোর", at)).toContain("_customers_");
+    expect(exportFileName("customers", "সোসা স্টোর", at).startsWith("_")).toBe(false);
   });
 });

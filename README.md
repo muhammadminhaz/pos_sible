@@ -74,6 +74,8 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 - **Free account.** Switch on in `/admin` → Manage: price 0, no end date, every module, unlimited users.
 - **Demo account.** Tick "Demo account" when adding a business: three months of random sample data and no welcome wizard. Real business accounts still get the wizard; the browser-only demo never shows it.
 - **Staff sign-in.** The login page has "Business owner" and "Staff member" tabs. Staff enter the business username (the owner's sign-in name), their own account name and the password the owner set for them under Settings → Users.
+- **UI components (React Bits).** Toasts are SwipeToast (`web/lib/toast.tsx`, same `toast.success/error/warning/info` calls as before; the burning underline is green, red, amber or blue by status; swipe down to dismiss). Every dropdown is GlideSelect (`web/components/ui/select.tsx` keeps the old `Select` composition; `MultiSelect` is the ticked variant used for locations and modules). The menu is portalled to the page body so dialogs and tables never clip it.
+- **Export file names.** Every CSV is named `<business>_<what>_<date>_<time>.csv`, e.g. `sosa_sales_2026-10-03_14-05.csv` (`exportFileName` in `web/components/shared/DataTable/export.ts`).
 - **Notifications.** The bell re-derives alerts from the data before every read and re-checks every 5 minutes and on focus.
 
 ## Tech stack

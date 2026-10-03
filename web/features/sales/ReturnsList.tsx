@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { PlusIcon, Trash2Icon, Undo2Icon, EyeIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";

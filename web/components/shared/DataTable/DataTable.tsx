@@ -14,7 +14,7 @@ import {
 } from "@tanstack/react-table";
 import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "cn";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollFade } from "@/components/ui/scroll-fade";
@@ -25,7 +25,7 @@ import { EmptyState } from "../EmptyState";
 import { BulkBar } from "./BulkBar";
 import { AUDIT_COLUMN_IDS, useAuditColumns } from "./auditColumns";
 import { columnLabel } from "./ColumnMenu";
-import { downloadCSV, toCSV } from "./export";
+import { downloadCSV, exportFileName, toCSV } from "./export";
 import { Pagination } from "./Pagination";
 import { Toolbar } from "./Toolbar";
 import type { TableQuery } from "./types";
@@ -179,7 +179,7 @@ export function DataTable<T>({
         }),
       ),
     );
-    downloadCSV(`${exportName ?? tableId}-${new Date().toISOString().slice(0, 10)}`, toCSV(records));
+    downloadCSV(exportFileName(exportName ?? tableId, appSettings?.business.name), toCSV(records));
     toast.success(t("common.exportCsv"), { description: `${rows.length}` });
   };
 

@@ -3,12 +3,13 @@
 import { useState, type FormEvent } from "react";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, DatabaseZapIcon, SparklesIcon, StoreIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LocaleToggle } from "@/components/layout/LocaleToggle";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { useCan } from "@/lib/auth/useCan";
@@ -124,9 +125,10 @@ function Wizard() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="ob-cur">{t("currency")}</Label>
-                    <select id="ob-cur" value={f.currency} onChange={(e) => set("currency", e.target.value)} className="h-9 rounded-lg border bg-transparent px-2.5 text-sm">
-                      {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>)}
-                    </select>
+                    <Select value={f.currency} onValueChange={(v) => set("currency", v)}>
+                      <SelectTrigger id="ob-cur" className="w-full"><SelectValue /></SelectTrigger>
+                      <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.symbol} {c.code}</SelectItem>)}</SelectContent>
+                    </Select>
                   </div>
                 </div>
               </>
