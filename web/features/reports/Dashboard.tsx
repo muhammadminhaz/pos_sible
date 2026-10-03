@@ -72,9 +72,10 @@ export function Dashboard() {
   const { data: lookups } = useLookups();
   const rf = useReportFilters();
   const loc = rf.filter.locationId ?? "all";
-  const range = { from: rf.filter.from!, to: rf.filter.to! };
+  const range = rf.filter.from && rf.filter.to ? { from: rf.filter.from, to: rf.filter.to } : undefined;
   const kpis = useDashboardKpis({ locationId: loc, ...range });
-  const prev = useDashboardKpis({ locationId: loc, ...previousRange(range) });
+  const previous = range ? previousRange(range) : undefined;
+  const prev = useDashboardKpis({ locationId: loc, ...previous }, !!previous);
   const extras = useReport("dashboard", rf.filter, () => dashboardReports.extras(rf.filter));
   const x = extras.data;
   const defs: FilterDef[] = [

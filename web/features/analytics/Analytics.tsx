@@ -289,7 +289,7 @@ export function Analytics({ segment }: { segment: Segment }) {
   const resetLayouts = useLayouts((st) => st.reset);
 
   return (
-    <ReportShell title={t(`tab.${segment}`)} description={t("description")} rf={rf} noDate actions={<DashboardRange allFrom={first.data} value={{ from: rf.filter.from!, to: rf.filter.to! }} onChange={(r) => rf.setUrl({ range: r ? encodeRange(r) : undefined })} />}>
+    <ReportShell title={t(`tab.${segment}`)} description={t("description")} rf={rf} noDate actions={<DashboardRange allFrom={first.data} value={rf.filter.from && rf.filter.to ? { from: rf.filter.from, to: rf.filter.to } : undefined} onChange={(r) => rf.setUrl({ range: r ? encodeRange(r) : undefined })} />}>
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("compareWith")}>
         <span className="text-sm text-muted-foreground">{t("compareWith")}</span>
         {SEGMENTS.filter((x) => x !== segment).map((x) => (

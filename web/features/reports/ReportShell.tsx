@@ -4,32 +4,26 @@ import type { ReactNode } from "react";
 import { PrinterIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { useRangeContext } from "@/components/shared/DateRangePicker";
 import { FilterBar, useUrlFilters, type FilterDef } from "@/components/shared/FilterBar";
-import { decodeRange, encodeRange } from "@/components/shared/FilterBar/useUrlFilters";
+import { decodeRange } from "@/components/shared/FilterBar/useUrlFilters";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import type { ReportFilter } from "@/lib/data/services/reports/_shared";
 import { useUI } from "@/lib/data/store/ui";
-import { presetRange } from "@/lib/domain/dateRanges";
 import { PrintPortal, useReportPrint } from "./print";
 
 type Url = Record<string, string | undefined>;
 
 /**
- * Filter state shared by every report: `location` and `range` in the URL, defaulting to the header's location and this month.
+ * Filter state shared by every report: `location` and `range` in the URL, defaulting only to the header's location.
  * `extraKeys` are the report's own filters (category, brand…); they come back in `url`.
  */
-export function useReportFilters<K extends string = never>(extraKeys: readonly K[] = [], opts: { defaultRange?: boolean } = {}) {
+export function useReportFilters<K extends string = never>(extraKeys: readonly K[] = []) {
   const globalLocation = useUI((s) => s.locationId);
-  const { today, fyStartMonth } = useRangeContext();
-  const [url, setUrl, resetUrl] = useUrlFilters<Url>(["location", "range", ...extraKeys], { autoRange: false });
-  const fallback = opts.defaultRange === false ? undefined : presetRange("thisMonth", today, fyStartMonth);
-  const range = decodeRange(url.range) ?? fallback;
+  const [url, setUrl, resetUrl] = useUrlFilters<Url>(["location", "range", ...extraKeys]);
+  const range = decodeRange(url.range);
   const filter: ReportFilter = { from: range?.from, to: range?.to, locationId: url.location ?? (globalLocation === "all" ? null : globalLocation) };
-  /** What the filter bar shows, so the default range is visible and not just applied. */
-  const shown: Url = { ...url, range: url.range ?? encodeRange(fallback) };
-  return { filter, url: url as Url & Partial<Record<K, string>>, shown, setUrl, resetUrl };
+  return { filter, url: url as Url & Partial<Record<K, string>>, shown: url, setUrl, resetUrl };
 }
 export type ReportFilters = ReturnType<typeof useReportFilters>;
 

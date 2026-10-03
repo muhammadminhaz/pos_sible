@@ -55,7 +55,7 @@ export function StockExpiryReport() {
   const f = useFormat();
   const can = useCan();
   const qc = useQueryClient();
-  const rf = useReportFilters(["category", "brand"] as const, { defaultRange: false });
+  const rf = useReportFilters(["category", "brand"] as const);
   const categories = useCategoryLookup(), brands = useBrandLookup();
   const [window, setWindow] = useState<ExpiryWindow | "all">("all");
   const [edit, setEdit] = useState<ExpiryRow | null>(null);

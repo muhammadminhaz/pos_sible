@@ -13,12 +13,12 @@ const QUICK: { preset: RangePreset; label: "thisMonth" | "short3" | "short6" | "
 ];
 
 /** Quick ranges plus a custom picker; the picker button always shows the dates being reported on. */
-export function DashboardRange({ value, onChange, allFrom }: { value: DateRange; onChange: (r: DateRange | undefined) => void; allFrom?: string | null }) {
+export function DashboardRange({ value, onChange, allFrom }: { value?: DateRange; onChange: (r: DateRange | undefined) => void; allFrom?: string | null }) {
   const t = useTranslations("dashboard");
   const tr = useTranslations("dateRange");
   const { today, fyStartMonth } = useRangeContext();
-  const active = matchPreset(value, today, fyStartMonth);
-  const isAll = !!allFrom && value.from === allFrom && value.to === today;
+  const active = value && matchPreset(value, today, fyStartMonth);
+  const isAll = !!allFrom && value?.from === allFrom && value?.to === today;
   const selected = isAll ? "all" : (QUICK.find((q) => q.preset === active)?.preset ?? "");
 
   return (
