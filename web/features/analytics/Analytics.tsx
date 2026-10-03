@@ -12,7 +12,9 @@ import { useReport } from "@/lib/data/hooks/reports";
 import { analyticsReports } from "@/lib/data/services/reports/analytics";
 import { useFormat } from "@/lib/i18n/format";
 import { DashboardRange } from "@/features/reports/DashboardRange";
+import { useRangeContext } from "@/components/shared/DateRangePicker";
 import { encodeRange } from "@/components/shared/FilterBar/useUrlFilters";
+import { presetRange } from "@/lib/domain/dateRanges";
 import { ReportShell, useReportFilters, type ReportFilters } from "@/features/reports/ReportShell";
 import { ReportTable, type Col } from "@/features/reports/ReportTable";
 import { BigMoney, DeltaPill } from "@/features/reports/KpiSummary";
@@ -255,6 +257,9 @@ const RANGE_KEY = "posible:analytics:range";
 export function Analytics({ segment }: { segment: Segment }) {
   const t = useTranslations("analytics");
   const rf = useReportFilters(["with"] as const);
+  const { today, fyStartMonth } = useRangeContext();
+  const range = rf.filter.from && rf.filter.to ? { from: rf.filter.from, to: rf.filter.to } : presetRange("thisMonth", today, fyStartMonth);
+  const reportFilters = { ...rf, filter: { ...rf.filter, ...range } };
   const { setUrl } = rf;
   const first = useReport("analytics-first", {}, () => analyticsReports.firstDate());
   const urlRange = rf.url.range;
@@ -289,7 +294,7 @@ export function Analytics({ segment }: { segment: Segment }) {
   const resetLayouts = useLayouts((st) => st.reset);
 
   return (
-    <ReportShell title={t(`tab.${segment}`)} description={t("description")} rf={rf} noDate actions={<DashboardRange allFrom={first.data} value={rf.filter.from && rf.filter.to ? { from: rf.filter.from, to: rf.filter.to } : undefined} onChange={(r) => rf.setUrl({ range: r ? encodeRange(r) : undefined })} />}>
+    <ReportShell title={t(`tab.${segment}`)} description={t("description")} rf={reportFilters} noDate actions={<DashboardRange allFrom={first.data} value={range} onChange={(r) => rf.setUrl({ range: r ? encodeRange(r) : undefined })} />}>
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("compareWith")}>
         <span className="text-sm text-muted-foreground">{t("compareWith")}</span>
         {SEGMENTS.filter((x) => x !== segment).map((x) => (
@@ -306,7 +311,7 @@ export function Analytics({ segment }: { segment: Segment }) {
         return (
           <section key={x} id={`analytics-${x}`} className={cn("grid scroll-mt-24 gap-4 rounded-3xl transition-shadow duration-500", flash === x && "ring-2 ring-primary/60 ring-offset-8 ring-offset-background")} aria-label={t(`tab.${x}`)}>
             {shown.length > 1 && <h2 className="mt-2 text-lg font-semibold tracking-tight">{t(`tab.${x}`)}</h2>}
-            <Section rf={rf} section={x} />
+            <Section rf={reportFilters} section={x} />
           </section>
         );
       })}

@@ -13,7 +13,8 @@ import { useDashboardKpis } from "@/lib/data/hooks/dashboard";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import { useReport } from "@/lib/data/hooks/reports";
 import { encodeRange } from "@/components/shared/FilterBar/useUrlFilters";
-import { previousRange } from "@/lib/domain/dateRanges";
+import { useRangeContext } from "@/components/shared/DateRangePicker";
+import { presetRange, previousRange } from "@/lib/domain/dateRanges";
 import { dashboardReports, type DuePayment } from "@/lib/data/services/reports/dashboard";
 import { useFormat } from "@/lib/i18n/format";
 import { AreaChart, BarChart } from "./Charts";
@@ -71,11 +72,11 @@ export function Dashboard() {
   const name = useCurrentUser()?.user.firstName ?? "";
   const { data: lookups } = useLookups();
   const rf = useReportFilters();
+  const { today, fyStartMonth } = useRangeContext();
   const loc = rf.filter.locationId ?? "all";
-  const range = rf.filter.from && rf.filter.to ? { from: rf.filter.from, to: rf.filter.to } : undefined;
+  const range = rf.filter.from && rf.filter.to ? { from: rf.filter.from, to: rf.filter.to } : presetRange("thisMonth", today, fyStartMonth);
   const kpis = useDashboardKpis({ locationId: loc, ...range });
-  const previous = range ? previousRange(range) : undefined;
-  const prev = useDashboardKpis({ locationId: loc, ...previous }, !!previous);
+  const prev = useDashboardKpis({ locationId: loc, ...previousRange(range) });
   const extras = useReport("dashboard", rf.filter, () => dashboardReports.extras(rf.filter));
   const x = extras.data;
   const defs: FilterDef[] = [
