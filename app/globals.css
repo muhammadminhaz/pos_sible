@@ -100,7 +100,7 @@
   --warning: oklch(0.666 0.179 58.318); /* amber-600 */
   --warning-foreground: oklch(0.473 0.137 46.201); /* amber-800 */
   --warning-soft: oklch(0.987 0.022 95.277); /* amber-50 */
-  --danger: oklch(0.586 0.253 17.585); /* rose-600 */
+  --danger: oklch(0.514 0.222 16.935); /* rose-700: AA as text */
   --danger-foreground: oklch(0.455 0.188 13.697); /* rose-800 */
   --danger-soft: oklch(0.969 0.015 12.422); /* rose-50 */
   --info: oklch(0.588 0.158 241.966); /* sky-600 */
