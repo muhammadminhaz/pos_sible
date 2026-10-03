@@ -75,7 +75,7 @@ export function DateRangePicker({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className={cn("justify-start font-normal", !value && "text-muted-foreground", className)}>
+        <Button variant="outline" size="sm" className={cn("justify-start font-normal tabular-nums", !value && "text-muted-foreground", className)}>
           <CalendarIcon />
           {value ? (showDates ? (value.from === value.to ? f.date(value.from) : `${f.date(value.from)} – ${f.date(value.to)}`) : label(value)) : (placeholder ?? t("pick"))}
         </Button>

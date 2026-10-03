@@ -80,8 +80,7 @@ export function Dashboard() {
   const defs: FilterDef[] = [
     { key: "location", label: common("common.location"), type: "select", options: (lookups?.locations ?? []).map((l) => ({ value: l.id, label: l.name })) },
   ];
-  // Charts read their colour from --chart-1: ink for the trend, the accent colour for the products.
-  const ink = { "--chart-1": "var(--foreground)" } as CSSProperties;
+  // Charts read their colour from --chart-1; both follow the accent colour.
   const accent = { "--chart-1": "var(--primary)" } as CSSProperties;
   return (
     <>
@@ -99,7 +98,7 @@ export function Dashboard() {
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
           <div className="xl:col-span-3"><MoneyOut now={kpis.data} before={prev.data} loading={kpis.isPending} /></div>
           <Block title={t("salesPeriod")} href="/sales" className="xl:col-span-5">
-            <div style={ink}>{x ? <AreaChart data={x.salesByDay} xKey="date" yKey="sales" label={t("salesTrend")} height={300} /> : <div className="h-75" />}</div>
+            <div style={accent}>{x ? <AreaChart data={x.salesByDay} xKey="date" yKey="sales" label={t("salesTrend")} height={300} /> : <div className="h-75" />}</div>
           </Block>
           <Block title={r("topProducts")} href="/reports/trending-products" className="xl:col-span-4">
             <div style={accent}>
