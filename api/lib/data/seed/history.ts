@@ -625,7 +625,7 @@ export function createHistory(h: HistoryInput): History {
 
   // Alerts (low stock, overdue, expiring...) are derived from the data at runtime; only the welcome note is seeded.
   const notifications: Notification[] = [
-    mk(notification, { id: id("n"), createdAt: `${h.today}T09:00:00`, createdBy: null, title: "Welcome to Pos-sible", body: `Your demo business is ready with ${Math.round(h.days / 30)} months of sample data.`, kind: "success", href: "/home" }),
+    mk(notification, { id: id("n"), createdAt: `${h.today}T09:00:00`, createdBy: null, title: "Welcome to POS-sible", body: `Your demo business is ready with ${Math.round(h.days / 30)} months of sample data.`, kind: "success", href: "/home" }),
   ];
 
   return { transactions, stockLots, accountTxns, cashRegisters, notifications, counters };

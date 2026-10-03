@@ -78,7 +78,7 @@ function Wizard() {
     <Dialog open>
       <DialogContent showCloseButton={false} onEscapeKeyDown={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()} className="gap-5 sm:max-w-xl">
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-sm font-semibold"><LogoMark className="size-7" />Pos-sible</span>
+          <span className="flex items-center gap-2 text-sm font-semibold"><LogoMark className="size-7" />POS-sible</span>
           <LocaleToggle />
         </div>
         <div className="flex gap-1.5" aria-hidden>

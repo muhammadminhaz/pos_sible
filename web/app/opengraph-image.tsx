@@ -7,7 +7,7 @@ export const contentType = "image/png";
 
 const CHIPS = ["POS & barcode", "Inventory", "Accounts", "Reports", "English + বাংলা"];
 
-/** The picture shown when a Pos-sible link is shared: the mark, the name, what it does, and a rising sales line. */
+/** The picture shown when a POS-sible link is shared: the mark, the name, what it does, and a rising sales line. */
 export default function OpenGraphImage() {
   return new ImageResponse(
     (

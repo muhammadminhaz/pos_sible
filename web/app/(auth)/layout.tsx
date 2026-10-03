@@ -18,7 +18,7 @@ export default async function AuthLayout({ children }: LayoutProps<"/">) {
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2 text-sm font-semibold tracking-tight">
             <LogoMark className="size-7" />
-            Pos-sible
+            POS-sible
           </span>
           <div className="flex items-center gap-2">
             <LocaleToggle />

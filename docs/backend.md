@@ -1,6 +1,6 @@
 # Backend (the `api` project: Next.js route handlers on Postgres)
 
-Pos-sible runs in two modes. The backend is its own project in `api/`, deployed separately from the UI in `web/`:
+POS-sible runs in two modes. The backend is its own project in `api/`, deployed separately from the UI in `web/`:
 
 | Mode | How | Where the data lives |
 |---|---|---|

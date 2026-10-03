@@ -7,7 +7,7 @@ import { routeTitleKey } from "@/lib/pageTitle";
 import { SITE, withSiteName } from "@/lib/site";
 
 /**
- * Keeps the browser tab and history titled after the screen you are on ("Products · Pos-sible"), in the current
+ * Keeps the browser tab and history titled after the screen you are on ("Products · POS-sible"), in the current
  * language. The shop's pages are private and client-rendered, so the title is set here instead of in per-page metadata.
  */
 export function PageTitle() {

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/site";
 
-/** Lets a tablet or phone install Pos-sible to the home screen and open it like an app. */
+/** Lets a tablet or phone install POS-sible to the home screen and open it like an app. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: `${SITE.name}: ${SITE.tagline}`,

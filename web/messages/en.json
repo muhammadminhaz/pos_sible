@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Pos-sible",
+    "appName": "POS-sible",
     "save": "Save",
     "saveChanges": "Save changes",
     "cancel": "Cancel",
@@ -212,7 +212,7 @@
     "heroPoint1": "A fast POS with bKash, Nagad and card payments",
     "heroPoint2": "Live stock across every shop and warehouse",
     "heroPoint3": "Profit, tax and cash reports in English and বাংলা",
-    "footer": "© 2026 Pos-sible. All rights reserved.",
+    "footer": "© 2026 POS-sible. All rights reserved.",
     "invalid": "Wrong username or password",
     "demoHint": "Demo: admin / 112233 or cashier / 112233",
     "forbiddenTitle": "You don't have access",
@@ -1927,7 +1927,7 @@
     }
   },
   "onboarding": {
-    "welcomeTitle": "Welcome to Pos-sible",
+    "welcomeTitle": "Welcome to POS-sible",
     "welcomeBody": "Two minutes to set up. How would you like to start?",
     "demoTitle": "Explore with sample data",
     "demoBody": "Six months of sales, stock and customers so every screen and report has something to show.",
