@@ -20,7 +20,7 @@ export function UsersPage() {
 
   return (
     <>
-      <AdminHeader title="Users" description="How many people can sign in at each business. You see counts, never who they are." />
+      <AdminHeader title="Users" description="How many users each business has, against its package limit. You see counts, never who they are." />
       <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard loading={!businesses} label="User accounts" count={total} />
         <StatCard loading={!businesses} label="Average per business" value={list.length ? (total / list.length).toFixed(1) : "0"} />

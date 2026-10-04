@@ -276,13 +276,14 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect(paid).toEqual(["DOWN1", "UP1"]);
   });
 
-  it("the package limits how many users can sign in", async () => {
+  it("the package limits how many users a business can have", async () => {
     const id = await open(`Quota ${tag}`, `quota${tag}`, "starter"); // 3 users
     const { p } = await principal(`quota${tag}`);
-    const make = (n: number) => rpc.handleRpc(p, { service: "crud:users", method: "create", args: [{ username: `q${n}${tag}`, firstName: `Q${n}`, lastName: "", email: "", roleId: "role_cashier", password: "pass-word-1", locationIds: [], isActive: true, allowLogin: true, prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 }] });
+    const make = (n: number, allowLogin = true) => rpc.handleRpc(p, { service: "crud:users", method: "create", args: [{ username: `q${n}${tag}`, firstName: `Q${n}`, lastName: "", email: "", roleId: "role_cashier", password: "pass-word-1", locationIds: [], isActive: true, allowLogin, prefix: "", language: "en", maxSalesDiscountPercent: null, avatar: null, profile: {}, bankDetails: {}, isSalesAgent: false, commissionPercent: 0 }] });
     expect((await make(1)).ok).toBe(true);
     expect((await make(2)).ok).toBe(true);
     expect(await make(3)).toMatchObject({ ok: false, error: { code: "plan_limit" } });
+    expect(await make(3, false)).toMatchObject({ ok: false, error: { code: "plan_limit" } }); // a user who can't sign in still counts
     expect((await summary(id)).users).toBe(3);
     // Upgrading the package lifts the limit.
     await platform.activateSubscription(id, { terms: 1, plan: "premium", restart: true, amount: 0 });

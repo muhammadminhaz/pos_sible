@@ -56,7 +56,7 @@ describe.runIf(up)("Postgres backend", () => {
 
   it("serves service calls, hides password hashes and refuses unknown calls", async () => {
     const lookups = await ok(admin, "lookupsService", "all");
-    expect(lookups.users.length).toBeGreaterThan(1);
+    expect(lookups.users.length).toBeGreaterThan(0);
     expect(lookups.users.every((u: { password: string }) => u.password === "")).toBe(true);
     expect(await call(admin, "lookupsService", "nope")).toMatchObject({ ok: false, error: { code: "not_found" } });
     expect(await call(admin, "salesService", "constructor")).toMatchObject({ ok: false });

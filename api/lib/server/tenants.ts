@@ -22,8 +22,9 @@ export type NewBusiness = {
   tailor?: (db: DB) => void;
 };
 
-/** Seed data comes with throwaway passwords; a real business never keeps them. */
-function lockDemoAccounts(db: DB): void {
+/** Seed data comes with throwaway passwords. A demo keeps its sample staff switched off; a real business starts with only its owner, since every user counts toward the package limit. */
+function lockDemoAccounts(db: DB, demo: boolean): void {
+  if (!demo) db.users = db.users.filter((u) => u.id === SEED_USER);
   for (const u of db.users) if (u.id !== SEED_USER) u.allowLogin = false;
 }
 
@@ -31,7 +32,7 @@ function lockDemoAccounts(db: DB): void {
 export async function createBusiness(input: NewBusiness): Promise<{ businessId: string }> {
   const id = randomUUID();
   const db = input.demo ? createSeed({ seed: Math.floor(Math.random() * 2 ** 31), days: DEMO_DAYS }) : createSeed();
-  lockDemoAccounts(db);
+  lockDemoAccounts(db, !!input.demo);
   const admin = db.users.find((u) => u.id === SEED_USER)!;
   Object.assign(admin, {
     username: input.admin.username.trim(), password: hashPassword(input.admin.password), firstName: input.admin.firstName.trim(),

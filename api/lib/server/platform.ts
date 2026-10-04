@@ -163,7 +163,7 @@ export type BusinessSummary = {
   expiresAt: string | null;
   /** What actually applies now: "expired" when the date has passed. */
   state: "active" | "cancelled" | "expired";
-  /** Accounts that can sign in. */
+  /** Every user the business has, whether or not they can sign in. */
   users: number;
   maxUsers: number | null;
   /** Bytes the business's records take in the database. */
@@ -174,7 +174,7 @@ export type BusinessSummary = {
 const ENTITY_SIZES = TABLE_NAMES.map((t) => `SELECT business_id, SUM(pg_column_size(data))::bigint AS bytes FROM ${sqlName(t)} GROUP BY business_id`).join("\nUNION ALL\n");
 
 /**
- * One row per business: its subscription, how many people can sign in, and how much space it uses. Only counts and
+ * One row per business: its subscription, how many users it has, and how much space it uses. Only counts and
  * sizes are computed in SQL (SUM / COUNT over the records); no record content is selected.
  */
 export async function listBusinesses(): Promise<BusinessSummary[]> {
@@ -196,7 +196,7 @@ export async function listBusinesses(): Promise<BusinessSummary[]> {
       LEFT JOIN plans np ON np.id = b.next_plan
       LEFT JOIN logins l ON l.business_id = b.id AND l.user_id = 'user_admin'
       LEFT JOIN (SELECT business_id, MAX(paid_at) AS last_paid FROM subscription_payments WHERE amount > 0 GROUP BY business_id) pay ON pay.business_id = b.id
-      LEFT JOIN (SELECT business_id, COUNT(*) AS n FROM users WHERE (data->>'allowLogin')::boolean IS NOT FALSE GROUP BY business_id) u ON u.business_id = b.id
+      LEFT JOIN (SELECT business_id, COUNT(*) AS n FROM users GROUP BY business_id) u ON u.business_id = b.id
       LEFT JOIN (SELECT business_id, SUM(bytes) AS bytes FROM (${ENTITY_SIZES}) x GROUP BY business_id) s ON s.business_id = b.id
       LEFT JOIN (SELECT business_id, MAX(at) AS last_active FROM audit_log GROUP BY business_id) a ON a.business_id = b.id
      ORDER BY b.created_at DESC`);

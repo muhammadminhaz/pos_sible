@@ -34,7 +34,7 @@ export function SubscriptionsPage() {
     <>
       <AdminHeader
         title="Subscriptions"
-        description="Packages say how long a term lasts, which modules a business can use and how many users can sign in. A business only runs while you keep its subscription active."
+        description="Packages say how long a term lasts, which modules a business can use and how many users a business can have. A business only runs while you keep its subscription active."
         actions={<Button onClick={() => setEditing("new")}><PlusIcon />New package</Button>}
       />
 
@@ -196,7 +196,7 @@ function PlanForm({ plan, onClose }: { plan: Plan | null; onClose: () => void })
         <Label htmlFor="p-unl">Unlimited users</Label>
         <Switch id="p-unl" checked={unlimited} onCheckedChange={setUnlimited} />
       </div>
-      {!unlimited && <div className="grid gap-1.5"><Label htmlFor="p-max">User accounts that can sign in</Label><Input id="p-max" type="number" min={1} step="1" value={max} onChange={(e) => setMax(e.target.value)} required /></div>}
+      {!unlimited && <div className="grid gap-1.5"><Label htmlFor="p-max">Users a business can have</Label><Input id="p-max" type="number" min={1} step="1" value={max} onChange={(e) => setMax(e.target.value)} required /></div>}
       <ModuleChoice modules={modules} value={picked} onChange={setPicked} />
       <div className="grid gap-1.5"><Label htmlFor="p-desc">Who it is for</Label><Input id="p-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={200} placeholder="For a single-counter shop getting started." /></div>
       <div className="grid gap-1.5">

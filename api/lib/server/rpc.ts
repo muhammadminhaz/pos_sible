@@ -115,19 +115,16 @@ function resolve(service: string, method: string): { target: Record<string, unkn
 }
 
 /**
- * A package allows a number of accounts that can sign in. Adding one, or switching one back on, is refused at the
- * limit, whatever the screen does; deactivating and deleting are never blocked.
+ * A package allows a number of users in total, whether or not they can sign in. Adding one is refused at the limit,
+ * whatever the screen does; deactivating and deleting are never blocked.
  */
-async function assertUserQuota(businessId: string, method: string, args: unknown[]): Promise<void> {
-  const patch = (method === "create" ? args[0] : args[1]) as { allowLogin?: unknown } | undefined;
-  if (!(method === "create" ? patch?.allowLogin !== false : method === "update" && patch?.allowLogin === true)) return;
+async function assertUserQuota(businessId: string, method: string): Promise<void> {
+  if (method !== "create") return;
   const row = (await pool().query<{ max_users: number | null }>("SELECT CASE WHEN b.free THEN NULL ELSE p.max_users END AS max_users FROM businesses b JOIN plans p ON p.id = b.plan WHERE b.id = $1", [businessId])).rows[0];
   const max = row?.max_users ?? null;
   if (max === null) return;
   const { db } = await loadBusiness(businessId);
-  const existing = method === "update" ? db.users.find((u) => u.id === args[0]) : undefined;
-  if (existing && existing.allowLogin !== false) return;
-  if (db.users.filter((u) => u.allowLogin !== false).length >= max) throw new AppError(`Your plan allows up to ${max} users who can sign in. Ask your provider to upgrade the package.`, "plan_limit");
+  if (db.users.length >= max) throw new AppError(`Your plan allows up to ${max} users. Ask your provider to upgrade the package.`, "plan_limit");
 }
 
 /** Password hashes never leave the server. */
@@ -147,7 +144,7 @@ export async function handleRpc(p: { businessId: string; userId: string; role: R
     const gate = GATES[service];
     if (gate && !gate.some((g) => hasPermission(p.role, g))) throw new ForbiddenError(gate[0]);
     const { target, fn } = resolve(service, method);
-    if (service === "crud:users") await assertUserQuota(p.businessId, method, args);
+    if (service === "crud:users") await assertUserQuota(p.businessId, method);
 
     const out = await runInBusiness(p.businessId, p.userId, async () => fn.apply(target, args), { service, method });
     return { ok: true, result: redact(out.result) };

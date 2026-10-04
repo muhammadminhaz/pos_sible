@@ -3,8 +3,8 @@ export const PERIOD_UNITS = ["day", "week", "month"] as const;
 export type PeriodUnit = (typeof PERIOD_UNITS)[number];
 
 /**
- * A subscription package the platform owner sells. `price` is what one term costs, `maxUsers` counts accounts that can
- * sign in (null means no limit) and `modules` are the sellable modules the package includes.
+ * A subscription package the platform owner sells. `price` is what one term costs, `maxUsers` caps the users a business
+ * can have in total (null means no limit) and `modules` are the sellable modules the package includes.
  */
 export type Plan = { id: string; label: string; maxUsers: number | null; price: number; periodUnit: PeriodUnit; periodCount: number; modules: ModuleId[]; description: string; benefits: string[] };
 
