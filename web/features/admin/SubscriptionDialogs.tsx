@@ -29,7 +29,6 @@ export function ActivateForm({ business, plans, onClose, onDone }: { business: B
   const [planId, setPlanId] = useState(business.nextPlan ?? business.plan);
   const [when, setWhen] = useState<When>(business.nextPlan ? "renew" : "now");
   const [terms, setTerms] = useState("1");
-  const [received, setReceived] = useState("");
   const [reference, setReference] = useState("");
   const [proof, setProof] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -38,9 +37,7 @@ export function ActivateForm({ business, plans, onClose, onDone }: { business: B
   const changed = planId !== business.plan;
   const mode: When = changed ? when : "renew";
   const n = Math.max(1, Math.floor(Number(terms)) || 1);
-  const list = business.free ? 0 : plan.price * n;
-  const amount = received.trim() === "" ? list : Number(received);
-  const badAmount = !Number.isFinite(amount) || amount < 0;
+  const amount = business.free ? 0 : plan.price * n;
   const needsProof = mode !== "end" && !business.free && amount > 0 && !reference.trim() && !proof;
   const badProof = proof !== null && (proof.size > MAX_PROOF || !/^image\/(png|jpeg|webp)$/.test(proof.type));
 
@@ -51,7 +48,7 @@ export function ActivateForm({ business, plans, onClose, onDone }: { business: B
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (badAmount || needsProof || badProof) return;
+    if (needsProof || badProof) return;
     setBusy(true);
     if (mode === "end") {
       const res = await call(`businesses/${business.id}/schedule`, { method: "POST", body: JSON.stringify({ plan: planId }) }).catch(() => null);
@@ -64,7 +61,6 @@ export function ActivateForm({ business, plans, onClose, onDone }: { business: B
     form.set("terms", String(n));
     form.set("plan", planId);
     form.set("restart", String(mode === "now"));
-    if (received.trim() !== "") form.set("amount", String(amount));
     if (reference.trim()) form.set("reference", reference.trim());
     if (proof) form.set("proof", proof);
     const res = await callForm(`businesses/${business.id}/activate`, form).catch(() => null);
@@ -118,8 +114,8 @@ export function ActivateForm({ business, plans, onClose, onDone }: { business: B
             <>
               <div className="grid gap-1.5">
                 <Label htmlFor="a-amount">Amount received</Label>
-                <Input id="a-amount" inputMode="decimal" autoComplete="off" value={received} onChange={(e) => setReceived(e.target.value)} placeholder={String(list)} aria-invalid={badAmount} aria-describedby="a-amount-hint" />
-                <p id="a-amount-hint" className={badAmount ? "text-sm text-danger" : "text-xs text-muted-foreground"}>{badAmount ? "Enter an amount of zero or more." : `Counts as revenue. Leave it empty for the price, ${formatMoney(list)}. 0 records the activation with no money.`}</p>
+                <Input id="a-amount" readOnly value={formatMoney(amount)} aria-describedby="a-amount-hint" />
+                <p id="a-amount-hint" className="text-xs text-muted-foreground">Package price times the terms. Recorded as revenue and dated today when you activate.</p>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="a-ref">Transaction ID</Label>
@@ -137,7 +133,7 @@ export function ActivateForm({ business, plans, onClose, onDone }: { business: B
       ) : <p className="text-sm text-muted-foreground">{business.name} stays on {business.planLabel} until {business.expiresAt ? day(business.expiresAt) : "its term ends"}.</p>}
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit" disabled={busy || badAmount || needsProof || badProof}>{busy && <Loader2Icon className="animate-spin" />}{mode === "end" ? "Schedule change" : "Activate"}</Button>
+        <Button type="submit" disabled={busy || needsProof || badProof}>{busy && <Loader2Icon className="animate-spin" />}{mode === "end" ? "Schedule change" : "Activate"}</Button>
       </DialogFooter>
     </form>
   );
