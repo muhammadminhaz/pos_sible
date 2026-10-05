@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Anek_Bangla, Inter } from "next/font/google";
+import { Inter, Noto_Sans_Bengali } from "next/font/google";
 import { getLocale, getMessages } from "next-intl/server";
 import { SITE } from "@/lib/site";
 import { Providers } from "./providers";
@@ -7,8 +7,8 @@ import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
-const anekBangla = Anek_Bangla({
-  variable: "--font-anek-bangla",
+const notoSansBengali = Noto_Sans_Bengali({
+  variable: "--font-noto-sans-bengali",
   subsets: ["bengali", "latin"],
   display: "swap",
 });
@@ -76,7 +76,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const messages = await getMessages();
 
   return (
-    <html lang={locale} suppressHydrationWarning className={`${inter.variable} ${anekBangla.variable}`}>
+    <html lang={locale} suppressHydrationWarning className={`${inter.variable} ${notoSansBengali.variable}`}>
       <head>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       </head>
