@@ -2,29 +2,26 @@
 
 import { useState, type FormEvent } from "react";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, DatabaseZapIcon, SparklesIcon, StoreIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "@/lib/toast";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import GlideSelect from "@/components/ui/glide-select";
 import { LocaleToggle } from "@/components/layout/LocaleToggle";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { useCan } from "@/lib/auth/useCan";
 import { API_MODE } from "@/lib/data/api/mode";
 import { useOnboardingActions, useOnboardingState } from "@/lib/data/hooks/onboarding";
 import type { Settings } from "@/lib/data/schemas";
+import { currencyOptions, currencySymbol } from "@/lib/i18n/currencies";
 
 const COLORS: { id: Settings["system"]["themeColor"]; swatch: string }[] = [
   { id: "indigo", swatch: "#4f46e5" }, { id: "blue", swatch: "#2563eb" }, { id: "sky", swatch: "#0284c7" }, { id: "green", swatch: "#059669" },
   { id: "amber", swatch: "#d97706" }, { id: "red", swatch: "#dc2626" }, { id: "purple", swatch: "#9333ea" }, { id: "black", swatch: "#27272a" },
 ];
-const CURRENCIES = [
-  { code: "BDT", symbol: "৳" }, { code: "INR", symbol: "₹" }, { code: "USD", symbol: "$" }, { code: "EUR", symbol: "€" }, { code: "GBP", symbol: "£" },
-];
-
 /**
  * First-run setup for whoever can change business settings: pick demo or empty shop, describe the business, choose a look.
  * Only for a real business account (API mode). The browser-only demo, and showcase accounts the platform owner creates
@@ -39,12 +36,13 @@ export function OnboardingGate() {
 
 function Wizard() {
   const t = useTranslations("onboarding");
+  const tc = useTranslations("common");
+  const locale = useLocale();
   const { complete, skip } = useOnboardingActions();
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<"demo" | "fresh">("demo");
   const [f, setF] = useState({ businessName: "", locationName: "", phone: "", city: "", currency: "BDT", themeColor: "indigo" as Settings["system"]["themeColor"] });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((s) => ({ ...s, [k]: v }));
-  const cur = CURRENCIES.find((c) => c.code === f.currency) ?? CURRENCIES[0];
   const steps = 3;
   const busy = complete.isPending || skip.isPending;
 
@@ -55,7 +53,7 @@ function Wizard() {
     try {
       await complete.mutateAsync({
         mode, businessName: f.businessName, locationName: f.locationName || f.businessName, phone: f.phone, city: f.city,
-        currencyCode: cur.code, currencySymbol: cur.symbol, themeColor: f.themeColor,
+        currencyCode: f.currency, currencySymbol: currencySymbol(f.currency, locale), themeColor: f.themeColor,
       });
       toast.success(t("ready"));
     } catch {
@@ -125,10 +123,7 @@ function Wizard() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="ob-cur">{t("currency")}</Label>
-                    <Select value={f.currency} onValueChange={(v) => set("currency", v)}>
-                      <SelectTrigger id="ob-cur" className="w-full"><SelectValue /></SelectTrigger>
-                      <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.symbol} {c.code}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <GlideSelect field searchable id="ob-cur" ariaLabel={t("currency")} searchPlaceholder={t("currency")} emptyText={tc("noResults")} options={currencyOptions(locale)} value={f.currency} onChange={(c) => set("currency", c)} />
                   </div>
                 </div>
               </>

@@ -125,7 +125,7 @@ export function BusinessesPage() {
               <TableHead className="text-right">Users</TableHead>
               <TableHead className="text-right">Storage</TableHead>
               <TableHead>Last active</TableHead>
-              <TableHead><span className="sr-only">Actions</span></TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

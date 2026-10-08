@@ -6,7 +6,7 @@ import { todayISO } from "@/lib/dates";
 import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
-import { delay } from "../_util";
+import { delay, anyOf } from "../_util";
 import { dayOf, inScope, isFinalSale, isReceivedPurchase, lineCostOf, names, sumBy, type ReportFilter } from "./_shared";
 import { profitBreakdown } from "./money";
 
@@ -78,7 +78,7 @@ export function overview(d: DB, f: ReportFilter): AnalyticsOverview {
   const trend = [...acc.values()].sort((a, b) => a.bucket.localeCompare(b.bucket)).map((x) => ({ ...x, sales: roundMoney(x.sales), profit: roundMoney(x.profit) }));
   let receivables = 0, payables = 0;
   for (const t of d.transactions) {
-    if (f.locationId && t.locationId !== f.locationId) continue;
+    if (f.locationId && !anyOf(f.locationId, t.locationId)) continue;
     if (isFinalSale(t)) receivables += paymentSummary(t.totals.total, t.payments).due;
     else if (isReceivedPurchase(t)) payables += paymentSummary(t.totals.total, t.payments).due;
   }
@@ -154,12 +154,12 @@ export function productAnalytics(d: DB, f: ReportFilter): ProductAnalytics {
   const today = scope.to;
   const lastSale = new Map<string, string>();
   for (const t of d.transactions) {
-    if (!isFinalSale(t) || (f.locationId && t.locationId !== f.locationId)) continue;
+    if (!isFinalSale(t) || (f.locationId && !anyOf(f.locationId, t.locationId))) continue;
     for (const l of t.lines) if (dayOf(t.date) > (lastSale.get(l.variationId) ?? "")) lastSale.set(l.variationId, dayOf(t.date));
   }
   const held = new Map<string, { qty: number; value: number }>();
   for (const l of d.stockLots) {
-    if (l.qtyRemaining <= 0 || (f.locationId && l.locationId !== f.locationId)) continue;
+    if (l.qtyRemaining <= 0 || (f.locationId && !anyOf(f.locationId, l.locationId))) continue;
     const h = held.get(l.variationId) ?? { qty: 0, value: 0 };
     h.qty += l.qtyRemaining; h.value += l.qtyRemaining * l.unitCost;
     held.set(l.variationId, h);
@@ -214,7 +214,7 @@ export function customerAnalytics(d: DB, f: ReportFilter): CustomerAnalytics {
   const aging = new Map(AGING_BUCKETS.map((b) => [b, 0]));
   const today = todayISO(d.settings.business.timeZone);
   for (const t of d.transactions) {
-    if (!isFinalSale(t) || (f.locationId && t.locationId !== f.locationId)) continue;
+    if (!isFinalSale(t) || (f.locationId && !anyOf(f.locationId, t.locationId))) continue;
     const due = paymentSummary(t.totals.total, t.payments).due;
     if (due <= 0) continue;
     const age = differenceInCalendarDays(parseISO(today), parseISO(t.date));
@@ -245,7 +245,7 @@ export function reorderSuggestions(d: DB, f: ReportFilter): { rows: ReorderRow[]
     for (const l of t.lines) sold.set(l.variationId, (sold.get(l.variationId) ?? 0) + sign * l.qty);
   }
   const stock = new Map<string, number>();
-  for (const l of d.stockLots) if (!f.locationId || l.locationId === f.locationId) stock.set(l.variationId, (stock.get(l.variationId) ?? 0) + l.qtyRemaining);
+  for (const l of d.stockLots) if (!f.locationId || anyOf(f.locationId, l.locationId)) stock.set(l.variationId, (stock.get(l.variationId) ?? 0) + l.qtyRemaining);
   const rows: ReorderRow[] = [];
   for (const [variationId, qty] of sold) {
     const perDay = qty / days;

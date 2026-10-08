@@ -7,7 +7,7 @@ import { transaction, type DB } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { todayISO } from "@/lib/dates";
 import { roundMoney } from "@/lib/domain/money";
-import { delay, nowISO, takeRef, uid } from "../_util";
+import { delay, nowISO, takeRef, uid, anyOf } from "../_util";
 import { inScope, isFinalSale, names, sumBy, withTotals, type ReportFilter, type ReportResult } from "./_shared";
 
 // ── Stock ───────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ export type StockRow = {
 
 /** Stock on hand per variation across the scope (lots counted once), plus units sold, transferred and adjusted in the date range. */
 export function stockReport(d: DB, f: StockFilter): ReportResult<StockRow> {
-  const lots = d.stockLots.filter((l) => l.qtyRemaining > 0 && (!f.locationId || l.locationId === f.locationId));
+  const lots = d.stockLots.filter((l) => l.qtyRemaining > 0 && (!f.locationId || anyOf(f.locationId, l.locationId)));
   const onHand = new Map<string, { qty: number; cost: number }>();
   for (const l of lots) {
     const x = onHand.get(l.variationId) ?? { qty: 0, cost: 0 };
@@ -40,7 +40,7 @@ export function stockReport(d: DB, f: StockFilter): ReportResult<StockRow> {
   const rows = d.variations
     .map((v) => ({ v, p: d.products.find((x) => x.id === v.productId)! }))
     .filter(({ p }) => p && p.manageStock && p.type !== "combo")
-    .filter(({ p }) => (!f.categoryId || p.categoryId === f.categoryId) && (!f.brandId || p.brandId === f.brandId) && (!f.unitId || p.unitId === f.unitId))
+    .filter(({ p }) => (!f.categoryId || anyOf(f.categoryId, p.categoryId)) && (!f.brandId || anyOf(f.brandId, p.brandId)) && (!f.unitId || anyOf(f.unitId, p.unitId)))
     .filter(({ v, p }) => !f.search || `${p.name} ${v.name} ${v.sku}`.toLowerCase().includes(f.search.toLowerCase()))
     .map(({ v, p }): StockRow => {
       const h = onHand.get(v.id) ?? { qty: 0, cost: 0 };
@@ -70,9 +70,9 @@ export type ExpiryRow = {
 export function stockExpiry(d: DB, f: ExpiryFilter): ReportResult<ExpiryRow> {
   const today = f.today ?? todayISO(d.settings.business.timeZone);
   const rows = d.stockLots
-    .filter((l) => l.expDate && l.qtyRemaining > 0 && (!f.locationId || l.locationId === f.locationId))
+    .filter((l) => l.expDate && l.qtyRemaining > 0 && (!f.locationId || anyOf(f.locationId, l.locationId)))
     .map((l) => ({ l, p: d.products.find((x) => x.id === l.productId), daysLeft: differenceInCalendarDays(parseISO(l.expDate!), parseISO(today)) }))
-    .filter(({ p }) => p && (!f.categoryId || p.categoryId === f.categoryId) && (!f.brandId || p.brandId === f.brandId))
+    .filter(({ p }) => p && (!f.categoryId || anyOf(f.categoryId, p.categoryId)) && (!f.brandId || anyOf(f.brandId, p.brandId)))
     .filter(({ daysLeft }) => (!f.window ? true : f.window === "expired" ? daysLeft < 0 : daysLeft >= 0 && daysLeft <= EXPIRY_WINDOWS[f.window]))
     .map(({ l, p, daysLeft }): ExpiryRow => {
       const v = d.variations.find((x) => x.id === l.variationId);

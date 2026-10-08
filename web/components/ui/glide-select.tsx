@@ -11,7 +11,7 @@ const GAP = 1;
 const MENU_GAP = 6;
 const EDGE = 8;
 
-export type GlideOption = { value: string; label: ReactNode; tag?: string };
+export type GlideOption = { value: string; label: ReactNode; tag?: string; /** Extra text the search box matches against. */ keywords?: string; /** Shown on the closed trigger instead of `label`. */ chip?: ReactNode };
 type Item = GlideOption;
 
 export type GlideSelectProps = {
@@ -45,6 +45,14 @@ export type GlideSelectProps = {
   /** Chip text when more than two rows are ticked, e.g. "3 selected". */
   summary?: (count: number) => string;
   className?: string;
+  /** Adds a search box that filters the rows as you type. */
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  /** When given, the parent does the filtering (e.g. a server search) and the rows are shown as passed in. */
+  onSearch?: (query: string) => void;
+  emptyText?: ReactNode;
+  /** Small icon shown at the start of the trigger (e.g. a map pin on a Location filter). */
+  icon?: ReactNode;
 };
 
 const norm = (o: string | GlideOption): Item => (typeof o === "string" ? { value: o, label: o } : o);
@@ -66,23 +74,28 @@ export default function GlideSelect({
   options, value, defaultValue, onChange, placeholder = "Select…", showTags = true, size = "md", radius = 10, menuWidth,
   placement = "bottom", align = "left", popDuration = 180, glideDuration = 220, rememberPosition = true, disabled = false,
   ariaLabel = "Select", field = false, id: idProp, invalid, autoFocus, multiple = false, values, defaultValues, onValuesChange, summary, className = "",
+  searchable = false, searchPlaceholder = "Search…", onSearch, emptyText = "No results", icon,
 }: GlideSelectProps) {
-  const items = options.map(norm);
+  const all = options.map(norm);
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  const items = !searchable || onSearch || !needle ? all : all.filter((it) => `${textOf(it)} ${it.value} ${it.tag ?? ""} ${it.keywords ?? ""}`.toLowerCase().includes(needle));
   const [inner, setInner] = useState(defaultValue ?? "");
   const [innerMulti, setInnerMulti] = useState<string[]>(defaultValues ?? []);
   const ticked = values ?? innerMulti;
   const current = multiple ? ticked.join("\u0000") : (value ?? inner);
   const isOn = (v: string) => (multiple ? ticked.includes(v) : v === current);
   const selected = items.findIndex((it) => isOn(it.value));
-  const chosen = items.filter((it) => isOn(it.value));
+  const chosen = all.filter((it) => isOn(it.value));
   const chipText: ReactNode = !multiple
-    ? selected >= 0 ? items[selected].label : placeholder
+    ? chosen.length ? (chosen[0].chip ?? chosen[0].label) : placeholder
     : chosen.length === 0 ? placeholder : chosen.length <= 2 ? chosen.map(textOf).join(", ") : (summary?.(chosen.length) ?? `${chosen.length} selected`);
   const [phase, setPhase] = useState<Phase>("closed");
   const [active, setActive] = useState<number | null>(null);
   const [pos, setPos] = useState<Pos | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
   const instant = useRef(false);
@@ -127,13 +140,14 @@ export default function GlideSelect({
     }
     // Bring the chosen row into view in long lists.
     if (selected >= 0) el.scrollTop = Math.max(0, selected * step - el.clientHeight / 2 + S.row / 2);
+    searchRef.current?.focus({ preventScroll: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   useLayoutEffect(() => {
     const p = pillRef.current;
     if (!p || phase !== "open") return;
-    if (active === null) {
+    if (active === null || active >= items.length) {
       p.style.opacity = "0";
       return;
     }
@@ -142,7 +156,7 @@ export default function GlideSelect({
     p.style.transform = `translateY(${active * step}px)`;
     p.style.opacity = "1";
     instant.current = false;
-  }, [active, phase, step]);
+  }, [active, phase, step, items.length]);
 
   const open = (viaKey: boolean) => {
     if (disabled) return;
@@ -153,6 +167,11 @@ export default function GlideSelect({
   };
   const close = (mode: "instant" | "pop") => {
     setActive(null);
+    if (searchable) triggerRef.current?.focus({ preventScroll: true }); // the search box is portalled, so hand focus back to the trigger
+    if (query) {
+      setQuery("");
+      onSearch?.("");
+    }
     clearTimeout(closeTimer.current);
     const el = menuRef.current;
     if (mode === "instant" || !el) {
@@ -168,7 +187,7 @@ export default function GlideSelect({
     const it = items[i];
     if (!it) return close("instant");
     if (multiple) {
-      const next = ticked.includes(it.value) ? ticked.filter((x) => x !== it.value) : items.map((x) => x.value).filter((x) => x === it.value || ticked.includes(x));
+      const next = ticked.includes(it.value) ? ticked.filter((x) => x !== it.value) : all.map((x) => x.value).filter((x) => x === it.value || ticked.includes(x));
       if (values === undefined) setInnerMulti(next);
       onValuesChange?.(next);
       return; // stays open so several rows can be ticked
@@ -213,6 +232,15 @@ export default function GlideSelect({
   };
 
   useEffect(() => {
+    // A modal dialog's focus trap pulls focus back from outside nodes; the portalled menu is ours, so keep focusin from reaching it.
+    const m = menuRef.current;
+    if (!m || !searchable) return undefined;
+    const stop = (e: Event) => e.stopPropagation();
+    m.addEventListener("focusin", stop);
+    return () => m.removeEventListener("focusin", stop);
+  }, [phase, searchable]);
+
+  useEffect(() => {
     if (phase === "closed") return undefined;
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node;
@@ -221,6 +249,7 @@ export default function GlideSelect({
     };
     const onMove = (e: Event) => {
       if (menuRef.current?.contains(e.target as Node)) return;
+      if (e.type === "resize" && document.activeElement === searchRef.current) return; // the mobile keyboard opening resizes the window
       close("instant");
     };
     // Captured on window so it runs before a dialog's own Escape handler: Escape closes the menu, not the dialog behind it.
@@ -301,8 +330,29 @@ export default function GlideSelect({
             } as CSSProperties}
             // A dialog treats a press outside itself as "dismiss": keep this one from reaching it.
             onPointerDown={(e) => e.nativeEvent.stopPropagation()}
-            onMouseDown={(e) => e.preventDefault()} // pressing a row must not pull focus off the trigger
+            onMouseDown={(e) => {
+              if (e.target !== searchRef.current) e.preventDefault(); // pressing a row must not pull focus off the trigger
+            }}
           >
+            {searchable ? (
+              <input
+                ref={searchRef}
+                className="glide-select__search"
+                value={query}
+                placeholder={searchPlaceholder}
+                aria-label={searchPlaceholder}
+                autoComplete="off"
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActive(0);
+                  onSearch?.(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  // Only navigation keys go to the list; everything else, including space, types into the box.
+                  if (["ArrowDown", "ArrowUp", "Enter", "Escape", "Tab"].includes(e.key)) onTriggerKey(e);
+                }}
+              />
+            ) : null}
             <div
               id={`${uid}-list`}
               role="listbox"
@@ -330,6 +380,7 @@ export default function GlideSelect({
                   </span>
                 </div>
               ))}
+              {items.length === 0 ? <div className="glide-select__empty">{emptyText}</div> : null}
             </div>
           </div>,
           document.body,
@@ -373,7 +424,8 @@ export default function GlideSelect({
         }}
         onKeyDown={onTriggerKey}
       >
-        <span className="glide-select__label" key={current} data-empty={selected < 0 ? "" : undefined}>
+        {icon ? <span className="glide-select__icon" aria-hidden="true">{icon}</span> : null}
+        <span className="glide-select__label" key={current} data-empty={chosen.length === 0 ? "" : undefined}>
           {chipText}
         </span>
         <span className="glide-select__chevron" aria-hidden="true">

@@ -5,6 +5,7 @@ import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
 import { delay } from "../_util";
 import { inScope, isFinalSale, isReceivedPurchase, sumBy, withTotals, type ReportFilter, type ReportResult } from "./_shared";
+import { anyOf } from "../_util";
 
 export type ContactReportFilter = ReportFilter & { type?: "customer" | "supplier"; customerGroupId?: string | null };
 export type ContactReportRow = {
@@ -22,7 +23,7 @@ export function contactsReport(d: DB, f: ContactReportFilter): ReportResult<Cont
   const rows = d.contacts
     .filter((c) => !c.isDefault || by.has(c.id))
     .filter((c) => !f.type || (f.type === "customer" ? c.type !== "supplier" : c.type !== "customer"))
-    .filter((c) => f.customerGroupId === undefined || (c.customerGroupId ?? null) === f.customerGroupId)
+    .filter((c) => f.customerGroupId === undefined || anyOf(f.customerGroupId, c.customerGroupId ?? null))
     .map((c): ContactReportRow => {
       const mine = by.get(c.id) ?? [];
       const sales = mine.filter(isFinalSale);

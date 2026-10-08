@@ -70,6 +70,15 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --animate-blink-cursor: blink-cursor 1.2s step-end infinite;
+  @keyframes blink-cursor {
+  0%, 49% {
+    opacity: 1;
+    }
+  50%, 100% {
+    opacity: 0;
+    }
+  }
 }
 
 /* Zinc neutrals, indigo-violet accent. */
@@ -204,8 +213,29 @@
     line-height: 1.45;
   }
   button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  [role="button"]:not(:disabled),
+  [role="menuitem"]:not([data-disabled]),
+  [role="menuitemcheckbox"]:not([data-disabled]),
+  [role="menuitemradio"]:not([data-disabled]),
+  [role="option"]:not([data-disabled="true"]):not([aria-disabled="true"]),
+  [role="tab"]:not(:disabled) {
     cursor: pointer;
+  }
+  /* Disabled controls say so. */
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  [role="button"][aria-disabled="true"],
+  [role="checkbox"][aria-disabled="true"],
+  [role="switch"][aria-disabled="true"],
+  [role="combobox"][aria-disabled="true"],
+  [role="tab"][aria-disabled="true"],
+  [role="menuitem"][data-disabled],
+  [role="option"][data-disabled="true"],
+  [role="option"][aria-disabled="true"],
+  label:has(:disabled) {
+    cursor: not-allowed;
   }
 }
 
@@ -359,6 +389,7 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   --glow-a: var(--primary);
   --glow-b: color-mix(in oklch, var(--primary) 70%, black);
   position: relative;
+  isolation: isolate; /* the ring below must beat sticky headers and the like inside the card, without leaking past it */
 }
 .card-glow::before,
 .card-glow::after {
@@ -368,6 +399,7 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   padding: 2px;
   border-radius: inherit;
   pointer-events: none;
+  z-index: 30;
   /* The ring: the gradient shows only in the 2px between the padding box and the border box. */
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -376,7 +408,7 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
 }
 .card-glow::before { background: radial-gradient(circle at 100% 0, var(--glow-a) 0, var(--glow-b) calc(var(--gr) * 0.62), transparent var(--gr)); }
 .card-glow::after { background: radial-gradient(circle at 0 100%, var(--glow-a) 0, var(--glow-b) calc(var(--gr) * 0.62), transparent var(--gr)); }
-.card-glow:hover::before, .card-glow:hover::after,
+.card-glow:not(:disabled):hover::before, .card-glow:not(:disabled):hover::after,
 .card-glow:focus-within::before, .card-glow:focus-within::after { --gr: 1500px; }
 @media (prefers-reduced-motion: reduce) {
   .card-glow::before, .card-glow::after { transition-duration: 0.01s; }
@@ -420,25 +452,54 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   opacity: 0.14;
   border-radius: 1.5rem;
 }
+/* The resize handle: a small round button inside the corner, shown while the card is hovered, focused or being resized. */
 .react-grid-item > .react-resizable-handle {
-  opacity: 0.8;
-  right: 4px;
-  bottom: 4px;
+  z-index: 40;
+  right: 12px;
+  bottom: 12px;
   width: 28px;
   height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: var(--card);
+  background-image: none;
+  box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.25);
   color: var(--muted-foreground);
-  transition: color 0.15s, opacity 0.15s, transform 0.15s;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.18s, transform 0.18s cubic-bezier(0.23, 1, 0.32, 1), color 0.15s, border-color 0.15s;
 }
-.react-grid-item > .react-resizable-handle:hover { opacity: 1; color: var(--primary); transform: scale(1.12); }
-/* Two diagonal strokes in the corner: the usual "resize" mark. */
+.react-grid-item:hover > .react-resizable-handle,
+.react-grid-item > .react-resizable-handle:focus-visible,
+.react-grid-item.resizing > .react-resizable-handle {
+  opacity: 1;
+  transform: none;
+}
+.react-grid-item > .react-resizable-handle:hover,
+.react-grid-item.resizing > .react-resizable-handle {
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+/* Two arrows pointing along the corner's diagonal: the usual "resize" mark. */
 .react-grid-item > .react-resizable-handle::after {
-  right: 7px;
-  bottom: 7px;
+  position: static;
   width: 14px;
   height: 14px;
   border: 0;
-  background: linear-gradient(135deg, transparent 0 38%, currentColor 38% 50%, transparent 50% 66%, currentColor 66% 78%, transparent 78%);
-  border-radius: 0 0 6px 0;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 13v6h-6'/%3E%3Cpath d='M5 11V5h6'/%3E%3Cpath d='m5 5 14 14'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 13v6h-6'/%3E%3Cpath d='M5 11V5h6'/%3E%3Cpath d='m5 5 14 14'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+/* No hover on touch screens, so the handle stays visible there. */
+@media (hover: none) {
+  .react-grid-item > .react-resizable-handle { opacity: 0.9; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .react-grid-item > .react-resizable-handle { transition: none; }
 }
 .react-grid-item.react-draggable-dragging > section,
 .react-grid-item.resizing > section {
@@ -448,19 +509,29 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   .react-grid-item > .react-resizable-handle { display: none; }
 }
 
-/* Scrollbars (page and every scrollable panel): accent coloured, thin, and only present while scrolling (see ScrollbarFade). */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.5s ease;
+/* Scrollbars (page and every scrollable panel): accent coloured, thin, no arrow buttons, and only visible while scrolling (see ScrollbarFade). */
+@supports selector(::-webkit-scrollbar) {
+  /* Chromium and Safari: the standard scrollbar-* properties would bring the arrow buttons back, so only the pseudo-elements are used. */
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: transparent; background-clip: padding-box; border: 2px solid transparent; border-radius: 9999px; }
+  [data-scrolling]::-webkit-scrollbar-thumb { background-color: var(--primary); }
+}
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.5s ease;
+  }
+  [data-scrolling] {
+    scrollbar-color: var(--primary) transparent;
+    transition-duration: 0.15s;
+  }
 }
 /* Rows that scroll sideways with their own arrows: no scrollbar track at all, so nothing is reserved under them. */
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
-[data-scrolling] {
-  scrollbar-color: var(--primary) transparent;
-  transition-duration: 0.15s;
-}
 @media (prefers-reduced-motion: reduce) {
   * { transition: none; }
 }
@@ -468,3 +539,9 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
     animation: none;
     mix-blend-mode: normal;
 }
+
+/* Theme toggle: the new theme is revealed by a clip-path circle driven from AnimatedThemeToggler. */
+/* The transition snapshot spans the whole window, scrollbar included, which would add a sideways scrollbar for its duration. */
+html[data-magicui-theme-vt="active"] { overflow-x: hidden; }
+html[data-magicui-theme-vt="active"]::view-transition-group(root) { animation-duration: var(--magicui-theme-toggle-vt-duration); }
+html[data-magicui-theme-vt="active"]::view-transition-new(root) { clip-path: var(--magicui-theme-vt-clip-from); }

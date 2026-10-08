@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { SITE } from "@/lib/site";
-import { call, type Business, type Me, type ModuleDef, type Plan, type RevenueReport } from "./api";
+import { call, setCurrency, type Business, type Me, type ModuleDef, type Plan, type RevenueReport } from "./api";
 
 /** `revenue` is null while loading and undefined if it could not be loaded. */
 type AdminState = { me: Me; plans: Plan[]; modules: ModuleDef[]; businesses: Business[] | null; revenue: RevenueReport | null | undefined; reload: () => Promise<void>; signOut: () => Promise<void> };
@@ -81,7 +81,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   const refreshMe = useCallback(async () => {
     const res = await call("me").catch(() => null);
-    if (res?.ok) return setMe(await res.json());
+    if (res?.ok) {
+      const json: Me = await res.json();
+      setCurrency(json.currency ?? "BDT"); // before setMe, so the first price drawn already has the right symbol
+      return setMe(json);
+    }
     setMe(res?.status === 401 ? null : "offline");
   }, []);
   const reload = useCallback(async () => {

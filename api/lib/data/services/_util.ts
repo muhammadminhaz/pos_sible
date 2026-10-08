@@ -7,6 +7,10 @@ import type { DB } from "@/lib/data/schemas";
 export const delay = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, typeof window === "undefined" ? 0 : Math.random() * 150));
 
+/** A filter value is one id or several joined with commas (multi-select filters). Non-string filter values compare as before. */
+export const anyOf = (list: unknown, actual: unknown): boolean =>
+  typeof list === "string" ? list.split(",").includes(String(actual)) : list === actual;
+
 export type Sort = { id: string; desc: boolean };
 export type ListQuery = { search?: string; page?: number; pageSize?: number; sort?: Sort };
 export type ListResult<T> = { rows: T[]; total: number };

@@ -7,7 +7,7 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { orderTotals } from "@/lib/domain/totals";
 import { lineTotals } from "@/lib/domain/totals";
 import { fulfilledQty, remainingQty } from "./_orders";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow, anyOf } from "./_util";
 
 export type OrderStatus = "ordered" | "partial" | "completed";
 export type OrderFilters = ListQuery & { locationId?: string; contactId?: string; status?: OrderStatus; shippingStatus?: ShippingStatus; from?: string; to?: string };
@@ -30,10 +30,10 @@ export const ordersService = service("ordersService", {
     const d = getDB();
     const rows = d.transactions
       .filter((t) => t.type === "sales_order")
-      .filter((t) => !f.locationId || t.locationId === f.locationId)
-      .filter((t) => !f.contactId || t.contactId === f.contactId)
-      .filter((t) => !f.status || t.status === f.status)
-      .filter((t) => !f.shippingStatus || t.shipping.status === f.shippingStatus)
+      .filter((t) => !f.locationId || anyOf(f.locationId, t.locationId))
+      .filter((t) => !f.contactId || anyOf(f.contactId, t.contactId))
+      .filter((t) => !f.status || anyOf(f.status, t.status))
+      .filter((t) => !f.shippingStatus || anyOf(f.shippingStatus, t.shipping.status))
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
       .filter((t) => matches(f.search, t.refNo, d.contacts.find((c) => c.id === t.contactId)?.name))

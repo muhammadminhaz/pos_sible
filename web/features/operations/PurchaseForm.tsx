@@ -164,7 +164,7 @@ export function PurchaseForm({ id, init, rows: initRows }: { id?: string; init: 
                   {expiry && <TableHead className="w-36">{t("catalog.mfgDate")}</TableHead>}
                   {expiry && <TableHead className="w-36">{t("catalog.expDate")}</TableHead>}
                   {showPriceUpdate && <TableHead className="w-48">{t("ops.updateSellPrice")}</TableHead>}
-                  <TableHead className="w-10" />
+                  <TableHead className="w-10 whitespace-nowrap">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

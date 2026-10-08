@@ -122,7 +122,7 @@ export function Labels() {
                   <TableHead>{t("catalog.packingDate")}</TableHead>
                   {settings?.product.enableExpiry && <TableHead>{t("catalog.expDate")}</TableHead>}
                   <TableHead>{t("catalog.priceGroup")}</TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-10 whitespace-nowrap">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

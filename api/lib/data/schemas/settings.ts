@@ -17,7 +17,7 @@ export const settings = z.object({
     fyStartMonth: z.number().int().min(1).max(12),
     accountingMethod: z.enum(["fifo", "lifo"]),
     transactionEditDays: z.number().int(),
-    dateFormat: z.enum(["dd-mm-yyyy", "mm-dd-yyyy", "dd/mm/yyyy", "mm/dd/yyyy"]),
+    dateFormat: z.enum(["dd/mm/yyyy", "mm-dd-yyyy", "mm/dd/yyyy"]).catch("dd/mm/yyyy"),
     timeFormat: z.enum(["12", "24"]),
     currencyPrecision: z.number().int().min(0).max(4),
     quantityPrecision: z.number().int().min(0).max(4),

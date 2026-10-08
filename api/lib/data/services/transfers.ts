@@ -6,7 +6,7 @@ import { stockLot, transaction, type DB, type Transaction } from "@/lib/data/sch
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { orderTotals } from "@/lib/domain/totals";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow, anyOf } from "./_util";
 import { putBack, takeStock } from "./_stock";
 
 export type TransferStatus = "pending" | "in_transit" | "completed";
@@ -63,9 +63,9 @@ export const transfersService = service("transfersService", {
     const loc = new Map(d.locations.map((l) => [l.id, l.name]));
     const rows = d.transactions
       .filter((t) => t.type === "stock_transfer")
-      .filter((t) => !f.fromLocationId || t.locationId === f.fromLocationId)
-      .filter((t) => !f.toLocationId || t.transferLocationId === f.toLocationId)
-      .filter((t) => !f.status || t.status === f.status)
+      .filter((t) => !f.fromLocationId || anyOf(f.fromLocationId, t.locationId))
+      .filter((t) => !f.toLocationId || anyOf(f.toLocationId, t.transferLocationId))
+      .filter((t) => !f.status || anyOf(f.status, t.status))
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
       .filter((t) => matches(f.search, t.refNo, loc.get(t.locationId), loc.get(t.transferLocationId ?? "")))

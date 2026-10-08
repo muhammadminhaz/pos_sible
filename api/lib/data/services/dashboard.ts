@@ -4,7 +4,7 @@ import { getDB } from "@/lib/data/store/db";
 import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
-import { delay } from "./_util";
+import { delay, anyOf } from "./_util";
 
 export type KpiFilters = { locationId?: string | "all"; from: string; to: string };
 export type Kpis = {
@@ -21,7 +21,7 @@ export type Kpis = {
 
 const inRange = (t: Transaction, f: KpiFilters) => {
   const d = t.date.slice(0, 10);
-  return d >= f.from && d <= f.to && (!f.locationId || f.locationId === "all" || t.locationId === f.locationId);
+  return d >= f.from && d <= f.to && (!f.locationId || f.locationId === "all" || anyOf(f.locationId, t.locationId));
 };
 
 export const dashboardService = service("dashboardService", {

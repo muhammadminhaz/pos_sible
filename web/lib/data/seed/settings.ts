@@ -14,7 +14,7 @@ export function defaultSettings(startDate: string): Settings {
       fyStartMonth: 7,
       accountingMethod: "fifo",
       transactionEditDays: 30,
-      dateFormat: "dd-mm-yyyy",
+      dateFormat: "dd/mm/yyyy",
       timeFormat: "12",
       currencyPrecision: 2,
       quantityPrecision: 2,

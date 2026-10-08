@@ -8,7 +8,7 @@ export type Business = {
   status: "active" | "cancelled"; expiresAt: string | null; state: "active" | "cancelled" | "expired";
   users: number; maxUsers: number | null; storageBytes: number; lastActiveAt: string | null;
 };
-export type Me = { username: string; plans: Plan[]; modules: ModuleDef[] };
+export type Me = { username: string; plans: Plan[]; modules: ModuleDef[]; currency: string };
 export type RevenueReport = {
   total: number; thisMonth: number; lastMonth: number; payments: number; firstPaymentAt: string | null;
   months: { month: string; amount: number; payments: number }[];
@@ -31,7 +31,11 @@ export function formatBytes(n: number): string {
   return `${v.toFixed(v < 10 ? 2 : 1)} ${units[i]}`;
 }
 
-export const formatMoney = (n: number) => `৳${Math.round(n).toLocaleString("en-US")}`;
+// ponytail: module-level currency set from /me, so the ~18 formatMoney call sites need no context threading.
+let currency = "BDT";
+export const setCurrency = (code: string) => { currency = code; };
+export const formatMoney = (n: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency, currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(Math.round(n));
 /** "Oct 26" for a "2026-10" month key. */
 export const shortMonth = (key: string) => new Date(`${key}-01T12:00:00`).toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
 export const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—");
@@ -44,7 +48,7 @@ export const STATE_LABEL = { active: "Active", cancelled: "Cancelled", expired: 
 
 /** "1 month", "2 weeks", "10 days". */
 export const termText = (unit: PeriodUnit, count: number) => `${count} ${unit}${count === 1 ? "" : "s"}`;
-/** "৳500 per month", "৳120 per 2 weeks". */
+/** "৳500 per month", "$120 per 2 weeks" (in the platform currency). */
 export const priceText = (p: Pick<Plan, "price" | "periodUnit" | "periodCount">) => `${formatMoney(p.price)} per ${p.periodCount === 1 ? p.periodUnit : termText(p.periodUnit, p.periodCount)}`;
 
 /** `terms` terms after `from`; mirrors how the server adds them (calendar months, plain days and weeks). */

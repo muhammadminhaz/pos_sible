@@ -9,7 +9,7 @@ import { todayISO } from "@/lib/dates";
 import { effectivePaymentStatus, paymentStatus, paymentSummary, type PaymentStatus, type PayTerm } from "@/lib/domain/payments";
 import { marginFromPrices } from "@/lib/domain/pricing";
 import { lineTotals, orderTotals, type DiscountInput } from "@/lib/domain/totals";
-import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
+import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow, anyOf } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type PurchaseStatus = "received" | "pending" | "ordered";
@@ -168,10 +168,10 @@ export const purchasesService = service("purchasesService", {
     const statusOf = (t: Transaction): PaymentStatus => effectivePaymentStatus(t, today);
     const rows = d.transactions
       .filter((t) => t.type === "purchase")
-      .filter((t) => !f.locationId || t.locationId === f.locationId)
-      .filter((t) => !f.contactId || t.contactId === f.contactId)
-      .filter((t) => !f.status || t.status === f.status)
-      .filter((t) => !f.paymentStatus || statusOf(t) === f.paymentStatus)
+      .filter((t) => !f.locationId || anyOf(f.locationId, t.locationId))
+      .filter((t) => !f.contactId || anyOf(f.contactId, t.contactId))
+      .filter((t) => !f.status || anyOf(f.status, t.status))
+      .filter((t) => !f.paymentStatus || anyOf(f.paymentStatus, statusOf(t)))
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
       .filter((t) => matches(f.search, t.refNo, contacts.get(t.contactId ?? "")))

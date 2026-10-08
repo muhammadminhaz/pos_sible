@@ -214,7 +214,7 @@ export function DataTable<T>({
                   const meta = h.column.columnDef.meta;
                   const sort = h.column.getIsSorted();
                   const canSort = h.column.getCanSort();
-                  const content = h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext());
+                  const content = h.isPlaceholder ? null : h.column.id === "actions" ? t("common.actions") : flexRender(h.column.columnDef.header, h.getContext());
                   return (
                     <th
                       key={h.id}

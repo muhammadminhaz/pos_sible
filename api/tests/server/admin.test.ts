@@ -213,6 +213,16 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect((await summary(id)).state).toBe("active");
   });
 
+  it("the platform currency is set by the admin, validated, and reported by /me", async () => {
+    const settings = await import("@/app/api/admin/settings/route");
+    const me = await import("@/app/api/admin/me/route");
+    const patch = (currency: string) => settings.PATCH(asAdmin("/api/admin/settings", { method: "PATCH", body: JSON.stringify({ currency }) }));
+    expect((await patch("XXX1")).status).toBe(400);
+    expect((await patch("USD")).status).toBe(200);
+    expect((await (await me.GET(asAdmin("/api/admin/me"))).json()).currency).toBe("USD");
+    expect((await patch("BDT")).status).toBe(200);
+  });
+
   it("any number of packages, with day, week or month terms: a weekly package gives one week per activation", async () => {
     const plansRoute = await import("@/app/api/admin/plans/route");
     const make = (body: object) => plansRoute.POST(asAdmin("/api/admin/plans", { method: "POST", body: JSON.stringify(body) }));

@@ -4,7 +4,7 @@ import { currentUser } from "@/lib/auth/session";
 import { NotFoundError, ValidationError } from "@/lib/data/errors";
 import { discount, type Discount } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
-import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult } from "./_util";
+import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult, anyOf } from "./_util";
 
 export type DiscountFilters = ListQuery & { active?: boolean; locationId?: string };
 export type DiscountInputData = Omit<Discount, "id" | "createdAt" | "createdBy"> & { id?: string };
@@ -15,8 +15,8 @@ export const discountsService = service("discountsService", {
     await delay();
     const d = getDB();
     const rows = d.discounts
-      .filter((x) => f.active == null || x.active === f.active)
-      .filter((x) => !f.locationId || x.locationId === f.locationId)
+      .filter((x) => f.active == null || anyOf(f.active, x.active))
+      .filter((x) => !f.locationId || anyOf(f.locationId, x.locationId))
       .filter((x) => matches(f.search, x.name))
       .sort((a, b) => b.priority - a.priority || a.name.localeCompare(b.name))
       .map((x): DiscountRow => ({

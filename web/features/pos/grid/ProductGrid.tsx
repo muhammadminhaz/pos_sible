@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon, PackageIcon } from "lucide-react";
+import { ScrollArea as ScrollAreaPrimitive } from "radix-ui";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ScrollBar } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -25,8 +27,9 @@ function initials(name: string) {
 }
 
 /**
- * A row of chips that scrolls sideways. Round arrows appear at whichever edge has more to show (the main way for mouse
- * users); swiping on touch, dragging with a mouse and the wheel work too. The edges fade where chips run off.
+ * A row of chips that scrolls sideways. Round arrows appear at whichever edge has more to show, and a thin scrollbar sits
+ * in its own strip under the chips on hover; swiping on touch, dragging with a mouse and the wheel work too. The edges
+ * fade where chips run off.
  */
 function ChipRow({ label, children }: { label: string; children: React.ReactNode }) {
   const t = useTranslations("pos.grid");
@@ -68,7 +71,7 @@ function ChipRow({ label, children }: { label: string; children: React.ReactNode
       aria-label={t(dir < 0 ? "scrollLeft" : "scrollRight")}
       onClick={() => go(dir)}
       className={cn(
-        "absolute top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full border bg-card text-foreground shadow-md transition hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:scale-95 motion-reduce:transition-none",
+        "absolute top-4 z-30 grid size-8 -translate-y-1/2 place-items-center rounded-full border bg-card text-foreground shadow-md transition hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:scale-95 motion-reduce:transition-none",
         dir < 0 ? "left-1" : "right-1",
       )}
     >
@@ -77,13 +80,11 @@ function ChipRow({ label, children }: { label: string; children: React.ReactNode
   );
 
   return (
-    <div className="relative -mx-3 min-w-0">
-      <div
+    <ScrollAreaPrimitive.Root type="hover" className="relative -mx-3 min-w-0">
+      <ScrollAreaPrimitive.Viewport
         ref={ref}
-        role="group"
-        aria-label={label}
         style={{ WebkitMaskImage: fade, maskImage: fade }}
-        className="flex cursor-grab touch-pan-x gap-2 no-scrollbar overflow-x-auto overscroll-x-contain px-3 active:cursor-grabbing"
+        className="cursor-grab touch-pan-x overscroll-x-contain px-3 active:cursor-grabbing"
         onScroll={update}
         onWheel={(e) => { if (e.deltaY && !e.deltaX) e.currentTarget.scrollLeft += e.deltaY; }}
         onPointerDown={(e) => { if (e.pointerType === "mouse") drag.current = { x: e.clientX, left: e.currentTarget.scrollLeft, moved: false }; }}
@@ -99,11 +100,12 @@ function ChipRow({ label, children }: { label: string; children: React.ReactNode
         onPointerLeave={end}
         onClickCapture={(e) => { if (swallowClick.current) { e.stopPropagation(); e.preventDefault(); } }}
       >
-        {children}
-      </div>
+        <div role="group" aria-label={label} className="flex gap-2 pb-2.5">{children}</div>
+      </ScrollAreaPrimitive.Viewport>
+      <ScrollBar orientation="horizontal" className="z-20 mx-3 data-horizontal:h-1.5 [&_[data-slot=scroll-area-thumb]]:bg-primary/60" />
       {edge.left && arrow(-1)}
       {edge.right && arrow(1)}
-    </div>
+    </ScrollAreaPrimitive.Root>
   );
 }
 
@@ -145,7 +147,7 @@ function ProductCard({ p, locationId }: { p: PosProduct; locationId: string }) {
       type="button"
       disabled={out}
       onClick={variable ? undefined : () => pick(0)}
-      className="group flex min-h-44 flex-col overflow-hidden rounded-xl border bg-card text-left shadow-xs transition duration-150 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md active:translate-y-0 active:scale-[0.97] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+      className="card-glow group flex min-h-44 flex-col overflow-hidden rounded-xl border bg-card text-left shadow-xs transition duration-150 active:scale-[0.97] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
     >
       <span className="relative grid aspect-[4/3] place-items-center bg-muted text-lg font-semibold text-muted-foreground">
         {p.image ? (

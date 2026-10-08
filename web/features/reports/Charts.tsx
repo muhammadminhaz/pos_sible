@@ -56,7 +56,7 @@ export function AreaChart({ data, xKey, yKey, label, height = 240, format }: Cha
             <CartesianGrid vertical={false} stroke="var(--border)" />
             <XAxis dataKey={xKey} tick={tick} tickLine={false} axisLine={false} minTickGap={24} tickFormatter={(v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? f.date(v).slice(0, 5) : v)} />
             <YAxis tick={tick} tickLine={false} axisLine={false} width={72} tickFormatter={(n: number) => f.number(n)} />
-            <Tooltip contentStyle={tooltipStyle} formatter={(v) => fmt(Number(v))} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(v) => fmt(Number(v))} labelFormatter={(v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v)) ? f.date(String(v)) : String(v))} />
             <Area type="linear" dataKey={yKey} stroke="var(--chart-1)" strokeWidth={2} fill={`url(#fill-${yKey})`} />
           </RAreaChart>
         </ResponsiveContainer>

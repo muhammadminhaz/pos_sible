@@ -14,12 +14,14 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { AdminHeader, useAdmin } from "./AdminShell";
+import GlideSelect from "@/components/ui/glide-select";
+import { currencyOptions } from "@/lib/i18n/currencies";
 import { call, day, formatMoney, priceText, termText, type Business, type ModuleDef, type PeriodUnit, type Plan } from "./api";
 import { Empty, Pager, StateBadge, usePaged } from "./parts";
 import { ActivateForm, CancelDialog, PaymentsDialog } from "./SubscriptionDialogs";
 
 export function SubscriptionsPage() {
-  const { plans, businesses, reload } = useAdmin();
+  const { me, plans, businesses, reload } = useAdmin();
   const [editing, setEditing] = useState<Plan | "new" | null>(null);
   const [removing, setRemoving] = useState<Plan | null>(null);
   const [activating, setActivating] = useState<Business | null>(null);
@@ -50,7 +52,7 @@ export function SubscriptionsPage() {
                 <TableHead>Last paid</TableHead>
                 <TableHead>Ends</TableHead>
                 <TableHead className="text-right">Price</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -87,7 +89,30 @@ export function SubscriptionsPage() {
         <Pager paged={paged} />
       </div>
 
-      <h2 className="mt-4 text-lg font-semibold tracking-tight">Packages</h2>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Packages</h2>
+        <div className="flex items-center gap-2">
+          <span className="hidden text-xs text-muted-foreground sm:inline">Shows all prices and revenue in this currency. Amounts are not converted.</span>
+          <GlideSelect
+            field
+            searchable
+            size="sm"
+            ariaLabel="Subscription currency"
+            searchPlaceholder="Search currency"
+            options={currencyOptions("en")}
+            value={me.currency}
+            menuWidth={320}
+            align="right"
+            onChange={async (currency) => {
+              const res = await call("settings", { method: "PATCH", body: JSON.stringify({ currency }) }).catch(() => null);
+              if (!res?.ok) return void toast.error("Couldn't change the currency. Try again.");
+              await reload();
+              toast.success("Currency updated");
+            }}
+            className="w-40"
+          />
+        </div>
+      </div>
       <div className="overflow-x-auto rounded-2xl border bg-card">
         <Table>
           <TableHeader>
@@ -97,7 +122,7 @@ export function SubscriptionsPage() {
               <TableHead className="text-right">Users</TableHead>
               <TableHead className="text-right">Modules</TableHead>
               <TableHead className="text-right">Businesses</TableHead>
-              <TableHead><span className="sr-only">Actions</span></TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -145,7 +170,7 @@ function EmptyRow({ cols, icon, children }: { cols: number; icon: Parameters<typ
 const UNITS: { value: PeriodUnit; label: string }[] = [{ value: "day", label: "Days" }, { value: "week", label: "Weeks" }, { value: "month", label: "Months" }];
 
 function PlanForm({ plan, onClose }: { plan: Plan | null; onClose: () => void }) {
-  const { modules, reload } = useAdmin();
+  const { me, modules, reload } = useAdmin();
   const [label, setLabel] = useState(plan?.label ?? "");
   const [price, setPrice] = useState(String(plan?.price ?? ""));
   const [count, setCount] = useState(String(plan?.periodCount ?? 1));
@@ -180,7 +205,7 @@ function PlanForm({ plan, onClose }: { plan: Plan | null; onClose: () => void })
       </DialogHeader>
       <div className="grid gap-1.5"><Label htmlFor="p-label">Name</Label><Input id="p-label" value={label} onChange={(e) => setLabel(e.target.value)} required maxLength={40} autoFocus={!plan} /></div>
       <div className="grid grid-cols-[1fr_auto] gap-3">
-        <div className="grid gap-1.5"><Label htmlFor="p-price">Price per term (৳)</Label><Input id="p-price" type="number" min={0} step="1" value={price} onChange={(e) => setPrice(e.target.value)} required /></div>
+        <div className="grid gap-1.5"><Label htmlFor="p-price">Price per term ({me.currency})</Label><Input id="p-price" type="number" min={0} step="any" value={price} onChange={(e) => setPrice(e.target.value)} required /></div>
         <div className="grid gap-1.5">
           <Label htmlFor="p-count">A term lasts</Label>
           <div className="flex gap-2">

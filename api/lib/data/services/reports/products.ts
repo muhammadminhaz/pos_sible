@@ -2,7 +2,7 @@ import { service } from "@/lib/data/api/facade";
 import type { DB, Transaction } from "@/lib/data/schemas";
 import { getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
-import { delay } from "../_util";
+import { delay, anyOf } from "../_util";
 import { inScope, isFinalSale, isReceivedPurchase, lineCostOf, lineTax, names, withTotals, type ReportFilter, type ReportResult } from "./_shared";
 
 export type ProductFilter = ReportFilter & { categoryId?: string; brandId?: string; contactId?: string; search?: string };
@@ -22,7 +22,7 @@ function labeller(d: DB) {
 
 const passes = (d: DB, f: ProductFilter, productId: string, text: string) => {
   const p = d.products.find((x) => x.id === productId);
-  return (!f.categoryId || p?.categoryId === f.categoryId) && (!f.brandId || p?.brandId === f.brandId) && (!f.search || text.toLowerCase().includes(f.search.toLowerCase()));
+  return (!f.categoryId || anyOf(f.categoryId, p?.categoryId)) && (!f.brandId || anyOf(f.brandId, p?.brandId)) && (!f.search || text.toLowerCase().includes(f.search.toLowerCase()));
 };
 
 // ── Trending ────────────────────────────────────────────────────────────
@@ -69,7 +69,7 @@ const lineRow = (d: DB, L: ReturnType<typeof labeller>, t: Transaction, l: Trans
 export function productPurchase(d: DB, f: ProductFilter): ReportResult<LineRow> {
   const L = labeller(d);
   const rows = d.transactions
-    .filter((t) => inScope(t, f) && (isReceivedPurchase(t) || t.type === "purchase_return") && (!f.contactId || t.contactId === f.contactId))
+    .filter((t) => inScope(t, f) && (isReceivedPurchase(t) || t.type === "purchase_return") && (!f.contactId || anyOf(f.contactId, t.contactId)))
     .sort((a, b) => b.date.localeCompare(a.date))
     .flatMap((t) => t.lines.filter((l) => passes(d, f, l.productId, `${L.label(l.productId, l.variationId)} ${L.sku(l.variationId)}`)).map((l) => lineRow(d, L, t, l, t.type === "purchase_return" ? -1 : 1)));
   return withTotals(rows, ["qty", "tax", "subtotal"]);
@@ -80,7 +80,7 @@ export function productSellDetailed(d: DB, f: ProductFilter, byLot = false): Rep
   const L = labeller(d);
   const lotNo = new Map(d.stockLots.map((l) => [l.id, l.lotNo]));
   const rows = d.transactions
-    .filter((t) => inScope(t, f) && (isFinalSale(t) || t.type === "sell_return") && (!f.contactId || t.contactId === f.contactId))
+    .filter((t) => inScope(t, f) && (isFinalSale(t) || t.type === "sell_return") && (!f.contactId || anyOf(f.contactId, t.contactId)))
     .sort((a, b) => b.date.localeCompare(a.date))
     .flatMap((t) => {
       const sign = t.type === "sell_return" ? -1 : 1;
@@ -136,13 +136,13 @@ export function itemsReport(d: DB, f: ItemFilter): ReportResult<ItemRow> {
   const byId = new Map(d.transactions.map((t) => [t.id, t]));
   const rows: ItemRow[] = [];
   for (const t of d.transactions) {
-    if (!inScope(t, f) || !isFinalSale(t) || (f.customerId && t.contactId !== f.customerId)) continue;
+    if (!inScope(t, f) || !isFinalSale(t) || (f.customerId && !anyOf(f.customerId, t.contactId))) continue;
     for (const l of t.lines) {
       if (!passes(d, f, l.productId, `${L.label(l.productId, l.variationId)} ${L.sku(l.variationId)}`)) continue;
       for (const a of l.allocations) {
         const lot = lots.get(a.lotId);
         const src = lot?.sourceTxnId ? byId.get(lot.sourceTxnId) : undefined;
-        if (f.supplierId && src?.contactId !== f.supplierId) continue;
+        if (f.supplierId && !anyOf(f.supplierId, src?.contactId)) continue;
         const sellPrice = l.qty ? roundMoney((l.subtotal - lineTax(l)) / l.qty) : 0;
         rows.push({
           id: `${t.id}:${l.id}:${a.lotId}`, product: L.label(l.productId, l.variationId), sku: L.sku(l.variationId), lotNo: lot?.lotNo ?? "",

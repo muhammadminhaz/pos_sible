@@ -1,5 +1,6 @@
 import type { DB, Transaction, TxnLine, User } from "@/lib/data/schemas";
 import { roundMoney } from "@/lib/domain/money";
+import { anyOf } from "../_util";
 
 /** Every report filters the same way: inclusive `yyyy-MM-dd` days and an optional location (null/absent = all). */
 export type ReportFilter = { from?: string; to?: string; locationId?: string | null };
@@ -10,7 +11,7 @@ export const dayOf = (iso: string) => iso.slice(0, 10);
 
 export const inScope = (t: { date: string; locationId: string }, f: ReportFilter) => {
   const d = dayOf(t.date);
-  return (!f.from || d >= f.from) && (!f.to || d <= f.to) && (!f.locationId || t.locationId === f.locationId);
+  return (!f.from || d >= f.from) && (!f.to || d <= f.to) && (!f.locationId || anyOf(f.locationId, t.locationId));
 };
 
 export const isFinalSale = (t: Transaction) => t.type === "sell" && t.status === "final";

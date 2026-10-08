@@ -1,19 +1,11 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
-import { CheckIcon, ChevronDownIcon, PlusCircleIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, MapPinIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import GlideSelect from "@/components/ui/glide-select";
 import { DateRangePicker, useRangeLabel } from "../DateRangePicker";
 import { decodeRange, encodeRange } from "./useUrlFilters";
 
@@ -55,69 +47,29 @@ function ClearX({ onClear, label }: { onClear: () => void; label: string }) {
 
 function OptionsChip({ def, value, onChange }: { def: FilterDef; value?: string; onChange: (v?: string) => void }) {
   const t = useTranslations("common");
-  const [open, setOpen] = useState(false);
-  const multi = def.type === "multiselect";
+  const multi = true; // every dropdown filter takes several values; the URL holds them comma-separated
   const selected = value ? (multi ? value.split(",") : [value]) : [];
-  const labels = selected.map((v) => def.options?.find((o) => o.value === v)?.label ?? v);
-
-  const toggle = (v: string) => {
-    if (!multi) {
-      onChange(selected[0] === v ? undefined : v);
-      setOpen(false);
-      return;
-    }
-    const next = selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v];
-    onChange(next.length ? next.join(",") : undefined);
-  };
+  const options = def.options ?? [];
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className={chip} data-active={selected.length > 0}>
-          {selected.length === 0 && <PlusCircleIcon className="text-muted-foreground" />}
-          <span className={cn(selected.length > 0 && "text-muted-foreground")}>{def.label}</span>
-          {selected.length > 0 && (
-            <>
-              <span className="h-3.5 w-px bg-border" />
-              <span className="max-w-40 truncate font-medium">
-                {labels.length > 2 ? t("selected", { count: labels.length }) : labels.join(", ")}
-              </span>
-              <ClearX onClear={() => onChange(undefined)} label={t("clear")} />
-            </>
-          )}
-          {selected.length === 0 && <ChevronDownIcon className="text-muted-foreground" />}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-60 p-0">
-        <Command>
-          {(def.options?.length ?? 0) > 7 && <CommandInput placeholder={def.label} />}
-          <CommandList>
-            <CommandEmpty>{t("noResults")}</CommandEmpty>
-            <CommandGroup>
-              {def.options?.map((o) => {
-                const isOn = selected.includes(o.value);
-                return (
-                  <CommandItem key={o.value} value={`${o.label} ${o.value}`} onSelect={() => toggle(o.value)}>
-                    {multi ? (
-                      <span
-                        className={cn(
-                          "grid size-4 place-items-center rounded-[4px] border",
-                          isOn && "border-primary bg-primary text-primary-foreground",
-                        )}
-                      >
-                        {isOn && <CheckIcon className="size-3 text-primary-foreground!" />}
-                      </span>
-                    ) : null}
-                    <span className="flex-1 truncate">{o.label}</span>
-                    {!multi && isOn && <CheckIcon className="size-4 text-primary" />}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <span className="inline-flex items-center gap-1">
+      <GlideSelect
+        field
+        className="gs-filter-chip"
+        searchable={options.length > 7}
+        searchPlaceholder={def.label}
+        emptyText={t("noResults")}
+        ariaLabel={def.label}
+        placeholder={def.label}
+        icon={def.key === "location" || def.key === "locationId" ? <MapPinIcon size={14} /> : undefined}
+        menuWidth={240}
+        options={options}
+        {...(multi
+          ? { multiple: true, values: selected, onValuesChange: (v: string[]) => onChange(v.length ? v.join(",") : undefined), summary: (count: number) => t("selected", { count }) }
+          : { value: selected[0], onChange: (v: string) => onChange(v === selected[0] ? undefined : v) })}
+      />
+      {selected.length > 0 && <ClearX onClear={() => onChange(undefined)} label={t("clear")} />}
+    </span>
   );
 }
 

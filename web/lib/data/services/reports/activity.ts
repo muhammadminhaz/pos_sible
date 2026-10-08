@@ -5,7 +5,7 @@ import { commission } from "@/lib/domain/commission";
 import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
-import { delay } from "../_util";
+import { delay, anyOf } from "../_util";
 import { registersService, type RegisterSummary } from "../registers";
 import { dayOf, inScope, isFinalSale, names, sumBy, userLabel, withTotals, type ReportFilter, type ReportResult } from "./_shared";
 
@@ -23,12 +23,12 @@ function paymentLines(d: DB, kind: "sell" | "purchase", f: PaymentReportFilter):
   const accounts = new Map(d.accounts.map((a) => [a.id, a.name]));
   const rows: PaymentLine[] = [];
   for (const t of d.transactions) {
-    if (t.type !== kind || (f.locationId && t.locationId !== f.locationId) || (f.contactId && t.contactId !== f.contactId)) continue;
+    if (t.type !== kind || (f.locationId && !anyOf(f.locationId, t.locationId)) || (f.contactId && !anyOf(f.contactId, t.contactId))) continue;
     if (kind === "sell" && t.status !== "final") continue;
-    if (f.customerGroupId !== undefined && (d.contacts.find((c) => c.id === t.contactId)?.customerGroupId ?? "") !== f.customerGroupId) continue;
+    if (f.customerGroupId !== undefined && !anyOf(f.customerGroupId, d.contacts.find((c) => c.id === t.contactId)?.customerGroupId ?? "")) continue;
     for (const p of t.payments) {
       const day = dayOf(p.paidOn);
-      if ((f.from && day < f.from) || (f.to && day > f.to) || (f.method && p.method !== f.method)) continue;
+      if ((f.from && day < f.from) || (f.to && day > f.to) || (f.method && !anyOf(f.method, p.method))) continue;
       rows.push({
         id: `${t.id}:${p.id}`, date: p.paidOn, paymentRef: p.refNo, refNo: t.refNo, contactName: names.contact(d, t.contactId), locationName: names.location(d, t.locationId),
         method: p.method, accountName: accounts.get(p.accountId ?? "") ?? "", amount: p.isReturn ? -p.amount : p.amount,
@@ -59,7 +59,7 @@ export type ExpenseReportFilter = ReportFilter & { categoryId?: string };
 
 /** Per category with its sub-categories indented under it; refunds subtract. `totals.total` counts each expense once. */
 export function expenseReport(d: DB, f: ExpenseReportFilter): ReportResult<ExpenseReportRow> {
-  const ts = d.transactions.filter((t) => t.type === "expense" && inScope(t, f) && (!f.categoryId || t.expenseCategoryId === f.categoryId));
+  const ts = d.transactions.filter((t) => t.type === "expense" && inScope(t, f) && (!f.categoryId || anyOf(f.categoryId, t.expenseCategoryId)));
   const rows: ExpenseReportRow[] = [];
   for (const c of d.expenseCategories.filter((x) => !x.parentId)) {
     const mine = ts.filter((t) => t.expenseCategoryId === c.id);
@@ -86,7 +86,7 @@ export type RegisterReportRow = {
 export async function registerReport(f: RegisterReportFilter): Promise<ReportResult<RegisterReportRow>> {
   const d = getDB();
   const regs = d.cashRegisters
-    .filter((r) => (!f.locationId || r.locationId === f.locationId) && (!f.userId || r.userId === f.userId) && (!f.status || r.status === f.status))
+    .filter((r) => (!f.locationId || anyOf(f.locationId, r.locationId)) && (!f.userId || anyOf(f.userId, r.userId)) && (!f.status || anyOf(f.status, r.status)))
     .filter((r) => (!f.from || dayOf(r.openedAt) >= f.from) && (!f.to || dayOf(r.openedAt) <= f.to))
     .sort((a, b) => b.openedAt.localeCompare(a.openedAt));
   const sums: RegisterSummary[] = await Promise.all(regs.map((r) => registersService.summary(r.id)));
@@ -115,7 +115,7 @@ export function salesReps(d: DB, f: RepFilter): ReportResult<RepRow> {
   const ts = d.transactions.filter((t) => inScope(t, f));
   const agentOf = (t: Transaction) => (t.type === "sell_return" ? d.transactions.find((x) => x.id === t.parentId)?.commissionAgentId : t.commissionAgentId) ?? null;
   const rows = d.users
-    .filter((u) => (f.userId ? u.id === f.userId : u.isSalesAgent || ts.some((t) => agentOf(t) === u.id)))
+    .filter((u) => (f.userId ? anyOf(f.userId, u.id) : u.isSalesAgent || ts.some((t) => agentOf(t) === u.id)))
     .map((u): RepRow => {
       const sales = ts.filter((t) => isFinalSale(t) && t.commissionAgentId === u.id);
       const returns = ts.filter((t) => t.type === "sell_return" && agentOf(t) === u.id);

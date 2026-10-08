@@ -173,7 +173,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
                     <td className="px-1">
                       <div className="flex gap-1">
                         <Input aria-label={t("sales.discount")} type="number" min={0} step="any" value={l.discount?.amount ?? ""} onChange={(e) => setCart(setLineDiscount(cart, l.key, e.target.value ? { type: l.discount?.type ?? "fixed", amount: Number(e.target.value) } : null))} className="tabular-nums" />
-                        <Button type="button" variant="outline" size="sm" disabled={!l.discount} onClick={() => setCart(setLineDiscount(cart, l.key, l.discount && { ...l.discount, type: l.discount.type === "fixed" ? "percentage" : "fixed" }))}>{l.discount?.type === "percentage" ? "%" : "৳"}</Button>
+                        <Button type="button" variant="outline" size="sm" disabled={!l.discount} onClick={() => setCart(setLineDiscount(cart, l.key, l.discount && { ...l.discount, type: l.discount.type === "fixed" ? "percentage" : "fixed" }))}>{l.discount?.type === "percentage" ? "%" : (settings?.business.currencySymbol ?? "৳")}</Button>
                       </div>
                     </td>
                     <td className="px-1 tabular-nums">{l.taxRate}%</td>

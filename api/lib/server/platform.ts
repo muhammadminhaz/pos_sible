@@ -28,6 +28,16 @@ const toPlan = (r: PlanRow): Plan => ({
   id: r.id, label: r.label, maxUsers: r.max_users, price: Number(r.price), periodUnit: r.period_unit, periodCount: r.period_count,
   modules: MODULE_IDS.filter((m) => r.modules.includes(m)), description: r.description, benefits: r.benefits,
 });
+export async function getCurrency(): Promise<string> {
+  await ready();
+  return (await pool().query<{ value: string }>("SELECT value FROM platform_settings WHERE key = 'currency'")).rows[0]?.value ?? "BDT";
+}
+
+export async function setCurrency(code: string): Promise<void> {
+  await ready();
+  await pool().query("INSERT INTO platform_settings (key, value) VALUES ('currency', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [code]);
+}
+
 const PLAN_COLUMNS = "id, label, max_users, price, period_unit, period_count, modules, description, benefits";
 
 export async function getPlans(): Promise<Plan[]> {

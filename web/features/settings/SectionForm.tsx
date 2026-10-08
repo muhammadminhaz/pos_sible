@@ -2,17 +2,19 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import { PlusIcon, XIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "@/lib/toast";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import GlideSelect from "@/components/ui/glide-select";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useSettings, useUpdateSettings } from "@/lib/data/hooks/settings";
 import { settings as settingsSchema, type Settings } from "@/lib/data/schemas";
+import { currencyOptions, currencySymbol } from "@/lib/i18n/currencies";
 import { LogoField } from "./LogoField";
 import { ShortcutEditor, shortcutConflicts } from "./ShortcutEditor";
 
@@ -22,7 +24,7 @@ const ACRONYMS: Record<string, string> = { fy: "FY", pos: "POS", sku: "SKU", id:
 const title = (w: string) => ACRONYMS[w.toLowerCase()] ?? w[0].toUpperCase() + w.slice(1);
 /** "stockExpiryAlertDays" → "Stock Expiry Alert Days" (Title Case, like the rest of the app). */
 const humanize = (k: string) => k.replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/(\d)([A-Za-z])/g, "$1 $2").replace(/_/g, " ").split(" ").filter(Boolean).map(title).join(" ");
-/** Enum values: formats and acronyms read naturally ("dd-mm-yyyy" → "DD-MM-YYYY", "12" → "12 hour"). */
+/** Enum values: formats and acronyms read naturally ("dd/mm/yyyy" → "DD/MM/YYYY", "12" → "12 hour"). */
 const optionLabel = (v: string) => (/^[dmy]{2}[-/][dmy]{2}[-/][dmy]{4}$/.test(v) ? v.toUpperCase() : /^\d+$/.test(v) ? `${v} hour` : /^[\d.]+$/.test(v) ? v : humanize(v));
 const secret = /password|secret|token/i;
 
@@ -33,7 +35,7 @@ function unwrap(s: z.ZodTypeAny): { inner: z.ZodTypeAny; nullable: boolean } {
   for (;;) {
     const tn = cur._def.typeName;
     if (tn === "ZodNullable") nullable = true;
-    if (tn === "ZodDefault" || tn === "ZodNullable" || tn === "ZodOptional") cur = cur._def.innerType;
+    if (tn === "ZodDefault" || tn === "ZodNullable" || tn === "ZodOptional" || tn === "ZodCatch") cur = cur._def.innerType;
     else return { inner: cur, nullable };
   }
 }
@@ -68,6 +70,7 @@ function useLabel(section: string) {
 
 function Field({ schema, path, ctx }: { schema: z.ZodTypeAny; path: Path; ctx: Ctx }) {
   const t = useTranslations();
+  const locale = useLocale();
   const label = useLabel(ctx.section)(path);
   const id = `s-${ctx.section}-${path.join("-")}`;
   const { inner, nullable } = unwrap(schema);
@@ -78,6 +81,26 @@ function Field({ schema, path, ctx }: { schema: z.ZodTypeAny; path: Path; ctx: C
   const tn = inner._def.typeName as string;
   const last = String(path.at(-1));
 
+  if (key === "currencyCode" && ctx.section === "business") {
+    return (
+      <div className="grid content-start gap-2">
+        <Label htmlFor={id}>{label}</Label>
+        <GlideSelect
+          field
+          searchable
+          id={id}
+          ariaLabel={label}
+          searchPlaceholder={label}
+          emptyText={t("common.noResults")}
+          options={currencyOptions(locale)}
+          value={value as string}
+          menuWidth={320}
+          // Code and symbol change together; two separate sets would overwrite each other.
+          onChange={(c) => ctx.set([], { ...(ctx.draft as object), currencyCode: c, currencySymbol: currencySymbol(c, locale), currencyPrecision: new Intl.NumberFormat("en", { style: "currency", currency: c }).resolvedOptions().maximumFractionDigits })}
+        />
+      </div>
+    );
+  }
   if (key === "logo" && ctx.section === "business") return <LogoField value={value as string | null} onChange={set} />;
   if (tn === "ZodObject") {
     if (key === "shortcuts" && ctx.section === "pos") return <ShortcutEditor value={value as Record<string, string>} onChange={set} />;

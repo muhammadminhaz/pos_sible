@@ -7,7 +7,7 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
 import { lineTotals, orderTotals, type DiscountInput } from "@/lib/domain/totals";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow, anyOf } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type ReturnFilters = ListQuery & { locationId?: string; contactId?: string; from?: string; to?: string; createdBy?: string };
@@ -26,9 +26,9 @@ export const returnsService = service("returnsService", {
     const parents = new Map(d.transactions.filter((t) => t.type === "sell").map((t) => [t.id, t.refNo]));
     const rows = d.transactions
       .filter((t) => t.type === "sell_return")
-      .filter((t) => !f.locationId || t.locationId === f.locationId)
-      .filter((t) => !f.contactId || t.contactId === f.contactId)
-      .filter((t) => !f.createdBy || t.createdBy === f.createdBy)
+      .filter((t) => !f.locationId || anyOf(f.locationId, t.locationId))
+      .filter((t) => !f.contactId || anyOf(f.contactId, t.contactId))
+      .filter((t) => !f.createdBy || anyOf(f.createdBy, t.createdBy))
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
       .filter((t) => matches(f.search, t.refNo, parents.get(t.parentId ?? ""), contacts.get(t.contactId ?? "")))

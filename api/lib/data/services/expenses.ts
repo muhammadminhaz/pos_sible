@@ -9,7 +9,7 @@ import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary, type PaymentStatus } from "@/lib/domain/payments";
 import { assertPostable, defaultAccountId, pushAccountTxn } from "./_ledger";
-import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
+import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow, anyOf } from "./_util";
 
 export type NewExpense = { locationId: string; categoryId: string; amount: number; method: PaymentMethod; note?: string };
 export type Recurring = NonNullable<Transaction["recurring"]>;
@@ -135,12 +135,12 @@ export const expensesService = service("expensesService", {
     const contacts = new Map(d.contacts.map((c) => [c.id, c.name]));
     const rows = d.transactions
       .filter((t) => t.type === "expense")
-      .filter((t) => !f.locationId || t.locationId === f.locationId)
-      .filter((t) => !f.categoryId || t.expenseCategoryId === f.categoryId)
-      .filter((t) => !f.subCategoryId || t.expenseSubCategoryId === f.subCategoryId)
-      .filter((t) => !f.contactId || t.contactId === f.contactId)
-      .filter((t) => !f.userId || t.expenseForUserId === f.userId)
-      .filter((t) => !f.paymentStatus || t.paymentStatus === f.paymentStatus)
+      .filter((t) => !f.locationId || anyOf(f.locationId, t.locationId))
+      .filter((t) => !f.categoryId || anyOf(f.categoryId, t.expenseCategoryId))
+      .filter((t) => !f.subCategoryId || anyOf(f.subCategoryId, t.expenseSubCategoryId))
+      .filter((t) => !f.contactId || anyOf(f.contactId, t.contactId))
+      .filter((t) => !f.userId || anyOf(f.userId, t.expenseForUserId))
+      .filter((t) => !f.paymentStatus || anyOf(f.paymentStatus, t.paymentStatus))
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
       .filter((t) => matches(f.search, t.refNo, t.notes, cats.get(t.expenseCategoryId ?? ""), cats.get(t.expenseSubCategoryId ?? ""), contacts.get(t.contactId ?? "")))

@@ -1,14 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CheckIcon, ChevronsUpDownIcon, GlobeIcon } from "lucide-react";
+import { GlobeIcon } from "lucide-react";
 import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 import * as Flags from "country-flag-icons/react/3x2";
 import { cn } from "cn";
-import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import GlideSelect from "@/components/ui/glide-select";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const POPULAR: CountryCode[] = ["BD", "IN", "PK", "AE", "SA", "MY", "SG", "GB", "US"];
 
@@ -42,7 +40,6 @@ export function PhoneInput({ id, value, onChange, defaultCountry = "BD", "aria-l
   const parsed = value ? parsePhoneNumberFromString(value) : undefined;
   const [country, setCountry] = useState<CountryCode>(parsed?.country ?? defaultCountry);
   const [national, setNational] = useState(parsed?.nationalNumber ?? "");
-  const [open, setOpen] = useState(false);
   const current = all.find((c) => c.code === country)!;
 
   const emit = (c: CountryCode, text: string) => {
@@ -54,35 +51,28 @@ export function PhoneInput({ id, value, onChange, defaultCountry = "BD", "aria-l
   };
 
   const invalid = value !== "" && !isValidPhoneNumber(value);
-  const item = (c: Country, prefix: string) => (
-    <CommandItem key={`${prefix}${c.code}`} value={`${c.name} ${c.dial} ${c.code}`} onSelect={() => { setCountry(c.code); setOpen(false); emit(c.code, national); }}>
-      <Flag country={c.code} />
-      <span className="flex-1 truncate">{c.name}</span>
-      <span className="text-muted-foreground tabular-nums">{c.dial}</span>
-      <CheckIcon className={cn("size-4", c.code === country ? "opacity-100" : "opacity-0")} />
-    </CommandItem>
-  );
+  const options = [...popular, ...all.filter((c) => !popular.includes(c))].map((c) => ({
+    value: c.code,
+    label: <span className="flex min-w-0 items-center gap-2"><Flag country={c.code} /><span className="truncate">{c.name}</span></span>,
+    tag: c.dial,
+    chip: <span className="flex items-center gap-1.5"><Flag country={c.code} />{c.dial}</span>,
+    keywords: `${c.name} ${c.code}`,
+  }));
 
   return (
     <div className="flex gap-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button type="button" variant="outline" role="combobox" aria-expanded={open} aria-label={`Country code, ${current.name} ${current.dial}`} className="w-28 shrink-0 justify-between px-2 font-normal">
-            <span className="flex items-center gap-1.5"><Flag country={current.code} />{current.dial}</span>
-            <ChevronsUpDownIcon className="size-3.5 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-72 p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Search country or code…" />
-            <CommandList>
-              <CommandEmpty>No country found.</CommandEmpty>
-              <CommandGroup heading="Popular">{popular.map((c) => item(c, "p-"))}</CommandGroup>
-              <CommandGroup heading="All countries">{all.map((c) => item(c, "a-"))}</CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <GlideSelect
+        field
+        searchable
+        searchPlaceholder="Search country or code…"
+        emptyText="No country found."
+        ariaLabel={`Country code, ${current.name} ${current.dial}`}
+        menuWidth={288}
+        value={country}
+        onChange={(c) => { setCountry(c as CountryCode); emit(c as CountryCode, national); }}
+        options={options}
+        className="w-28 shrink-0"
+      />
       <Input
         id={id}
         type="tel"

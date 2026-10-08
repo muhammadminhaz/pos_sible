@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS platform_sessions (
     id: 3,
     name: "editable subscription plans",
     sql: `
--- The packages a business can be on. Prices are what the platform owner charges per month (BDT) and drive the revenue view.
+-- The packages a business can be on. Prices are what the platform owner charges per month and drive the revenue view.
 CREATE TABLE IF NOT EXISTS plans (
   id text PRIMARY KEY,
   label text NOT NULL,
@@ -264,6 +264,15 @@ CREATE INDEX IF NOT EXISTS rate_limits_window ON rate_limits (window_start);
 -- An activation with no money (a free account, or an amount of 0) is still the day the business was activated.
 ALTER TABLE subscription_payments DROP CONSTRAINT IF EXISTS subscription_payments_amount_check;
 ALTER TABLE subscription_payments ADD CONSTRAINT subscription_payments_amount_check CHECK (amount >= 0);
+`,
+  },
+  {
+    id: 14,
+    name: "platform currency",
+    sql: `
+-- One currency for every package price and payment; changing it relabels amounts, it never converts them.
+CREATE TABLE IF NOT EXISTS platform_settings (key text PRIMARY KEY, value text NOT NULL);
+INSERT INTO platform_settings (key, value) VALUES ('currency', 'BDT') ON CONFLICT DO NOTHING;
 `,
   },
 ];

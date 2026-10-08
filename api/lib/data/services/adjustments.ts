@@ -6,7 +6,7 @@ import { transaction } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
 import { orderTotals } from "@/lib/domain/totals";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow, anyOf } from "./_util";
 import { putBack, takeStock } from "./_stock";
 
 export type AdjustmentInput = {
@@ -25,8 +25,8 @@ export const adjustmentsService = service("adjustmentsService", {
     const d = getDB();
     const rows = d.transactions
       .filter((t) => t.type === "stock_adjustment")
-      .filter((t) => !f.locationId || t.locationId === f.locationId)
-      .filter((t) => !f.type || t.adjustmentType === f.type)
+      .filter((t) => !f.locationId || anyOf(f.locationId, t.locationId))
+      .filter((t) => !f.type || anyOf(f.type, t.adjustmentType))
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
       .filter((t) => matches(f.search, t.refNo, t.notes))

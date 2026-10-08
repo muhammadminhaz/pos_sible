@@ -7,6 +7,7 @@ import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
 import { delay } from "../_util";
 import { dayOf, inScope, isFinalSale, isReceivedPurchase, names, type ReportFilter } from "./_shared";
+import { firstDate } from "./analytics";
 import { stockExpiry, type ExpiryRow } from "./stock";
 import { trendingProducts, type TrendingRow } from "./products";
 
@@ -19,9 +20,20 @@ export type DashboardExtras = {
   salesDue: DuePayment[];
   purchasesDue: DuePayment[];
   expiryAlerts: ExpiryRow[];
+  /** Totals across every alerting lot, not only the ones listed. */
+  expiryCount: { expired: number; soon: number };
 };
 
 const LIST = 8;
+const EXPIRY_LIST = 6;
+
+/** Up to half the slots each for expired and still-sellable lots, so the soon-to-expire ones (the ones you can act on) always show. */
+function splitExpiry(rows: ExpiryRow[]): ExpiryRow[] {
+  const expired = rows.filter((r) => r.daysLeft < 0);
+  const soon = rows.filter((r) => r.daysLeft >= 0);
+  const takeSoon = Math.min(soon.length, Math.max(EXPIRY_LIST / 2, EXPIRY_LIST - expired.length));
+  return [...expired.slice(0, EXPIRY_LIST - takeSoon), ...soon.slice(0, takeSoon)];
+}
 
 /** Net of returns would hide the day's takings, so the chart shows invoiced sales. */
 export function salesByDay(d: DB, days: number, today: string, locationId?: string | null) {
@@ -81,10 +93,12 @@ export function dashboardExtras(d: DB, f: ReportFilter & { today?: string }): Da
     stockAlerts: stockAlerts(d, f.locationId).slice(0, LIST),
     salesDue: dues(d, isFinalSale, { locationId: f.locationId }).slice(0, LIST),
     purchasesDue: dues(d, isReceivedPurchase, { locationId: f.locationId }).slice(0, LIST),
-    expiryAlerts: expiring.slice(0, LIST),
+    expiryAlerts: splitExpiry(expiring),
+    expiryCount: { expired: expiring.filter((r) => r.daysLeft < 0).length, soon: expiring.filter((r) => r.daysLeft >= 0).length },
   };
 }
 
 export const dashboardReports = service("dashboardReports", {
   async extras(f: ReportFilter & { today?: string } = {}) { await delay(); return dashboardExtras(getDB(), f); },
+  async firstDate() { await delay(); return firstDate(getDB()); },
 });

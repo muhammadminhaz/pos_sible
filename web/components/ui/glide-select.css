@@ -116,6 +116,12 @@
   }
 }
 
+.glide-select__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--gs-text) 55%, transparent);
+}
+
 .glide-select__chevron {
   display: inline-flex;
   flex-shrink: 0;
@@ -266,5 +272,54 @@
 
   .glide-select[data-swap] .glide-select__label {
     animation: none;
+  }
+}
+
+.glide-select__search {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  width: 100%;
+  height: 32px;
+  margin-bottom: 4px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--gs-inner-radius);
+  background: var(--gs-surface);
+  color: var(--gs-text);
+  font-size: max(var(--gs-font), 16px);
+  outline: none;
+}
+
+.glide-select__search:focus-visible {
+  border-color: color-mix(in srgb, var(--gs-text) 40%, transparent);
+}
+
+.glide-select__empty {
+  padding: 10px;
+  font-size: var(--gs-font);
+  color: color-mix(in srgb, var(--gs-text) 55%, transparent);
+  text-align: center;
+}
+
+/* Filter-bar chips: the same surface, height and type as the other chips in the row, readable before anything is picked. */
+.glide-select.gs-filter-chip .glide-select__trigger {
+  height: 32px;
+  padding: 0 8px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--muted) 50%, transparent);
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.glide-select.gs-filter-chip .glide-select__label[data-empty] {
+  opacity: 1;
+  color: var(--foreground);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glide-select.gs-filter-chip .glide-select__trigger:not(:disabled):hover {
+    background: var(--muted);
   }
 }

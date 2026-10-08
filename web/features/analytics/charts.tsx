@@ -118,7 +118,8 @@ export function Chart({ options, label, rows, xKey, series, format, height }: { 
   );
 }
 
-const dayLabel = (f: ReturnType<typeof useFormat>) => (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? f.date(v).slice(0, 5) : v);
+const dayLabel = (f: ReturnType<typeof useFormat>) => (v: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(v) ? f.date(v).slice(0, 5) : /^\d{4}-\d{2}$/.test(v) ? f.date(`${v}-01`).slice(3) : v;
 
 /** Bars for one measure and a line for another (sales vs profit). */
 export function ComboChart({ data, xKey, bar, line, label, height = 280, format }: Common & { bar: Series; line: Series }) {
@@ -197,12 +198,12 @@ export function StackedBars({ data, xKey, series, label, height = 260, format }:
     const base = baseOptions(th, reduced);
     return {
       ...base,
-      xAxis: { ...base.xAxis, categories: data.map((r) => String(r[xKey])) },
+      xAxis: { ...base.xAxis, categories: data.map((r) => dayLabel(f)(String(r[xKey]))) },
       plotOptions: { ...base.plotOptions, column: { stacking: "normal", borderRadius: 4, borderWidth: 0 } },
       tooltip: { ...base.tooltip, pointFormatter() { return `<span style="color:${this.color}">●</span> ${this.series.name}: <b>${fmt(Number(this.y))}</b><br/>`; } },
       series: series.map((s, i) => ({ type: "column" as const, name: s.label, data: data.map((r) => Number(r[s.key])), color: rgba(th.series[i % th.series.length]) })),
     };
-  }, [data, xKey, series, fmt]);
+  }, [data, xKey, series, fmt, f]);
   return <Chart options={options} label={label} rows={data} xKey={xKey} series={series} format={fmt} height={height} />;
 }
 

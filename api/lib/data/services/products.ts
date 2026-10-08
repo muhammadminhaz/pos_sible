@@ -5,7 +5,7 @@ import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
 import { product as productSchema, stockLot, variation as variationSchema, type DB, type Product, type TxnType, type Variation } from "@/lib/data/schemas";
 import { commit, getDB } from "@/lib/data/store/db";
 import { roundMoney } from "@/lib/domain/money";
-import { delay, nowISO, paginate, uid, type ListQuery, type ListResult } from "./_util";
+import { delay, nowISO, paginate, uid, type ListQuery, type ListResult, anyOf } from "./_util";
 
 /** A variation as the product form edits it. `id` is set for rows that already exist. */
 export type VariationInput = Omit<Variation, "id" | "productId" | "createdAt" | "createdBy"> & { id?: string };
@@ -200,14 +200,14 @@ export const productsService = service("productsService", {
     const term = f.search?.trim().toLowerCase();
     let rows = toRows(getDB(), f.locationId).filter(
       (p) =>
-        (!f.type || p.type === f.type) &&
-        (!f.categoryId || p.categoryId === f.categoryId || p.subCategoryId === f.categoryId) &&
-        (!f.brandId || p.brandId === f.brandId) &&
-        (!f.unitId || p.unitId === f.unitId) &&
-        (!f.taxId || p.taxId === f.taxId) &&
+        (!f.type || anyOf(f.type, p.type)) &&
+        (!f.categoryId || anyOf(f.categoryId, p.categoryId) || anyOf(f.categoryId, p.subCategoryId)) &&
+        (!f.brandId || anyOf(f.brandId, p.brandId)) &&
+        (!f.unitId || anyOf(f.unitId, p.unitId)) &&
+        (!f.taxId || anyOf(f.taxId, p.taxId)) &&
         (!f.locationId || p.locationIds.includes(f.locationId)) &&
         (!f.active || p.active === (f.active === "active")) &&
-        (f.notForSale === undefined || p.notForSale === f.notForSale),
+        (f.notForSale === undefined || anyOf(f.notForSale, p.notForSale)),
     );
     if (term) {
       const ranked = rows.map((p) => [p, rank(p, term)] as const).filter(([, r]) => r >= 0);

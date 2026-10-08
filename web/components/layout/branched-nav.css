@@ -20,7 +20,7 @@
   padding-left: 14px;
   color: var(--bm-ink);
   font-size: var(--bm-font);
-  line-height: 1.2;
+  line-height: 1.5; /* Bengali (and other Indic) glyphs run taller than Latin, and the labels clip their overflow */
 }
 
 .branched-menu__marker {
@@ -64,7 +64,7 @@
 .branched-menu__head > svg:first-child { flex: none; width: 16px; height: 16px; transition: transform 200ms var(--bm-ease-out); }
 .branched-menu__chev { margin-left: auto; flex: none; width: 14px; height: 14px; opacity: 0.55; transition: transform var(--bm-fold) var(--bm-ease-out); }
 .branched-menu__section[data-open] .branched-menu__chev { transform: rotate(90deg); }
-.branched-menu__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.branched-menu__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-block: 0.15em; }
 
 .branched-menu__section[data-open] .branched-menu__head { color: var(--bm-ink); }
 

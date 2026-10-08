@@ -127,7 +127,7 @@ function VariationBuilder({ value, onChange, rate, margin }: Props & { rate: num
                 <TableHead>{t("products.sku")}</TableHead>
                 {PRICE_FIELDS.map((p) => <TableHead key={p.field} className="text-right">{t(`catalog.${p.label}`)}</TableHead>)}
                 {groups.map((g) => <TableHead key={g.id} className="text-right">{g.name}</TableHead>)}
-                <TableHead className="w-10" />
+                <TableHead className="w-10 whitespace-nowrap">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -15,7 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/auth/authStore";
 import { useCan } from "@/lib/auth/useCan";
@@ -201,9 +200,10 @@ export function SidebarContent({ collapsed = false, onNavigate }: { collapsed?: 
           <LocationSwitcher />
         </div>
       )}
-      <ScrollArea className="min-h-0 flex-1">
+      {/* A plain scroller, so it gets the same accent scrollbar as every other panel (see ScrollbarFade). */}
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {collapsed ? <RailNav groups={groups} /> : <ExpandedNav groups={groups} onNavigate={onNavigate} />}
-      </ScrollArea>
+      </div>
       <div className={cn("flex shrink-0 flex-col gap-2 border-t p-3", collapsed && "items-center")}>
         <OpenPosButton collapsed={collapsed} />
       </div>

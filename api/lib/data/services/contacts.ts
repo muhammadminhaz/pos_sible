@@ -8,7 +8,7 @@ import { roundMoney } from "@/lib/domain/money";
 import { paymentStatus, paymentSummary } from "@/lib/domain/payments";
 import { todayISO } from "@/lib/dates";
 import { customerPoints } from "@/lib/domain/rewards";
-import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult } from "./_util";
+import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, anyOf } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type ContactRow = Contact & {
@@ -132,8 +132,8 @@ export const contactsService = service("contactsService", {
       : null;
     const rows = toRows(getDB()).filter(
       (c) =>
-        (!f.type || c.type === f.type || c.type === "both") &&
-        (!f.customerGroupId || c.customerGroupId === f.customerGroupId) &&
+        (!f.type || anyOf(f.type, c.type) || c.type === "both") &&
+        (!f.customerGroupId || anyOf(f.customerGroupId, c.customerGroupId)) &&
         (!f.assignedTo || c.assignedTo.includes(f.assignedTo)) &&
         (!f.active || c.active === (f.active === "active")) &&
         (!f.hasDue || c.due > 0) &&

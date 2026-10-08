@@ -40,7 +40,7 @@ export function UserMenu() {
           {user.avatar && <AvatarImage src={user.avatar} alt="" />}
           <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">{initials}</AvatarFallback>
         </Avatar>
-        <span className="hidden max-w-40 text-left leading-tight md:block">
+        <span className="hidden max-w-40 text-left leading-tight 2xl:block">
           <span className="block truncate text-[13px] font-medium" title={name}>{name}</span>
           <span className="block truncate text-xs text-muted-foreground">{role.name}</span>
         </span>

@@ -98,7 +98,7 @@ function Body({ saleId, mode, kind, onClose }: { saleId: string; mode: "add" | "
               <TableHead>{t("sales.refNo")}</TableHead>
               <TableHead>{t("sales.paymentMethod")}</TableHead>
               <TableHead className="text-right">{t("sales.expenseAmount")}</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-10 whitespace-nowrap">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

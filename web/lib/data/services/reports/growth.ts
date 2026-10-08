@@ -8,7 +8,7 @@ import { commit, getDB } from "@/lib/data/store/db";
 import { todayISO } from "@/lib/dates";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
-import { delay, nowISO, uid } from "../_util";
+import { delay, nowISO, uid, anyOf } from "../_util";
 import { headline, productAnalytics, reorderSuggestions, salesPatterns } from "./analytics";
 import { dayOf, inScope, isFinalSale, type ReportFilter } from "./_shared";
 import { profitBreakdown } from "./money";
@@ -112,7 +112,7 @@ export function opportunities(d: DB, f: ReportFilter = {}): Opportunity[] {
   const returned = new Map<string, number>();
   for (const t of d.transactions) if (t.type === "sell_return" && t.parentId) returned.set(t.parentId, (returned.get(t.parentId) ?? 0) + t.totals.total);
   for (const t of d.transactions) {
-    if (!isFinalSale(t) || !t.contactId || (f.locationId && t.locationId !== f.locationId)) continue;
+    if (!isFinalSale(t) || !t.contactId || (f.locationId && !anyOf(f.locationId, t.locationId))) continue;
     const v = visits.get(t.contactId) ?? { n: 0, spent: 0, last: "" };
     v.n++; v.spent += exTax(t); if (dayOf(t.date) > v.last) v.last = dayOf(t.date);
     visits.set(t.contactId, v);

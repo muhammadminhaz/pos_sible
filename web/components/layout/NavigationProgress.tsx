@@ -54,16 +54,9 @@ export function NavigationProgress() {
       setNavigating(true);
       giveUp.current = setTimeout(() => setNavigating(false), GIVE_UP_MS);
     };
-    const onNavigationStart = () => {
-      clearTimeout(giveUp.current);
-      setNavigating(true);
-      giveUp.current = setTimeout(() => setNavigating(false), GIVE_UP_MS);
-    };
     document.addEventListener("click", onClick, true);
-    window.addEventListener("posible:navigation-start", onNavigationStart);
     return () => {
       document.removeEventListener("click", onClick, true);
-      window.removeEventListener("posible:navigation-start", onNavigationStart);
       clearTimeout(showTimer.current);
       clearTimeout(giveUp.current);
     };

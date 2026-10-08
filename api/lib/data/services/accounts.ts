@@ -8,7 +8,7 @@ import { paymentKind } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { accountBalance, assertPostable, pushAccountTxn } from "./_ledger";
 import { crud } from "./catalog";
-import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
+import { delay, matches, nowISO, paginate, uid, type ListQuery, type ListResult, auditIds, type AuditRow, anyOf } from "./_util";
 
 export type AccountInput = Pick<Account, "name" | "typeId" | "number" | "note" | "details" | "openingBalance" | "allowOverdraft"> & { id?: string };
 export type AccountRow = AuditRow & {
@@ -83,7 +83,7 @@ export const accountsService = service("accountsService", {
     await delay();
     const d = getDB();
     return d.accounts
-      .filter((a) => !f.status || a.status === f.status)
+      .filter((a) => !f.status || anyOf(f.status, a.status))
       .map((a) => row(d, a))
       .filter((r) => matches(f.search, r.name, r.number, r.typeName, r.subTypeName))
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -219,11 +219,11 @@ export const accountsService = service("accountsService", {
     const names = new Map(d.accounts.map((a) => [a.id, a.name]));
     const rows: PaymentReportRow[] = [];
     for (const t of d.transactions) {
-      if (!PAYING_TYPES.includes(t.type) || (f.type && t.type !== f.type) || (f.locationId && t.locationId !== f.locationId)) continue;
+      if (!PAYING_TYPES.includes(t.type) || (f.type && !anyOf(f.type, t.type)) || (f.locationId && !anyOf(f.locationId, t.locationId))) continue;
       for (const p of t.payments) {
         const day = p.paidOn.slice(0, 10);
         if ((f.from && day < f.from) || (f.to && day > f.to)) continue;
-        if (f.accountId && p.accountId !== f.accountId) continue;
+        if (f.accountId && !anyOf(f.accountId, p.accountId)) continue;
         if (f.linked === "linked" && !p.accountId) continue;
         if (f.linked === "unlinked" && p.accountId) continue;
         if (!matches(f.search, p.refNo, t.refNo, p.note, names.get(p.accountId ?? ""))) continue;

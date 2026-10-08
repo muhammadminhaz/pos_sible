@@ -45,8 +45,9 @@ export function BigMoney({ value, className }: { value: number; className?: stri
 export function DeltaPill({ now, before, good }: { now: number; before?: number; good?: "up" | "down" }) {
   const t = useTranslations("dashboard");
   const f = useFormat();
-  if (before === undefined || before === 0) return <span className="block h-6" aria-hidden />;
-  const pct = ((now - before) / Math.abs(before)) * 100;
+  if (before === undefined) return <span className="block h-6" aria-hidden />;
+  // ponytail: nothing before means all of it is new, so it reads as ±100%
+  const pct = before === 0 ? (Math.sign(now) || 0) * 100 : ((now - before) / Math.abs(before)) * 100;
   const flat = Math.abs(pct) < 0.05;
   const up = pct > 0;
   const verdict = flat || !good ? "neutral" : (up ? "up" : "down") === good ? "good" : "bad";
@@ -75,11 +76,16 @@ function ShareBar({ pct, tone }: { pct: number; tone: "ink" | "accent" }) {
   );
 }
 
-function Headline({ label, value, before, good, share, tone, href, loading, order }: {
-  order: number; label: string; value?: number; before?: number; good?: "up" | "down"; share: number; tone: "ink" | "accent"; href: string; loading: boolean;
+function Headline({ label, value, before, good, due, kind, salesTotal, tone, href, loading, order }: {
+  order: number; label: string; value?: number; before?: number; good?: "up" | "down"; due?: number; kind: "collect" | "pay" | "spend"; salesTotal?: number; tone: "ink" | "accent"; href: string; loading: boolean;
 }) {
   const t = useTranslations("dashboard");
   const f = useFormat();
+  const clamp = (n: number) => Math.min(100, Math.max(0, n));
+  // Sales and purchases show how much is settled; expense shows how much of the sales it ate.
+  const paidPct = kind === "spend"
+    ? (value !== undefined && salesTotal && salesTotal > 0 ? clamp((value / salesTotal) * 100) : null)
+    : (value && value > 0 && due !== undefined ? clamp(((value - due) / value) * 100) : null);
   return (
     <section style={{ "--i": order } as CSSProperties} className={`${CARD} h-full`}>
       <div className="flex items-start justify-between gap-3">
@@ -89,11 +95,13 @@ function Headline({ label, value, before, good, share, tone, href, loading, orde
       {loading || value === undefined ? (
         <Skeleton className="mt-3 h-11 w-48 rounded-xl" />
       ) : (
-        <div className={cn("mt-2 text-3xl leading-tight sm:text-[2.5rem] font-semibold", value < 0 && "text-danger")}><BigMoney value={value} /></div>
+        <div className={cn("mt-2 text-3xl leading-tight font-semibold", value < 0 && "text-danger")}><BigMoney value={value} /></div>
       )}
       <div className="mt-1 min-h-6">{value !== undefined && !loading ? <DeltaPill now={value} before={before} good={good} /> : null}</div>
-      <div className="mt-4"><ShareBar pct={share} tone={tone} /></div>
-      <p className="mt-2 text-xs text-muted-foreground tabular">{t("salesVsPurchases", { pct: f.number(Math.round(share)) })}</p>
+      <div className="mt-4"><ShareBar pct={paidPct ?? 0} tone={tone} /></div>
+      <p className="mt-2 text-xs text-muted-foreground tabular">{paidPct !== null
+          ? t(kind === "collect" ? "collectedOfSales" : kind === "pay" ? "paidOfPurchases" : "spentOfSales", { pct: f.number(Math.floor(paidPct)), due: f.money(due ?? 0) })
+          : loading || value === undefined ? "\u00a0" : t(kind === "collect" ? "emptySales" : kind === "pay" ? "emptyPurchases" : value === 0 ? "emptyExpense" : "noSalesToCompare")}</p>
     </section>
   );
 }
@@ -105,7 +113,7 @@ function NetCard({ now, before, loading }: { now?: Kpis; before?: Kpis; loading:
   const net = now?.net;
   const margin = now && now.totalSales > 0 ? Math.round(((now.net / now.totalSales) * 100) * 10) / 10 : null;
   return (
-    <section style={{ "--i": 2 } as CSSProperties} className={`${CARD} h-full`}>
+    <section style={{ "--i": 3 } as CSSProperties} className={`${CARD} h-full`}>
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">{t("net")}</h3>
         <GoButton href="/reports/profit-loss" label={`${t("open")}: ${t("net")}`} />
@@ -113,30 +121,29 @@ function NetCard({ now, before, loading }: { now?: Kpis; before?: Kpis; loading:
       {loading || net === undefined ? (
         <Skeleton className="mt-3 h-11 w-48 rounded-xl" />
       ) : (
-        <div className={cn("mt-2 text-3xl leading-tight font-semibold sm:text-[2.5rem]", net < 0 && "text-danger")}><BigMoney value={net} /></div>
+        <div className={cn("mt-2 text-3xl leading-tight font-semibold", net < 0 && "text-danger")}><BigMoney value={net} /></div>
       )}
       <div className="mt-1 min-h-6">{net !== undefined && !loading ? <DeltaPill now={net} before={before?.net} good="up" /> : null}</div>
       <div className="mt-4"><ShareBar pct={Math.min(100, Math.max(0, margin ?? 0))} tone="ink" /></div>
-      <p className="mt-2 text-xs text-muted-foreground tabular">{margin !== null ? t("ofSales", { pct: f.number(margin) }) : "\u00a0"}</p>
+      <p className="mt-2 text-xs text-muted-foreground tabular">{margin !== null ? t("ofSales", { pct: f.number(margin) }) : loading || net === undefined ? "\u00a0" : t("emptyProfit")}</p>
     </section>
   );
 }
 
 export function KpiSummary({ now, before, loading }: { now?: Kpis; before?: Kpis; loading: boolean }) {
   const t = useTranslations("dashboard");
-  const total = (now?.totalSales ?? 0) + (now?.totalPurchase ?? 0);
-  const salesShare = total > 0 ? ((now?.totalSales ?? 0) / total) * 100 : 0;
   return (
-    <section aria-label={t("salesPeriod")} className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-      <Headline order={0} label={t("totalSales")} value={now?.totalSales} before={before?.totalSales} good="up" share={salesShare} tone="ink" href="/sales" loading={loading} />
-      <Headline order={1} label={t("totalPurchase")} value={now?.totalPurchase} before={before?.totalPurchase} share={total > 0 ? 100 - salesShare : 0} tone="ink" href="/purchases" loading={loading} />
-      <div className="md:col-span-2 xl:col-span-1 [&>section]:h-full"><NetCard now={now} before={before} loading={loading} /></div>
+    <section aria-label={t("salesPeriod")} className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <Headline order={0} label={t("totalSales")} value={now?.totalSales} before={before?.totalSales} good="up" due={now?.invoiceDue} kind="collect" tone="ink" href="/sales" loading={loading} />
+      <Headline order={1} label={t("totalPurchase")} value={now?.totalPurchase} before={before?.totalPurchase} good="up" due={now?.purchaseDue} kind="pay" tone="ink" href="/purchases" loading={loading} />
+      <Headline order={2} label={t("expense")} value={now?.expense} before={before?.expense} good="down" kind="spend" salesTotal={now?.totalSales} tone="ink" href="/expenses" loading={loading} />
+      <div className="[&>section]:h-full"><NetCard now={now} before={before} loading={loading} /></div>
     </section>
   );
 }
 
 /** Money going out and money owed, as one calm list under the headline cards. */
-export function MoneyOut({ now, before, loading }: { now?: Kpis; before?: Kpis; loading: boolean }) {
+export function MoneyOut({ now, loading }: { now?: Kpis; loading: boolean }) {
   const t = useTranslations("dashboard");
   const f = useFormat();
   const rows: { key: Key; label: string; warn?: boolean; href: string }[] = [
@@ -146,22 +153,14 @@ export function MoneyOut({ now, before, loading }: { now?: Kpis; before?: Kpis; 
     { key: "purchaseReturn", label: "totalPurchaseReturn", href: "/purchases/returns" },
   ];
   return (
-    <div className="grid min-w-0 grid-cols-1 gap-3">
-      <section style={{ "--i": 3 } as CSSProperties} className={CARD}>
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-sm font-medium text-muted-foreground">{t("expense")}</h3>
-          <GoButton href="/expenses" label={`${t("open")}: ${t("expense")}`} />
-        </div>
-        {loading || now?.expense === undefined ? <Skeleton className="mt-3 h-10 w-40 rounded-xl" /> : <div className="mt-2 text-3xl font-semibold"><BigMoney value={now.expense} /></div>}
-        <div className="mt-1 min-h-6">{now?.expense !== undefined && !loading ? <DeltaPill now={now.expense} before={before?.expense} good="down" /> : null}</div>
-      </section>
-      <section style={{ "--i": 4 } as CSSProperties} className={CARD} aria-label={t("owedAndReturned")}>
-        <h3 className="mb-2 text-sm font-medium text-muted-foreground">{t("owedAndReturned")}</h3>
-        <ul className="divide-y divide-border/70">
+    <div className="grid h-full min-w-0 grid-cols-1 gap-3">
+      <section style={{ "--i": 4 } as CSSProperties} className={`${CARD} flex h-full flex-col`} aria-label={t("owedAndReturned")}>
+        <h2 className="mb-2 text-base font-semibold tracking-tight">{t("owedAndReturned")}</h2>
+        <ul className="flex flex-1 flex-col divide-y divide-border/70">
           {rows.map((r) => {
             const v = now?.[r.key];
             return (
-              <li key={r.key} className="flex items-center justify-between gap-3 py-3">
+              <li key={r.key} className="flex flex-1 items-center justify-between gap-3 py-3">
                 <Link href={r.href} className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t(r.label)}</Link>
                 {loading || v === undefined ? (
                   <Skeleton className="h-5 w-24" />

@@ -17,7 +17,7 @@ import { cartTotals, paymentState } from "@/lib/pos/selectors";
 import { fulfilledQty, linkLines, syncOrders } from "./_orders";
 import { todayISO } from "@/lib/dates";
 import { expiryCutoff } from "./_stock";
-import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow } from "./_util";
+import { assertEditWindow, delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, auditIds, type AuditRow, anyOf } from "./_util";
 import { defaultAccountId } from "./_ledger";
 
 export type SaleStatus = "final" | "draft" | "quotation" | "suspended";
@@ -325,16 +325,16 @@ export const salesService = service("salesService", {
     const rows = d.transactions
       .filter((t) => t.type === "sell" && t.status !== "suspended")
       .filter((t) => !kindStatus || kindStatus.includes(t.status))
-      .filter((t) => !f.locationId || t.locationId === f.locationId)
-      .filter((t) => !f.contactId || t.contactId === f.contactId)
-      .filter((t) => !f.createdBy || t.createdBy === f.createdBy)
-      .filter((t) => !f.agentId || t.commissionAgentId === f.agentId)
-      .filter((t) => !f.channel || t.channel === f.channel)
-      .filter((t) => !f.shippingStatus || t.shipping.status === f.shippingStatus)
+      .filter((t) => !f.locationId || anyOf(f.locationId, t.locationId))
+      .filter((t) => !f.contactId || anyOf(f.contactId, t.contactId))
+      .filter((t) => !f.createdBy || anyOf(f.createdBy, t.createdBy))
+      .filter((t) => !f.agentId || anyOf(f.agentId, t.commissionAgentId))
+      .filter((t) => !f.channel || anyOf(f.channel, t.channel))
+      .filter((t) => !f.shippingStatus || anyOf(f.shippingStatus, t.shipping.status))
       .filter((t) => !f.subscription || t.recurring != null)
-      .filter((t) => !f.deliveryPersonId || t.shipping.deliveryPersonId === f.deliveryPersonId)
+      .filter((t) => !f.deliveryPersonId || anyOf(f.deliveryPersonId, t.shipping.deliveryPersonId))
       .filter((t) => !f.shipped || t.shipping.status != null)
-      .filter((t) => !f.paymentStatus || statusOf(t) === f.paymentStatus)
+      .filter((t) => !f.paymentStatus || anyOf(f.paymentStatus, statusOf(t)))
       .filter((t) => !f.from || t.date.slice(0, 10) >= f.from)
       .filter((t) => !f.to || t.date.slice(0, 10) <= f.to)
       .filter((t) => matches(f.search, t.refNo, contacts.get(t.contactId ?? "")?.name, contacts.get(t.contactId ?? "")?.mobile))

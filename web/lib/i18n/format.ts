@@ -20,7 +20,7 @@ const DEFAULTS: FormatOptions = {
   placement: "before",
   precision: 2,
   qtyPrecision: 2,
-  dateFormat: "dd-mm-yyyy",
+  dateFormat: "dd/mm/yyyy",
   timeFormat: "12",
   timeZone: "Asia/Dhaka",
 };
@@ -77,7 +77,7 @@ export function createFormatter(locale: string, opts: Partial<FormatOptions> = {
     const dd = digitFmt.format(day);
     const mm = digitFmt.format(m);
     const yyyy = yearFmt.format(y);
-    const sep = o.dateFormat.includes("/") ? "/" : "-";
+    const sep = o.dateFormat === "mm-dd-yyyy" ? "-" : "/"; // ponytail: a legacy saved "dd-mm-yyyy" also renders with slashes
     return o.dateFormat.startsWith("dd") ? [dd, mm, yyyy].join(sep) : [mm, dd, yyyy].join(sep);
   };
 

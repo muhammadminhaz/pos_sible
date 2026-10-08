@@ -51,7 +51,7 @@ export function RevenueSummary({ compact }: { compact?: boolean }) {
         ) : revenue === undefined ? <Failed /> : (
           <>
             <div className="mt-2 text-4xl leading-tight font-semibold sm:text-5xl"><BigMoney value={revenue.total} /></div>
-            <div className="mt-2"><Delta now={revenue.thisMonth} before={revenue.lastMonth} label="this month vs last" /></div>
+            <div className="mt-2"><Delta now={revenue.thisMonth} before={revenue.lastMonth} label="This month vs last" /></div>
             <p className="mt-5 text-sm">{formatMoney(revenue.thisMonth)} received this month</p>
             <p className="mt-1 text-sm text-muted-foreground">{revenue.firstPaymentAt ? `${revenue.payments} payment${revenue.payments === 1 ? "" : "s"} since ${day(revenue.firstPaymentAt)}` : "Nothing recorded yet"}</p>
             {compact && <p className="mt-4 text-sm"><Link href="/admin/revenue" className="text-primary hover:underline">See the full breakdown</Link></p>}

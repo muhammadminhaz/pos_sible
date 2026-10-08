@@ -34,10 +34,9 @@ function MoneyText({ value }: { value: number }) {
   return m ? <><span className="mr-1 align-[0.55em] text-[0.45em] font-medium text-muted-foreground">{m[1]}</span>{m[2]}</> : <>{formatMoney(shown)}</>;
 }
 
-/** How a figure moved against the one before it: a green or red pill with an arrow. Nothing to compare gives no pill. */
+/** How a figure moved against the one before it: a green or red pill with an arrow. Nothing before it reads as +100%. */
 export function Delta({ now, before, label }: { now: number; before: number; label: string }) {
-  if (!before) return <span className="block h-6" aria-hidden />;
-  const pct = ((now - before) / before) * 100;
+  const pct = before ? ((now - before) / Math.abs(before)) * 100 : (Math.sign(now) || 0) * 100;
   const flat = Math.abs(pct) < 0.05;
   const up = pct > 0;
   const Icon = flat ? MinusIcon : up ? ArrowUpRightIcon : ArrowDownRightIcon;
