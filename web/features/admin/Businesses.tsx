@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Flag, isPhoneOk, PhoneInput } from "@/components/shared/PhoneInput";
 import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollFade } from "@/components/ui/scroll-fade";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminHeader, useAdmin } from "./AdminShell";
 import { call, day, formatBytes, type Business, type ModuleDef, type Plan } from "./api";
 import { Pager, StateBadge, usePaged } from "./parts";
@@ -110,8 +111,9 @@ export function BusinessesPage() {
         <Input aria-label="Search businesses" placeholder="Search name or username…" className="pl-8" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       <div className="overflow-hidden rounded-2xl border bg-card">
-        <Table>
-          <TableHeader>
+        <ScrollFade tabIndex={0} className="relative h-[calc(100dvh-20rem)] min-h-96 overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+        <table className="w-full caption-bottom text-sm">
+          <TableHeader className="sticky top-0 z-10 bg-muted">
             <TableRow>
               <TableHead>Business</TableHead>
               <TableHead>Business code</TableHead>
@@ -158,7 +160,8 @@ export function BusinessesPage() {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+        </table>
+        </ScrollFade>
         <Pager paged={paged} />
       </div>
 
