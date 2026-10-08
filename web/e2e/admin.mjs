@@ -72,7 +72,7 @@ await admin.getByRole("button", { name: "Activate", exact: true }).click();
 await admin.locator("tr", { hasText: name }).getByText("Active").waitFor();
 check(true, "after activating, the business shows as active");
 
-for (const [link, heading] of [["Users", "Users"], ["Subscriptions", "Subscriptions"], ["Revenue", "Revenue"], ["Dashboard", "Dashboard"]]) {
+for (const [link, heading] of [["Packages", "Packages"], ["Subscriptions", "Subscriptions"], ["Revenue", "Revenue"], ["Dashboard", "Dashboard"]]) {
   await admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: link }).click();
   await admin.getByRole("heading", { name: heading, level: 1 }).waitFor();
   await admin.waitForTimeout(300);

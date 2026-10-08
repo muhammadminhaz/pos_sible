@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { BanknoteIcon, Building2Icon, CreditCardIcon, LayoutDashboardIcon, Loader2Icon, LogOutIcon, MenuIcon, ShieldCheckIcon, UsersIcon } from "lucide-react";
+import { BanknoteIcon, Building2Icon, CreditCardIcon, LayoutDashboardIcon, Loader2Icon, LogOutIcon, MenuIcon, PackageIcon, ShieldCheckIcon } from "lucide-react";
 import { cn } from "cn";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,8 @@ export function useAdmin(): AdminState {
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/admin/businesses", label: "Businesses", icon: Building2Icon },
-  { href: "/admin/users", label: "Users", icon: UsersIcon },
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCardIcon },
+  { href: "/admin/packages", label: "Packages", icon: PackageIcon },
   { href: "/admin/revenue", label: "Revenue", icon: BanknoteIcon },
 ] as const;
 

@@ -10,7 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCountUp } from "@/lib/useCountUp";
-import { formatMoney, STATE_LABEL, type Business } from "./api";
+import GlideSelect from "@/components/ui/glide-select";
+import { currencyOptions } from "@/lib/i18n/currencies";
+import { toast } from "@/lib/toast";
+import { useAdmin } from "./AdminShell";
+import { call, day, formatMoney, STATE_LABEL, type Business } from "./api";
 
 const STATE_STYLE = {
   active: "border-transparent bg-success-soft text-success-foreground",
@@ -175,3 +179,31 @@ export function sortAndPage<T>(rows: T[], query: TableQuery, sorts: Record<strin
 
 /** Whether an ISO date falls on or between the two yyyy-mm-dd days of a range filter (no range: always). */
 export const inRange = (iso: string | null, r?: { from: string; to: string }) => !r || (iso !== null && iso.slice(0, 10) >= r.from && iso.slice(0, 10) <= r.to);
+
+/** Changes the currency every price and payment is shown in. Stored amounts keep their own currency and are converted for display. */
+export function CurrencyPicker() {
+  const { me, reload } = useAdmin();
+  return (
+    <div className="flex items-center gap-2">
+      <span className="hidden text-xs text-muted-foreground sm:inline">{me.rates?.at ? `Rates from ${day(me.rates.at)}` : "No exchange rates yet, amounts are not converted"}</span>
+      <GlideSelect
+        field
+        searchable
+        size="sm"
+        ariaLabel="Currency"
+        searchPlaceholder="Search currency"
+        options={currencyOptions("en")}
+        value={me.currency}
+        menuWidth={320}
+        align="right"
+        onChange={async (currency) => {
+          const res = await call("settings", { method: "PATCH", body: JSON.stringify({ currency }) }).catch(() => null);
+          if (!res?.ok) return void toast.error("Couldn't change the currency. Try again.");
+          await reload();
+          toast.success("Currency updated");
+        }}
+        className="w-40"
+      />
+    </div>
+  );
+}
