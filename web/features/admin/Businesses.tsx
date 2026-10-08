@@ -110,7 +110,6 @@ export function BusinessesPage() {
         <Input aria-label="Search businesses" placeholder="Search name or username…" className="pl-8" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       <div className="overflow-hidden rounded-2xl border bg-card">
-        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -129,8 +128,8 @@ export function BusinessesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!businesses && <TableRow><TableCell colSpan={11} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
-            {businesses && rows.length === 0 && <TableRow><TableCell colSpan={11} className="h-24 text-center text-muted-foreground">{businesses.length ? "No businesses match." : "No business accounts yet. Add the first one."}</TableCell></TableRow>}
+            {!businesses && <TableRow><TableCell colSpan={12} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
+            {businesses && rows.length === 0 && <TableRow><TableCell colSpan={12} className="h-24 text-center text-muted-foreground">{businesses.length ? "No businesses match." : "No business accounts yet. Add the first one."}</TableCell></TableRow>}
             {paged.rows.map((b) => (
               <TableRow key={b.id}>
                 <TableCell className="font-medium">{b.name}</TableCell>
@@ -160,7 +159,6 @@ export function BusinessesPage() {
             ))}
           </TableBody>
         </Table>
-        </div>
         <Pager paged={paged} />
       </div>
 

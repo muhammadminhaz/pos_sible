@@ -149,7 +149,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu" onClick={() => setMenu(true)}><MenuIcon /></Button>
             <ThemeToggle />
           </header>
-          <main className="mx-auto grid w-full max-w-6xl content-start gap-4 px-4 py-8 sm:px-6">{children}</main>
+          <main className="mx-auto grid w-full max-w-6xl grid-cols-[minmax(0,1fr)] content-start gap-4 px-4 py-8 sm:px-6">{children}</main>
         </div>
       </div>
     </Ctx.Provider>
