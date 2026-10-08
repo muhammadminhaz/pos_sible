@@ -58,6 +58,8 @@ export type DataTableProps<T> = {
   defaultHidden?: string[];
   /** "card" gives the table the same surface as the dashboard cards (used by reports); "bare" has none, for a table already inside a card. */
   surface?: "plain" | "card" | "bare";
+  /** Offer the created/updated-by columns when rows carry them. Off for tables with no business session (platform admin). */
+  audit?: boolean;
 };
 
 const ROW_H = { comfortable: "h-10", compact: "h-8" };
@@ -81,6 +83,7 @@ export function DataTable<T>({
   empty,
   defaultHidden = [],
   surface = "plain",
+  audit = true,
 }: DataTableProps<T>) {
   const t = useTranslations();
   const density = useUI((s) => s.density);
@@ -90,7 +93,7 @@ export function DataTable<T>({
   const [selection, setSelection] = useState<RowSelectionState>({});
   const [selectedRows, setSelectedRows] = useState<Record<string, T>>({});
 
-  const auditColumns = useAuditColumns(data);
+  const auditColumns = useAuditColumns(audit ? data : []);
   const hidden = pref?.hidden ?? (auditColumns.length ? [...defaultHidden, ...AUDIT_COLUMN_IDS] : defaultHidden);
   const columnVisibility = useMemo<VisibilityState>(() => Object.fromEntries(hidden.map((id) => [id, false])), [hidden]);
   const sorting: SortingState = query.sort ? [query.sort] : [];

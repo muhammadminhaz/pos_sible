@@ -1,23 +1,25 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { BanIcon, EyeIcon, EyeOffIcon, Loader2Icon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, SearchIcon, SettingsIcon, Trash2Icon } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { BanIcon, Building2Icon, EyeIcon, EyeOffIcon, Loader2Icon, PlusIcon, RefreshCwIcon, SettingsIcon, Trash2Icon } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { toast } from "@/lib/toast";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Flag, isPhoneOk, PhoneInput } from "@/components/shared/PhoneInput";
+import { DataTable, RowActions, useTableQuery } from "@/components/shared/DataTable";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { FilterBar, useUrlFilters, type FilterDef } from "@/components/shared/FilterBar";
+import { decodeRange } from "@/components/shared/FilterBar/useUrlFilters";
 import { Switch } from "@/components/ui/switch";
-import { ScrollFade } from "@/components/ui/scroll-fade";
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminHeader, useAdmin } from "./AdminShell";
-import { call, day, formatBytes, type Business, type ModuleDef, type Plan } from "./api";
-import { Pager, StateBadge, usePaged } from "./parts";
+import { call, day, formatBytes, STATE_LABEL, type Business, type ModuleDef, type Plan } from "./api";
+import { StateBadge } from "./parts";
 import { ActivateForm, CancelDialog, planText } from "./SubscriptionDialogs";
 
 function PlanSelect({ id, plans, value, onChange }: { id: string; plans: Plan[]; value: string; onChange: (v: string) => void }) {
@@ -86,18 +88,66 @@ function PasswordField({ id, name, value, onChange, label, autoComplete }: { id:
   );
 }
 
+type Url = { plan?: string; status?: string; free?: string; joined?: string };
+const URL_KEYS = ["plan", "status", "free", "joined"] as const;
+const SORTS: Record<string, (b: Business) => string | number> = {
+  name: (b) => b.name.toLowerCase(), code: (b) => b.code, ownerUsername: (b) => (b.ownerUsername ?? "").toLowerCase(), planLabel: (b) => b.planLabel.toLowerCase(),
+  modules: (b) => b.modules.length, state: (b) => b.state, expiresAt: (b) => b.expiresAt ?? "", users: (b) => b.users, storageBytes: (b) => b.storageBytes, lastActiveAt: (b) => b.lastActiveAt ?? "",
+};
+
 export function BusinessesPage() {
   const { businesses, plans, modules, reload } = useAdmin();
-  const [q, setQ] = useState("");
+  const [url, setUrl, reset] = useUrlFilters<Url>([...URL_KEYS]);
+  const [query, setQuery] = useTableQuery("admin-businesses");
   const [adding, setAdding] = useState(false);
   const [managing, setManaging] = useState<Business | null>(null);
   const [deleting, setDeleting] = useState<Business | null>(null);
   const [activating, setActivating] = useState<Business | null>(null);
   const [cancelling, setCancelling] = useState<Business | null>(null);
-  const term = q.trim().toLowerCase();
-  const rows = (businesses ?? []).filter((b) => !term || b.name.toLowerCase().includes(term) || (b.ownerUsername ?? "").toLowerCase().includes(term) || b.code.includes(term));
 
-  const paged = usePaged(rows, term);
+  const term = query.search.trim().toLowerCase();
+  const planIds = url.plan?.split(",");
+  const states = url.status?.split(",");
+  const joined = decodeRange(url.joined);
+  const filtered = (businesses ?? []).filter((b) =>
+    (!term || b.name.toLowerCase().includes(term) || (b.ownerUsername ?? "").toLowerCase().includes(term) || b.code.includes(term)) &&
+    (!planIds || planIds.includes(b.plan)) && (!states || states.includes(b.state)) && (url.free !== "1" || b.free) &&
+    (!joined || (b.createdAt.slice(0, 10) >= joined.from && b.createdAt.slice(0, 10) <= joined.to)));
+  const key = query.sort ? SORTS[query.sort.id] : undefined;
+  const sorted = key ? [...filtered].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * (query.sort?.desc ? -1 : 1)) : filtered;
+  const rows = query.pageSize === -1 ? sorted : sorted.slice(query.page * query.pageSize, (query.page + 1) * query.pageSize);
+
+  const col = (id: string, label: string, cell: ColumnDef<Business>["cell"], meta: ColumnDef<Business>["meta"] = {}): ColumnDef<Business> => ({ id, accessorFn: SORTS[id], header: label, cell, meta: { label, ...meta } });
+  const columns: ColumnDef<Business>[] = [
+    col("name", "Business", ({ row }) => <span className="font-medium">{row.original.name}</span>, { csv: (b) => b.name }),
+    col("code", "Business code", ({ row }) => <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{row.original.code}</code>),
+    col("ownerUsername", "Owner username", ({ row }) => <span className="text-muted-foreground">{row.original.ownerUsername ?? "—"}</span>),
+    { id: "contact", header: "Contact", enableSorting: false, accessorFn: (b) => [b.contactEmail, b.contactPhone].filter(Boolean).join(" · "), meta: { label: "Contact" }, cell: ({ row }) => <Contact email={row.original.contactEmail} phone={row.original.contactPhone} /> },
+    col("planLabel", "Package", ({ row }) => <>{row.original.planLabel}{row.original.free && <span className="ml-2 rounded-full bg-success-soft px-2 py-0.5 text-xs text-success-foreground">Free</span>}</>),
+    col("modules", "Modules", ({ row }) => <span className="text-muted-foreground">{row.original.modules.length}/{modules.length}</span>, { csv: (b) => b.modules.length }),
+    col("state", "Subscription", ({ row }) => <StateBadge state={row.original.state} />, { csv: (b) => STATE_LABEL[b.state] }),
+    col("expiresAt", "Ends", ({ row }) => <span className="whitespace-nowrap">{day(row.original.expiresAt)}</span>, { csv: (b) => day(b.expiresAt) }),
+    col("users", "Users", ({ row }) => <span className="tabular-nums">{row.original.users}{row.original.maxUsers !== null ? ` / ${row.original.maxUsers}` : ""}</span>, { align: "right", csv: (b) => b.users }),
+    col("storageBytes", "Storage", ({ row }) => <span className="whitespace-nowrap tabular-nums">{formatBytes(row.original.storageBytes)}</span>, { align: "right", csv: (b) => formatBytes(b.storageBytes) }),
+    col("lastActiveAt", "Last active", ({ row }) => <span className="whitespace-nowrap">{day(row.original.lastActiveAt)}</span>, { csv: (b) => day(b.lastActiveAt) }),
+    {
+      id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined },
+      cell: ({ row }) => (
+        <RowActions items={[
+          { label: "Manage account", icon: SettingsIcon, onClick: () => setManaging(row.original) },
+          { label: "Activate subscription", icon: RefreshCwIcon, onClick: () => setActivating(row.original) },
+          { label: "Cancel subscription", icon: BanIcon, destructive: true, onClick: () => setCancelling(row.original), hidden: row.original.state === "cancelled" },
+          { label: "Delete business", icon: Trash2Icon, destructive: true, onClick: () => setDeleting(row.original) },
+        ]} />
+      ),
+    },
+  ];
+  const defs: FilterDef[] = [
+    { key: "plan", label: "Package", type: "select", options: plans.map((p) => ({ value: p.id, label: p.label })) },
+    { key: "status", label: "Subscription", type: "select", options: Object.entries(STATE_LABEL).map(([value, label]) => ({ value, label })) },
+    { key: "free", label: "Free accounts", type: "toggle" },
+    { key: "joined", label: "Joined", type: "daterange" },
+  ];
 
   return (
     <>
@@ -106,64 +156,12 @@ export function BusinessesPage() {
         description="Each business is a separate account. You see its package, users and storage, never its data."
         actions={<Button onClick={() => setAdding(true)}><PlusIcon />Add business</Button>}
       />
-      <div className="relative max-w-xs">
-        <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input aria-label="Search businesses" placeholder="Search name or username…" className="pl-8" value={q} onChange={(e) => setQ(e.target.value)} />
-      </div>
-      <div className="overflow-hidden rounded-2xl border bg-card">
-        <ScrollFade tabIndex={0} className="relative h-[calc(100dvh-20rem)] min-h-96 overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-        <table className="w-full caption-bottom text-sm">
-          <TableHeader className="sticky top-0 z-10 bg-muted">
-            <TableRow>
-              <TableHead>Business</TableHead>
-              <TableHead>Business code</TableHead>
-              <TableHead>Owner username</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Package</TableHead>
-              <TableHead>Modules</TableHead>
-              <TableHead>Subscription</TableHead>
-              <TableHead>Ends</TableHead>
-              <TableHead className="text-right">Users</TableHead>
-              <TableHead className="text-right">Storage</TableHead>
-              <TableHead>Last active</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!businesses && <TableRow><TableCell colSpan={12} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
-            {businesses && rows.length === 0 && <TableRow><TableCell colSpan={12} className="h-24 text-center text-muted-foreground">{businesses.length ? "No businesses match." : "No business accounts yet. Add the first one."}</TableCell></TableRow>}
-            {paged.rows.map((b) => (
-              <TableRow key={b.id}>
-                <TableCell className="font-medium">{b.name}</TableCell>
-                <TableCell><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{b.code}</code></TableCell>
-                <TableCell className="text-muted-foreground">{b.ownerUsername ?? "—"}</TableCell>
-                <TableCell><Contact email={b.contactEmail} phone={b.contactPhone} /></TableCell>
-                <TableCell>{b.planLabel}{b.free && <span className="ml-2 rounded-full bg-success-soft px-2 py-0.5 text-xs text-success-foreground">Free</span>}</TableCell>
-                <TableCell className="text-muted-foreground">{b.modules.length}/{modules.length}</TableCell>
-                <TableCell><StateBadge state={b.state} /></TableCell>
-                <TableCell className="whitespace-nowrap">{day(b.expiresAt)}</TableCell>
-                <TableCell className="text-right tabular-nums">{b.users}{b.maxUsers !== null ? ` / ${b.maxUsers}` : ""}</TableCell>
-                <TableCell className="text-right whitespace-nowrap tabular-nums">{formatBytes(b.storageBytes)}</TableCell>
-                <TableCell className="whitespace-nowrap">{day(b.lastActiveAt)}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild><Button size="icon-sm" variant="ghost" aria-label={`Actions for ${b.name}`}><MoreHorizontalIcon /></Button></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="min-w-56">
-                      <DropdownMenuItem onSelect={() => setManaging(b)}><SettingsIcon />Manage account</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setActivating(b)}><RefreshCwIcon />Activate subscription</DropdownMenuItem>
-                      {b.state !== "cancelled" && <DropdownMenuItem variant="destructive" onSelect={() => setCancelling(b)}><BanIcon />Cancel subscription</DropdownMenuItem>}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" onSelect={() => setDeleting(b)}><Trash2Icon />Delete business</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </table>
-        </ScrollFade>
-        <Pager paged={paged} />
-      </div>
+      <FilterBar defs={defs} value={url} onChange={(p) => { setUrl(p); setQuery({ page: 0 }); }} onReset={() => { reset(); setQuery({ page: 0 }); }} />
+      <DataTable
+        tableId="admin-businesses" columns={columns} data={rows} total={sorted.length} loading={!businesses} query={query} onQueryChange={setQuery} exportName="businesses" audit={false}
+        exportRows={async () => sorted} getRowId={(b) => b.id}
+        empty={<EmptyState icon={Building2Icon} title={businesses?.length ? "No businesses match" : "No business accounts yet"} description={businesses?.length ? "Try a different search or clear the filters." : "Add the first one to get started."} />}
+      />
 
       <Dialog open={adding} onOpenChange={setAdding}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">{adding && <AddForm plans={plans} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
