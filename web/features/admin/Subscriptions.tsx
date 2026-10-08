@@ -1,12 +1,16 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { BanIcon, CreditCardIcon, Loader2Icon, MoreHorizontalIcon, PackageIcon, PencilIcon, PlusIcon, ReceiptIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { BanIcon, CreditCardIcon, Loader2Icon, PackageIcon, PencilIcon, PlusIcon, ReceiptIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "@/lib/toast";
+import { DataTable, RowActions, useTableQuery } from "@/components/shared/DataTable";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { FilterBar, useUrlFilters, type FilterDef } from "@/components/shared/FilterBar";
+import { decodeRange } from "@/components/shared/FilterBar/useUrlFilters";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,9 +20,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { AdminHeader, useAdmin } from "./AdminShell";
 import GlideSelect from "@/components/ui/glide-select";
 import { currencyOptions } from "@/lib/i18n/currencies";
-import { call, day, formatMoney, priceText, termText, type Business, type ModuleDef, type PeriodUnit, type Plan } from "./api";
-import { Empty, Pager, StateBadge, usePaged } from "./parts";
+import { call, day, formatMoney, STATE_LABEL, priceText, termText, type Business, type ModuleDef, type PeriodUnit, type Plan } from "./api";
+import { Empty, inRange, sortAndPage, StateBadge } from "./parts";
 import { ActivateForm, CancelDialog, PaymentsDialog } from "./SubscriptionDialogs";
+
+type Url = { plan?: string; status?: string; free?: string; ends?: string };
+const URL_KEYS = ["plan", "status", "free", "ends"] as const;
+const SORTS: Record<string, (b: Business) => string | number> = {
+  name: (b) => b.name.toLowerCase(), planLabel: (b) => b.planLabel.toLowerCase(), state: (b) => b.state, lastPaidAt: (b) => b.lastPaidAt ?? "", expiresAt: (b) => (b.free ? "9999" : (b.expiresAt ?? "")), price: (b) => (b.free ? 0 : b.price),
+};
 
 export function SubscriptionsPage() {
   const { me, plans, businesses, reload } = useAdmin();
@@ -28,7 +38,49 @@ export function SubscriptionsPage() {
   const [viewing, setViewing] = useState<Business | null>(null);
   const [cancelling, setCancelling] = useState<Business | null>(null);
   const list = businesses ?? [];
-  const paged = usePaged(list, "");
+  const [url, setUrl, reset] = useUrlFilters<Url>([...URL_KEYS]);
+  const [query, setQuery] = useTableQuery("admin-subscriptions");
+  const term = query.search.trim().toLowerCase();
+  const planIds = url.plan?.split(",");
+  const states = url.status?.split(",");
+  const ends = decodeRange(url.ends);
+  const filtered = list.filter((b) => (!term || b.name.toLowerCase().includes(term)) && (!planIds || planIds.includes(b.plan)) && (!states || states.includes(b.state)) && (url.free !== "1" || b.free) && inRange(b.expiresAt, ends));
+  const { sorted, page } = sortAndPage(filtered, query, SORTS);
+  const ratesNote = me.rates?.at ? `Rates from ${day(me.rates.at)}` : "No exchange rates yet, amounts are not converted";
+
+  const col = (id: string, label: string, cell: ColumnDef<Business>["cell"], meta: ColumnDef<Business>["meta"] = {}): ColumnDef<Business> => ({ id, accessorFn: SORTS[id], header: label, cell, meta: { label, ...meta } });
+  const columns: ColumnDef<Business>[] = [
+    col("name", "Business", ({ row }) => <span className="font-medium">{row.original.name}</span>),
+    col("planLabel", "Package", ({ row }) => {
+      const b = row.original;
+      return (
+        <div className="grid gap-0.5">
+          <span>{b.planLabel}{b.free && <span className="ml-2 rounded-full bg-success-soft px-2 py-0.5 text-xs text-success-foreground">Free</span>}</span>
+          {b.nextPlanLabel && <span className="text-xs text-muted-foreground">Then {b.nextPlanLabel}</span>}
+        </div>
+      );
+    }, { csv: (b) => b.planLabel }),
+    col("state", "Status", ({ row }) => <StateBadge state={row.original.state} />, { csv: (b) => STATE_LABEL[b.state] }),
+    col("lastPaidAt", "Last paid", ({ row }) => <span className="whitespace-nowrap">{day(row.original.lastPaidAt)}</span>, { csv: (b) => day(b.lastPaidAt) }),
+    col("expiresAt", "Ends", ({ row }) => <span className="whitespace-nowrap">{row.original.free ? "Never" : day(row.original.expiresAt)}</span>, { csv: (b) => (b.free ? "Never" : day(b.expiresAt)) }),
+    col("price", "Price", ({ row }) => <span className="whitespace-nowrap tabular-nums">{row.original.free ? "Free" : priceText(row.original)}</span>, { align: "right", csv: (b) => (b.free ? "Free" : priceText(b)) }),
+    {
+      id: "actions", enableSorting: false, enableHiding: false, meta: { className: "w-10", csv: () => undefined },
+      cell: ({ row }) => (
+        <RowActions items={[
+          { label: "Activate or change package", icon: RefreshCwIcon, onClick: () => setActivating(row.original) },
+          { label: "Payments and proof", icon: ReceiptIcon, onClick: () => setViewing(row.original) },
+          { label: "Cancel subscription", icon: BanIcon, destructive: true, onClick: () => setCancelling(row.original), hidden: row.original.state === "cancelled" },
+        ]} />
+      ),
+    },
+  ];
+  const defs: FilterDef[] = [
+    { key: "plan", label: "Package", type: "select", options: plans.map((p) => ({ value: p.id, label: p.label })) },
+    { key: "status", label: "Status", type: "select", options: Object.entries(STATE_LABEL).map(([value, label]) => ({ value, label })) },
+    { key: "free", label: "Free accounts", type: "toggle" },
+    { key: "ends", label: "Ends", type: "daterange" },
+  ];
 
   const done = async (close: () => void) => { close(); await reload(); };
 
@@ -40,64 +92,15 @@ export function SubscriptionsPage() {
         actions={<Button onClick={() => setEditing("new")}><PlusIcon />New package</Button>}
       />
 
-      <h2 className="mt-2 text-lg font-semibold tracking-tight">Subscriptions</h2>
-      <div className="overflow-hidden rounded-2xl border bg-card">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Business</TableHead>
-                <TableHead>Package</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last paid</TableHead>
-                <TableHead>Ends</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {!businesses && <TableRow><TableCell colSpan={7} className="h-24 text-center text-muted-foreground">Loading…</TableCell></TableRow>}
-              {businesses && list.length === 0 && <EmptyRow cols={7} icon={CreditCardIcon}>No businesses yet. Add one under Businesses, then activate its subscription here once it pays.</EmptyRow>}
-              {paged.rows.map((b) => (
-                <TableRow key={b.id}>
-                  <TableCell className="font-medium">{b.name}</TableCell>
-                  <TableCell>
-                    <div className="grid gap-0.5">
-                      <span>{b.planLabel}{b.free && <span className="ml-2 rounded-full bg-success-soft px-2 py-0.5 text-xs text-success-foreground">Free</span>}</span>
-                      {b.nextPlanLabel && <span className="text-xs text-muted-foreground">Then {b.nextPlanLabel}</span>}
-                    </div>
-                  </TableCell>
-                  <TableCell><StateBadge state={b.state} /></TableCell>
-                  <TableCell className="whitespace-nowrap">{day(b.lastPaidAt)}</TableCell>
-                  <TableCell className="whitespace-nowrap">{b.free ? "Never" : day(b.expiresAt)}</TableCell>
-                  <TableCell className="text-right whitespace-nowrap tabular-nums">{b.free ? "Free" : priceText(b)}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button size="icon-sm" variant="ghost" aria-label={`Actions for ${b.name}`}><MoreHorizontalIcon /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-56">
-                        <DropdownMenuItem onSelect={() => setActivating(b)}><RefreshCwIcon />Activate or change package</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setViewing(b)}><ReceiptIcon />Payments and proof</DropdownMenuItem>
-                        {b.state !== "cancelled" && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={() => setCancelling(b)}><BanIcon />Cancel subscription</DropdownMenuItem></>}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <Pager paged={paged} />
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Packages</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <FilterBar defs={defs} value={url} onChange={(p) => { setUrl(p); setQuery({ page: 0 }); }} onReset={() => { reset(); setQuery({ page: 0 }); }} />
         <div className="flex items-center gap-2">
-          <span className="hidden text-xs text-muted-foreground sm:inline">Shows all prices and revenue in this currency. Amounts are not converted.</span>
+          <span className="hidden text-xs text-muted-foreground sm:inline">{ratesNote}</span>
           <GlideSelect
             field
             searchable
             size="sm"
-            ariaLabel="Subscription currency"
+            ariaLabel="Currency"
             searchPlaceholder="Search currency"
             options={currencyOptions("en")}
             value={me.currency}
@@ -113,6 +116,13 @@ export function SubscriptionsPage() {
           />
         </div>
       </div>
+      <DataTable
+        tableId="admin-subscriptions" columns={columns} data={page} total={sorted.length} loading={!businesses} query={query} onQueryChange={setQuery} exportName="subscriptions" audit={false} fill="26rem"
+        exportRows={async () => sorted} getRowId={(b) => b.id}
+        empty={<EmptyState icon={CreditCardIcon} title={list.length ? "No subscriptions match" : "No businesses yet"} description={list.length ? "Try a different search or clear the filters." : "Add one under Businesses, then activate its subscription here once it pays."} />}
+      />
+
+      <h2 className="mt-4 text-lg font-semibold tracking-tight">Packages</h2>
       <div className="overflow-x-auto rounded-2xl border bg-card">
         <Table>
           <TableHeader>

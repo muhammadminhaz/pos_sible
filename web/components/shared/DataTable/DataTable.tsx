@@ -60,6 +60,8 @@ export type DataTableProps<T> = {
   surface?: "plain" | "card" | "bare";
   /** Offer the created/updated-by columns when rows carry them. Off for tables with no business session (platform admin). */
   audit?: boolean;
+  /** Fixed height that reaches the bottom of the viewport: the CSS length of everything else on the page (e.g. "23rem"). Rows scroll inside; an empty table keeps the height. */
+  fill?: string;
 };
 
 const ROW_H = { comfortable: "h-10", compact: "h-8" };
@@ -84,6 +86,7 @@ export function DataTable<T>({
   defaultHidden = [],
   surface = "plain",
   audit = true,
+  fill,
 }: DataTableProps<T>) {
   const t = useTranslations();
   const density = useUI((s) => s.density);
@@ -208,7 +211,7 @@ export function DataTable<T>({
         {toolbar}
       </Toolbar>
 
-      <ScrollFade tabIndex={0} className="relative hidden max-h-[calc(100dvh-16rem)] overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:block print:max-h-none">
+      <ScrollFade tabIndex={0} style={fill ? { height: `calc(100dvh - ${fill})`, minHeight: "16rem" } : undefined} className="relative hidden max-h-[calc(100dvh-16rem)] overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:block print:max-h-none">
         <table className="w-full caption-bottom text-[13px]">
           <thead className="sticky top-0 z-10 bg-muted">
             {table.getHeaderGroups().map((hg) => (

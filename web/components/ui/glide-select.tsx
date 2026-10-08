@@ -97,6 +97,7 @@ export default function GlideSelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
   const instant = useRef(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -139,10 +140,20 @@ export default function GlideSelect({
       p.style.transition = "";
     }
     // Bring the chosen row into view in long lists.
-    if (selected >= 0) el.scrollTop = Math.max(0, selected * step - el.clientHeight / 2 + S.row / 2);
+    const list = listRef.current;
+    if (list && selected >= 0) list.scrollTop = Math.max(0, selected * step - list.clientHeight / 2 + S.row / 2);
     searchRef.current?.focus({ preventScroll: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
+
+  // The menu is hidden until it has a position, and a hidden input cannot take focus, so the search box gets it here.
+  // A press on the trigger also moves focus to the trigger once the event finishes, so focus is taken again on the next frame.
+  useLayoutEffect(() => {
+    if (phase !== "open" || !pos || !searchable) return undefined;
+    searchRef.current?.focus({ preventScroll: true });
+    const id = requestAnimationFrame(() => searchRef.current?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(id);
+  }, [phase, pos, searchable]);
 
   useLayoutEffect(() => {
     const p = pillRef.current;
@@ -287,7 +298,7 @@ export default function GlideSelect({
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
-    scrub.current = { id: e.pointerId, top: e.currentTarget.getBoundingClientRect().top + PAD };
+    scrub.current = { id: e.pointerId, top: e.currentTarget.getBoundingClientRect().top - e.currentTarget.scrollTop + PAD };
     instant.current = true;
     setActive(rowAt(e.clientY));
   };
@@ -358,6 +369,7 @@ export default function GlideSelect({
               role="listbox"
               aria-multiselectable={multiple || undefined}
               aria-label={ariaLabel}
+              ref={listRef}
               className="glide-select__list"
               data-live={active !== null ? "" : undefined}
               onPointerOver={onListOver}

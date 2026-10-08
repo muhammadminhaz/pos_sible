@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { pool, ready } from "./pool";
 import { effectiveModules, MODULE_IDS, monthlyEquivalent, subscriptionState, termInterval, type ModuleDef, type ModuleId, type PeriodUnit, type Plan, type SubscriptionStatus } from "./plans";
 import { hashPassword } from "./passwords";
+import { convert, getRates, round2 } from "./rates";
 import { sqlName, TABLE_NAMES } from "./tables";
 import { clearFails, recordFail, throttled } from "./throttle";
 
@@ -23,7 +24,7 @@ export function adminCredentials(): { username: string; password: string } {
   return { username: process.env.ADMIN_USERNAME?.trim() ?? "", password: process.env.ADMIN_PASSWORD ?? "" };
 }
 
-type PlanRow = { id: string; label: string; max_users: number | null; price: string; period_unit: PeriodUnit; period_count: number; modules: string[]; description: string; benefits: string[] };
+type PlanRow = { id: string; label: string; max_users: number | null; price: string; period_unit: PeriodUnit; period_count: number; modules: string[]; description: string; benefits: string[]; currency: string };
 const toPlan = (r: PlanRow): Plan => ({
   id: r.id, label: r.label, maxUsers: r.max_users, price: Number(r.price), periodUnit: r.period_unit, periodCount: r.period_count,
   modules: MODULE_IDS.filter((m) => r.modules.includes(m)), description: r.description, benefits: r.benefits,
@@ -38,11 +39,19 @@ export async function setCurrency(code: string): Promise<void> {
   await pool().query("INSERT INTO platform_settings (key, value) VALUES ('currency', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [code]);
 }
 
-const PLAN_COLUMNS = "id, label, max_users, price, period_unit, period_count, modules, description, benefits";
+const PLAN_COLUMNS = "id, label, max_users, price, period_unit, period_count, modules, description, benefits, currency";
 
+/** Packages with prices converted to the platform's display currency (2 decimals). Stored prices keep their own currency. */
 export async function getPlans(): Promise<Plan[]> {
   await ready();
-  return (await pool().query<PlanRow>(`SELECT ${PLAN_COLUMNS} FROM plans ORDER BY sort, id`)).rows.map(toPlan);
+  const [rows, shown, rates] = await Promise.all([pool().query<PlanRow>(`SELECT ${PLAN_COLUMNS} FROM plans ORDER BY sort, id`), getCurrency(), getRates()]);
+  return rows.rows.map((r) => ({ ...toPlan(r), price: convert(Number(r.price), r.currency, shown, rates) }));
+}
+
+/** When the stored rates were fetched, and whether they cover the display currency (so amounts really are converted). */
+export async function getRateStatus(): Promise<{ at: string | null; covers: boolean }> {
+  const [rates, shown] = await Promise.all([getRates(), getCurrency()]);
+  return { at: rates.at?.toISOString() ?? null, covers: shown === "USD" ? rates.perUsd.size > 0 : rates.perUsd.has(shown) };
 }
 
 export type PlanPatch = { label?: string; maxUsers?: number | null; price?: number; periodUnit?: PeriodUnit; periodCount?: number; modules?: ModuleId[]; description?: string; benefits?: string[] };
@@ -54,9 +63,9 @@ export async function createPlan(input: Required<Pick<PlanPatch, "label" | "pric
   await ready();
   const id = `${slug(input.label)}-${randomBytes(3).toString("hex")}`;
   const r = await pool().query<PlanRow>(
-    `INSERT INTO plans (id, label, max_users, price, period_unit, period_count, modules, description, benefits, sort)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE((SELECT MAX(sort) FROM plans), 0) + 1) RETURNING ${PLAN_COLUMNS}`,
-    [id, input.label, input.maxUsers ?? null, input.price, input.periodUnit, input.periodCount, MODULE_IDS.filter((m) => input.modules.includes(m)), input.description ?? "", input.benefits ?? []]);
+    `INSERT INTO plans (id, label, max_users, price, period_unit, period_count, modules, description, benefits, sort, currency)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE((SELECT MAX(sort) FROM plans), 0) + 1, $10) RETURNING ${PLAN_COLUMNS}`,
+    [id, input.label, input.maxUsers ?? null, input.price, input.periodUnit, input.periodCount, MODULE_IDS.filter((m) => input.modules.includes(m)), input.description ?? "", input.benefits ?? [], await getCurrency()]);
   return toPlan(r.rows[0]);
 }
 
@@ -67,10 +76,22 @@ export async function updatePlan(id: string, patch: PlanPatch): Promise<boolean>
   await ready();
   const sets: string[] = [];
   const args: unknown[] = [id];
+  const shown = await getCurrency();
+  // The form sends the price as displayed (converted). Sending it back unchanged must not re-save the plan in the display
+  // currency; only a real price edit does, and it is then stored in the currency it was typed in.
+  let priceChanged = patch.price !== undefined;
+  if (priceChanged) {
+    const cur = (await pool().query<{ price: string; currency: string }>("SELECT price, currency FROM plans WHERE id = $1", [id])).rows[0];
+    if (cur && round2(patch.price!) === convert(Number(cur.price), cur.currency, shown, await getRates())) priceChanged = false;
+  }
   for (const key of Object.keys(PLAN_COLUMN_OF) as (keyof PlanPatch)[]) {
-    if (patch[key] === undefined) continue;
+    if (patch[key] === undefined || (key === "price" && !priceChanged)) continue;
     args.push(key === "modules" ? MODULE_IDS.filter((m) => patch.modules!.includes(m)) : patch[key]);
     sets.push(`${PLAN_COLUMN_OF[key]} = $${args.length}`);
+  }
+  if (priceChanged) {
+    args.push(shown);
+    sets.push(`currency = $${args.length}`);
   }
   if (!sets.length) return (await pool().query("SELECT 1 FROM plans WHERE id = $1", [id])).rowCount === 1;
   return (await pool().query(`UPDATE plans SET ${sets.join(", ")} WHERE id = $1`, args)).rowCount === 1;
@@ -189,13 +210,14 @@ const ENTITY_SIZES = TABLE_NAMES.map((t) => `SELECT business_id, SUM(pg_column_s
  */
 export async function listBusinesses(): Promise<BusinessSummary[]> {
   await ready();
+  const [shown, rates] = await Promise.all([getCurrency(), getRates()]);
   const { rows } = await pool().query<{
-    id: string; name: string; created_at: Date; plan: string; plan_label: string; price: string; period_unit: PeriodUnit; period_count: number; plan_modules: string[]; max_users: number | null;
+    id: string; name: string; created_at: Date; plan: string; plan_label: string; price: string; plan_currency: string; period_unit: PeriodUnit; period_count: number; plan_modules: string[]; max_users: number | null;
     next_plan: string | null; next_plan_label: string | null; last_paid: Date | null;
     subscription_status: SubscriptionStatus; subscription_expires_at: Date | null; owner: string | null; code: string; contact_email: string | null; contact_phone: string | null;
     modules: string[] | null; free: boolean; users: string; storage: string; last_active: Date | null;
   }>(`
-    SELECT b.id, b.name, b.created_at, b.plan, p.label AS plan_label, p.price, p.period_unit, p.period_count, p.modules AS plan_modules, p.max_users,
+    SELECT b.id, b.name, b.created_at, b.plan, p.label AS plan_label, p.price, p.currency AS plan_currency, p.period_unit, p.period_count, p.modules AS plan_modules, p.max_users,
            b.next_plan, np.label AS next_plan_label, pay.last_paid,
            b.subscription_status, b.subscription_expires_at, l.username AS owner, b.code, b.contact_email, b.contact_phone, b.modules, b.free,
            COALESCE(u.n, 0) AS users,
@@ -212,7 +234,7 @@ export async function listBusinesses(): Promise<BusinessSummary[]> {
      ORDER BY b.created_at DESC`);
   return rows.map((r) => {
     const planModules = MODULE_IDS.filter((m) => r.plan_modules.includes(m));
-    const price = r.free ? 0 : Number(r.price);
+    const price = r.free ? 0 : convert(Number(r.price), r.plan_currency, shown, rates);
     return {
       id: r.id, name: r.name, createdAt: r.created_at.toISOString(), ownerUsername: r.owner, code: r.code, contactEmail: r.contact_email, contactPhone: r.contact_phone,
       plan: r.plan, planLabel: r.plan_label, price, periodUnit: r.period_unit, periodCount: r.period_count,
@@ -315,7 +337,9 @@ export async function activateSubscription(businessId: string, a: Activation): P
       return { ok: false, reason: "unknown_plan" };
     }
     const p = toPlan(plan);
-    const amount = b.free ? 0 : Math.round((a.amount ?? p.price * a.terms) * 100) / 100;
+    // A typed amount is in the currency the console shows; the package price is in the currency the package was saved in.
+    const currency = a.amount !== undefined ? await getCurrency() : plan.currency;
+    const amount = b.free ? 0 : round2(a.amount ?? p.price * a.terms);
     const reference = a.reference?.trim() || null;
     if (amount > 0 && !reference && !a.proof) {
       await client.query("ROLLBACK");
@@ -329,9 +353,9 @@ export async function activateSubscription(businessId: string, a: Activation): P
     RETURNING subscription_expires_at`, [businessId, target, !!a.restart, termInterval(p, a.terms)]);
     // Every activation is written down, even at 0: the day it happened is the day the business was paid.
     const paymentId = Number((await client.query<{ id: string }>(
-      `INSERT INTO subscription_payments (business_id, business_name, plan, plan_label, terms, period_unit, period_count, amount, reference, proof, proof_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-      [businessId, b.name, target, p.label, a.terms, p.periodUnit, p.periodCount, amount, reference, a.proof?.data ?? null, a.proof?.type ?? null])).rows[0].id);
+      `INSERT INTO subscription_payments (business_id, business_name, plan, plan_label, terms, period_unit, period_count, amount, reference, proof, proof_type, currency)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+      [businessId, b.name, target, p.label, a.terms, p.periodUnit, p.periodCount, amount, reference, a.proof?.data ?? null, a.proof?.type ?? null, currency])).rows[0].id);
     await client.query("COMMIT");
     return { ok: true, expiresAt: r.rows[0].subscription_expires_at.toISOString(), paymentId };
   } catch (e) {
@@ -355,10 +379,11 @@ export type Payment = { id: number; planLabel: string; terms: number; periodUnit
 /** Every payment recorded for a business, newest first. The proof image itself is fetched separately. */
 export async function listPayments(businessId: string): Promise<Payment[]> {
   await ready();
-  const { rows } = await pool().query<{ id: string; label: string; terms: number; period_unit: PeriodUnit; period_count: number; amount: string; paid_at: Date; reference: string | null; has_proof: boolean }>(
-    `SELECT id, COALESCE(plan_label, plan) AS label, terms, period_unit, period_count, amount, paid_at, reference, proof IS NOT NULL AS has_proof
+  const { rows } = await pool().query<{ id: string; label: string; terms: number; period_unit: PeriodUnit; period_count: number; amount: string; currency: string; paid_at: Date; reference: string | null; has_proof: boolean }>(
+    `SELECT id, COALESCE(plan_label, plan) AS label, terms, period_unit, period_count, amount, currency, paid_at, reference, proof IS NOT NULL AS has_proof
        FROM subscription_payments WHERE business_id = $1 ORDER BY paid_at DESC, id DESC`, [businessId]);
-  return rows.map((r) => ({ id: Number(r.id), planLabel: r.label, terms: r.terms, periodUnit: r.period_unit, periodCount: r.period_count, amount: Number(r.amount), paidAt: r.paid_at.toISOString(), reference: r.reference, hasProof: r.has_proof }));
+  const [shown, rates] = await Promise.all([getCurrency(), getRates()]);
+  return rows.map((r) => ({ id: Number(r.id), planLabel: r.label, terms: r.terms, periodUnit: r.period_unit, periodCount: r.period_count, amount: convert(Number(r.amount), r.currency, shown, rates), paidAt: r.paid_at.toISOString(), reference: r.reference, hasProof: r.has_proof }));
 }
 
 export async function paymentProof(id: number): Promise<{ data: Buffer; type: string } | null> {
@@ -419,19 +444,34 @@ export function revenueMonths(rows: { month: string; amount: number; payments: n
 export async function revenueReport(now = new Date()): Promise<RevenueReport> {
   await ready();
   const db = pool();
-  const [monthly, plans, recent, totals] = await Promise.all([
-    db.query<{ month: string; amount: string; payments: string }>(
-      `SELECT to_char(paid_at AT TIME ZONE $1, 'YYYY-MM') AS month, SUM(amount) AS amount, COUNT(*) AS payments FROM subscription_payments WHERE amount > 0 GROUP BY 1`, [REPORT_ZONE]),
-    db.query<{ plan: string; label: string | null; amount: string }>(
-      `SELECT sp.plan, COALESCE(p.label, MAX(sp.plan_label)) AS label, SUM(sp.amount) AS amount FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan WHERE sp.amount > 0 GROUP BY sp.plan, p.label ORDER BY SUM(sp.amount) DESC`),
-    db.query<{ id: string; business_id: string | null; business_name: string; plan: string; label: string | null; terms: number; period_unit: PeriodUnit; period_count: number; amount: string; paid_at: Date; reference: string | null; has_proof: boolean }>(
-      `SELECT sp.id, sp.business_id, sp.business_name, sp.plan, COALESCE(sp.plan_label, p.label) AS label, sp.terms, sp.period_unit, sp.period_count, sp.amount, sp.paid_at, sp.reference, sp.proof IS NOT NULL AS has_proof FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan WHERE sp.amount > 0 ORDER BY sp.paid_at DESC, sp.id DESC LIMIT 12`),
-    db.query<{ total: string | null; n: string; first: Date | null }>(`SELECT SUM(amount) AS total, COUNT(*) AS n, MIN(paid_at) AS first FROM subscription_payments WHERE amount > 0`),
+  // Payments are summed per currency in SQL, then each sum is converted once; mixed-currency history adds up in the display currency.
+  const [monthly, plans, recent, totals, shown, rates] = await Promise.all([
+    db.query<{ month: string; currency: string; amount: string; payments: string }>(
+      `SELECT to_char(paid_at AT TIME ZONE $1, 'YYYY-MM') AS month, currency, SUM(amount) AS amount, COUNT(*) AS payments FROM subscription_payments WHERE amount > 0 GROUP BY 1, 2`, [REPORT_ZONE]),
+    db.query<{ plan: string; label: string | null; currency: string; amount: string }>(
+      `SELECT sp.plan, COALESCE(p.label, MAX(sp.plan_label)) AS label, sp.currency, SUM(sp.amount) AS amount FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan WHERE sp.amount > 0 GROUP BY sp.plan, p.label, sp.currency`),
+    db.query<{ id: string; business_id: string | null; business_name: string; plan: string; label: string | null; terms: number; period_unit: PeriodUnit; period_count: number; amount: string; currency: string; paid_at: Date; reference: string | null; has_proof: boolean }>(
+      `SELECT sp.id, sp.business_id, sp.business_name, sp.plan, COALESCE(sp.plan_label, p.label) AS label, sp.terms, sp.period_unit, sp.period_count, sp.amount, sp.currency, sp.paid_at, sp.reference, sp.proof IS NOT NULL AS has_proof FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan WHERE sp.amount > 0 ORDER BY sp.paid_at DESC, sp.id DESC LIMIT 12`),
+    db.query<{ currency: string; total: string; n: string; first: Date | null }>(`SELECT currency, SUM(amount) AS total, COUNT(*) AS n, MIN(paid_at) AS first FROM subscription_payments WHERE amount > 0 GROUP BY currency`),
+    getCurrency(),
+    getRates(),
   ]);
-  const { months, thisMonth, lastMonth } = revenueMonths(monthly.rows.map((r) => ({ month: r.month, amount: Number(r.amount), payments: Number(r.payments) })), now);
+  const to = (n: number, from: string) => convert(n, from, shown, rates);
+  const sum = <K extends string>(rows: { currency: string; amount: string }[], key: (r: never) => K) => {
+    const out = new Map<K, number>();
+    for (const r of rows) out.set(key(r as never), (out.get(key(r as never)) ?? 0) + to(Number(r.amount), r.currency));
+    return out;
+  };
+  const byMonth = sum(monthly.rows, (r: { month: string }) => r.month);
+  const paymentsByMonth = new Map<string, number>();
+  for (const r of monthly.rows) paymentsByMonth.set(r.month, (paymentsByMonth.get(r.month) ?? 0) + Number(r.payments));
+  const { months, thisMonth, lastMonth } = revenueMonths([...byMonth].map(([month, amount]) => ({ month, amount: round2(amount), payments: paymentsByMonth.get(month) ?? 0 })), now);
+  const byPlan = sum(plans.rows, (r: { plan: string }) => r.plan);
+  const labels = new Map(plans.rows.map((r) => [r.plan, r.label ?? r.plan]));
   return {
-    total: Number(totals.rows[0].total ?? 0), thisMonth, lastMonth, payments: Number(totals.rows[0].n), firstPaymentAt: totals.rows[0].first?.toISOString() ?? null, months,
-    byPlan: plans.rows.map((r) => ({ plan: r.plan, label: r.label ?? r.plan, amount: Number(r.amount) })),
-    recent: recent.rows.map((r) => ({ id: Number(r.id), businessId: r.business_id, businessName: r.business_name, plan: r.plan, planLabel: r.label ?? r.plan, terms: r.terms, periodUnit: r.period_unit, periodCount: r.period_count, amount: Number(r.amount), paidAt: r.paid_at.toISOString(), reference: r.reference, hasProof: r.has_proof })),
+    total: round2(totals.rows.reduce((t, r) => t + to(Number(r.total), r.currency), 0)), thisMonth, lastMonth, payments: totals.rows.reduce((t, r) => t + Number(r.n), 0),
+    firstPaymentAt: totals.rows.reduce<Date | null>((m, r) => (r.first && (!m || r.first < m) ? r.first : m), null)?.toISOString() ?? null, months,
+    byPlan: [...byPlan].map(([plan, amount]) => ({ plan, label: labels.get(plan) ?? plan, amount: round2(amount) })).sort((a, b) => b.amount - a.amount),
+    recent: recent.rows.map((r) => ({ id: Number(r.id), businessId: r.business_id, businessName: r.business_name, plan: r.plan, planLabel: r.label ?? r.plan, terms: r.terms, periodUnit: r.period_unit, periodCount: r.period_count, amount: to(Number(r.amount), r.currency), paidAt: r.paid_at.toISOString(), reference: r.reference, hasProof: r.has_proof })),
   };
 }

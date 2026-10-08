@@ -19,7 +19,7 @@ import { decodeRange } from "@/components/shared/FilterBar/useUrlFilters";
 import { Switch } from "@/components/ui/switch";
 import { AdminHeader, useAdmin } from "./AdminShell";
 import { call, day, formatBytes, STATE_LABEL, type Business, type ModuleDef, type Plan } from "./api";
-import { StateBadge } from "./parts";
+import { inRange, sortAndPage, StateBadge } from "./parts";
 import { ActivateForm, CancelDialog, planText } from "./SubscriptionDialogs";
 
 function PlanSelect({ id, plans, value, onChange }: { id: string; plans: Plan[]; value: string; onChange: (v: string) => void }) {
@@ -112,10 +112,8 @@ export function BusinessesPage() {
   const filtered = (businesses ?? []).filter((b) =>
     (!term || b.name.toLowerCase().includes(term) || (b.ownerUsername ?? "").toLowerCase().includes(term) || b.code.includes(term)) &&
     (!planIds || planIds.includes(b.plan)) && (!states || states.includes(b.state)) && (url.free !== "1" || b.free) &&
-    (!joined || (b.createdAt.slice(0, 10) >= joined.from && b.createdAt.slice(0, 10) <= joined.to)));
-  const key = query.sort ? SORTS[query.sort.id] : undefined;
-  const sorted = key ? [...filtered].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * (query.sort?.desc ? -1 : 1)) : filtered;
-  const rows = query.pageSize === -1 ? sorted : sorted.slice(query.page * query.pageSize, (query.page + 1) * query.pageSize);
+    inRange(b.createdAt, joined));
+  const { sorted, page: rows } = sortAndPage(filtered, query, SORTS);
 
   const col = (id: string, label: string, cell: ColumnDef<Business>["cell"], meta: ColumnDef<Business>["meta"] = {}): ColumnDef<Business> => ({ id, accessorFn: SORTS[id], header: label, cell, meta: { label, ...meta } });
   const columns: ColumnDef<Business>[] = [
@@ -158,7 +156,7 @@ export function BusinessesPage() {
       />
       <FilterBar defs={defs} value={url} onChange={(p) => { setUrl(p); setQuery({ page: 0 }); }} onReset={() => { reset(); setQuery({ page: 0 }); }} />
       <DataTable
-        tableId="admin-businesses" columns={columns} data={rows} total={sorted.length} loading={!businesses} query={query} onQueryChange={setQuery} exportName="businesses" audit={false}
+        tableId="admin-businesses" columns={columns} data={rows} total={sorted.length} loading={!businesses} query={query} onQueryChange={setQuery} exportName="businesses" audit={false} fill="22rem"
         exportRows={async () => sorted} getRowId={(b) => b.id}
         empty={<EmptyState icon={Building2Icon} title={businesses?.length ? "No businesses match" : "No business accounts yet"} description={businesses?.length ? "Try a different search or clear the filters." : "Add the first one to get started."} />}
       />

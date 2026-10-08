@@ -8,7 +8,7 @@ export type Business = {
   status: "active" | "cancelled"; expiresAt: string | null; state: "active" | "cancelled" | "expired";
   users: number; maxUsers: number | null; storageBytes: number; lastActiveAt: string | null;
 };
-export type Me = { username: string; plans: Plan[]; modules: ModuleDef[]; currency: string };
+export type Me = { username: string; plans: Plan[]; modules: ModuleDef[]; currency: string; rates?: { at: string | null; covers: boolean } };
 export type RevenueReport = {
   total: number; thisMonth: number; lastMonth: number; payments: number; firstPaymentAt: string | null;
   months: { month: string; amount: number; payments: number }[];
@@ -34,8 +34,12 @@ export function formatBytes(n: number): string {
 // ponytail: module-level currency set from /me, so the ~18 formatMoney call sites need no context threading.
 let currency = "BDT";
 export const setCurrency = (code: string) => { currency = code; };
-export const formatMoney = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency, currencyDisplay: "narrowSymbol", maximumFractionDigits: 0 }).format(Math.round(n));
+/** Whole amounts stay whole ("$1,500"); anything else shows both decimals ("$12.35"), never more than 2. */
+export const formatMoney = (n: number) => {
+  const v = Math.round((n + Number.EPSILON) * 100) / 100;
+  const digits = Number.isInteger(v) ? 0 : 2;
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, currencyDisplay: "narrowSymbol", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v);
+};
 /** "Oct 26" for a "2026-10" month key. */
 export const shortMonth = (key: string) => new Date(`${key}-01T12:00:00`).toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
 export const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—");

@@ -275,4 +275,24 @@ CREATE TABLE IF NOT EXISTS platform_settings (key text PRIMARY KEY, value text N
 INSERT INTO platform_settings (key, value) VALUES ('currency', 'BDT') ON CONFLICT DO NOTHING;
 `,
   },
+  {
+    id: 15,
+    name: "currency rates and per-row currency",
+    sql: `
+-- Units of each currency per 1 USD, refreshed every 3 days by the rate job.
+CREATE TABLE IF NOT EXISTS currency_rates (
+  code text PRIMARY KEY,
+  per_usd numeric(24, 10) NOT NULL CHECK (per_usd > 0),
+  fetched_at timestamptz NOT NULL DEFAULT now()
+);
+-- A price or payment stays in the currency it was saved in; the page converts it for display. Existing rows were
+-- saved in whatever the platform currency was, so they take it.
+ALTER TABLE plans ADD COLUMN IF NOT EXISTS currency text;
+ALTER TABLE subscription_payments ADD COLUMN IF NOT EXISTS currency text;
+UPDATE plans SET currency = COALESCE((SELECT value FROM platform_settings WHERE key = 'currency'), 'BDT') WHERE currency IS NULL;
+UPDATE subscription_payments SET currency = COALESCE((SELECT value FROM platform_settings WHERE key = 'currency'), 'BDT') WHERE currency IS NULL;
+ALTER TABLE plans ALTER COLUMN currency SET NOT NULL;
+ALTER TABLE subscription_payments ALTER COLUMN currency SET NOT NULL;
+`,
+  },
 ];

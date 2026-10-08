@@ -5,6 +5,7 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDownRightIcon, ArrowUpRightIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon, MinusIcon, type LucideIcon } from "lucide-react";
 import { CARD } from "@/components/shared/card-surface";
+import type { TableQuery } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,8 +31,9 @@ function CountUp({ value, format }: { value: number; format: (n: number) => stri
 /** Money with the currency symbol small and muted, like the figures in the business app. */
 function MoneyText({ value }: { value: number }) {
   const shown = useCountUp(value) ?? value;
-  const m = /^(\D*?)(\d.*)$/.exec(formatMoney(shown));
-  return m ? <><span className="mr-1 align-[0.55em] text-[0.45em] font-medium text-muted-foreground">{m[1]}</span>{m[2]}</> : <>{formatMoney(shown)}</>;
+  const text = formatMoney(shown === value ? value : Math.round(shown)); // whole numbers while it counts up, the real figure once it lands
+  const m = /^(\D*?)(\d.*)$/.exec(text);
+  return m ? <><span className="mr-1 align-[0.55em] text-[0.45em] font-medium text-muted-foreground">{m[1]}</span>{m[2]}</> : <>{text}</>;
 }
 
 /** How a figure moved against the one before it: a green or red pill with an arrow. Nothing before it reads as +100%. */
@@ -161,3 +163,15 @@ export function Pager({ paged }: { paged: ReturnType<typeof usePaged> }) {
     </nav>
   );
 }
+
+/** Sorts by the clicked column and cuts the page the table is on. The admin already holds every row, so this runs in the browser. */
+export function sortAndPage<T>(rows: T[], query: TableQuery, sorts: Record<string, (r: T) => string | number>) {
+  const key = query.sort ? sorts[query.sort.id] : undefined;
+  const dir = query.sort?.desc ? -1 : 1;
+  const sorted = key ? [...rows].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * dir) : rows;
+  const page = query.pageSize === -1 ? sorted : sorted.slice(query.page * query.pageSize, (query.page + 1) * query.pageSize);
+  return { sorted, page };
+}
+
+/** Whether an ISO date falls on or between the two yyyy-mm-dd days of a range filter (no range: always). */
+export const inRange = (iso: string | null, r?: { from: string; to: string }) => !r || (iso !== null && iso.slice(0, 10) >= r.from && iso.slice(0, 10) <= r.to);
