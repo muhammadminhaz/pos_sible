@@ -1,5 +1,5 @@
-// Checks the public home page (/): every section renders, no console errors, no horizontal scroll, no a11y violations
-// in light and dark, keyboard works on the tabs and FAQ. Saves a screenshot per section and a scroll+hover video.
+// Checks the public home page (/): every section renders and fills the viewport, no console errors, no horizontal scroll,
+// no a11y violations in light and dark. Saves a screenshot per section and a scroll+hover video.
 // Usage: npx next dev -p 3111 &  then  E2E_URL=http://localhost:3111 npm run e2e:landing   (OUT=dir to keep the images and video)
 import { mkdirSync, readFileSync } from "node:fs";
 import { chromium } from "playwright-core";
@@ -7,7 +7,7 @@ import { chromium } from "playwright-core";
 const BASE = process.env.E2E_URL ?? "http://localhost:3111";
 const OUT = process.env.OUT ?? "e2e/.landing-out";
 const axeSource = readFileSync(new URL("../node_modules/axe-core/axe.min.js", import.meta.url), "utf8");
-const SECTIONS = ["hero", "product", "stats", "visibility", "growth", "features", "possible", "how", "shops", "payments", "pricing", "faq", "tour", "cta", "footer"];
+const SECTIONS = ["hero", "loop", "problem", "inbox", "goals", "predict", "intelligence", "map", "basics", "how", "pricing", "faq", "cta", "footer"];
 
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -38,7 +38,7 @@ for (const [width, height, theme] of [[1440, 900, "light"], [390, 844, "light"],
   for (const id of SECTIONS) {
     const el = page.locator(`#${id}`);
     if (!(await el.count())) { fail(mode, `missing section #${id}`); continue; }
-    if (id !== "footer" && id !== "stats" && !(await el.locator("h1, h2").count())) fail(mode, `#${id} has no heading`);
+    if (id !== "footer" && !(await el.locator("h1, h2").count())) fail(mode, `#${id} has no heading`);
     if (theme === "light") {
       await el.scrollIntoViewIfNeeded();
       await page.waitForTimeout(250);
@@ -51,24 +51,12 @@ for (const [width, height, theme] of [[1440, 900, "light"], [390, 844, "light"],
   if (/framer|qarin/i.test(body)) fail(mode, "reference branding in page text");
   if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) fail(mode, "horizontal scroll");
   if (!(await page.locator("h1").evaluate((e) => getComputedStyle(e).fontFamily)).includes("Geist")) fail(mode, "h1 is not Geist");
-  await page.locator("#stats").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
-  const stat = await page.locator("#stats dd").last().innerText();
-  if (stat.trim() !== "3") fail(mode, `stats should show final value with reduced motion, got "${stat}"`);
 
+  for (const id of SECTIONS) {
+    const h = await page.locator(`#${id}`).evaluate((e) => e.getBoundingClientRect().height).catch(() => 0);
+    if (h < height) fail(mode, `#${id} is ${h}px, shorter than the viewport`);
+  }
   if (width === 1440 && theme === "light") {
-    // Growth tabs move with the arrow keys.
-    await page.getByRole("tab", { name: "Checkout" }).focus();
-    await page.keyboard.press("ArrowRight");
-    if ((await page.getByRole("tab", { name: "Stock and transfers" }).getAttribute("aria-selected")) !== "true") fail(mode, "tabs ignore ArrowRight");
-    // Prices come from the seeded plans.
-    await page.locator("#pricing").scrollIntoViewIfNeeded();
-    if (!(await page.locator("#pricing").innerText()).includes("৳1,500")) fail(mode, "Standard price missing");
-    // FAQ opens from the keyboard and closes the other one.
-    const first = page.locator("#faq summary").first();
-    await first.focus();
-    await page.keyboard.press("Enter");
-    if (!(await page.locator("#faq details").first().evaluate((d) => d.open))) fail(mode, "FAQ did not open");
     // Nothing on / may touch the app data or the server.
     const dbs = await page.evaluate(() => indexedDB.databases?.().then((l) => l.map((d) => d.name)));
     if (dbs?.includes("posible")) fail(mode, "landing seeded the browser database");

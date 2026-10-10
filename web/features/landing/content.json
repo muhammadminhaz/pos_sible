@@ -1,0 +1,378 @@
+{
+  "nav": [
+    {
+      "href": "#inbox",
+      "label": "Opportunities"
+    },
+    {
+      "href": "#goals",
+      "label": "Goals"
+    },
+    {
+      "href": "#intelligence",
+      "label": "Coming next"
+    },
+    {
+      "href": "#pricing",
+      "label": "Pricing"
+    },
+    {
+      "href": "#faq",
+      "label": "FAQ"
+    }
+  ],
+  "sections": [
+    {
+      "id": "hero",
+      "badge": "More than a POS",
+      "title": "Know what happened. Know what to do next.",
+      "body": "POS-sible runs your counter, then reads every sale to find the money you are missing: stock about to run out, regulars who went quiet, cash stuck in old dues. Each finding comes with a next step.",
+      "primary": "Find my first opportunity",
+      "secondary": "Try it with sample data",
+      "trust": "Takes cash, card, bKash, Nagad, Rocket and Upay. Priced in ৳ BDT from ৳500 a month."
+    },
+    {
+      "id": "loop",
+      "title": "How POS-sible thinks",
+      "label": "How POS-sible thinks",
+      "steps": [
+        "Sale",
+        "Understanding",
+        "Opportunity",
+        "Recommendation",
+        "Action",
+        "Result"
+      ],
+      "note": "A normal POS stops after the first step. Ours keeps going."
+    },
+    {
+      "id": "problem",
+      "title": "Most POS software is a very fast cash register with a report attached",
+      "body": "It records everything and explains nothing. You still do the thinking, at night, with a spreadsheet.",
+      "rows": [
+        {
+          "before": "Low stock: 7",
+          "after": "You will probably run out of Coca-Cola 500ml in about 4 days."
+        },
+        {
+          "before": "Sales are down 8%",
+          "after": "Saturdays are down. Your top 3 products are selling 18% slower. Here is a promotion to fix it."
+        },
+        {
+          "before": "Customer list",
+          "after": "23 regulars have not bought in 60 days. Here is who, and what they usually buy."
+        }
+      ],
+      "beforeLabel": "A report says",
+      "afterLabel": "POS-sible says"
+    },
+    {
+      "id": "inbox",
+      "eyebrow": "Opportunity Inbox",
+      "title": "Open the app and see where the money is hiding",
+      "body": "Every day POS-sible scans your sales, stock and dues, ranks what it finds by value, and puts it in one inbox.",
+      "points": [
+        "Restock fast sellers before they run out",
+        "Win back regulars who stopped coming",
+        "Collect dues left unpaid for over 30 days",
+        "Clear stock that has not moved in 45 days"
+      ],
+      "cta": "Open the Opportunity Inbox"
+    },
+    {
+      "id": "goals",
+      "eyebrow": "Smart goals",
+      "title": "A target that tells you how to reach it",
+      "body": "Set a monthly goal. POS-sible tracks the pace, projects where you will land, and turns the gap into things a shop owner can actually do.",
+      "points": [
+        "Live pace against the target, day by day",
+        "The exact amount to add each day to close the gap",
+        "Three routes to get there: more customers, bigger baskets, or both"
+      ]
+    },
+    {
+      "id": "predict",
+      "title": "Predict it before it happens",
+      "body": "Low stock is a number. Running out in 4 days is a decision. POS-sible reads your sales speed, the day of the week and the trend to say when each product will run out.",
+      "live": "Live: restock alerts and the month-end forecast"
+    },
+    {
+      "id": "intelligence",
+      "eyebrow": "Coming next",
+      "title": "From reporting to a business copilot",
+      "body": "The opportunity engine is live today. These are the next things we are building on top of it, in the order we expect to ship them.",
+      "soon": "Coming soon",
+      "items": [
+        {
+          "id": "ask",
+          "status": "soon",
+          "title": "Ask POS-sible",
+          "body": "Ask why profit fell while sales rose. Answers come from your own numbers, not a generic chatbot."
+        },
+        {
+          "id": "health",
+          "status": "soon",
+          "title": "Business Health Score",
+          "body": "One score out of 100 across sales, profit, stock, customers and cash, with the weakest area called out."
+        },
+        {
+          "id": "lifecycle",
+          "status": "soon",
+          "title": "Customer lifecycle",
+          "body": "New, active, loyal, at risk, lost. See who is slipping away and send them an offer."
+        },
+        {
+          "id": "experiments",
+          "status": "soon",
+          "title": "Experiments",
+          "body": "Run a 10% discount as a test. Compare revenue and profit before, during and after."
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "eyebrow": "The whole product",
+      "title": "Analytics tells you the past. Growth tells you what to do next.",
+      "body": "Everything a shop runs on sits beside one section that looks forward.",
+      "items": [
+        {
+          "name": "Home",
+          "line": "What is happening",
+          "future": false
+        },
+        {
+          "name": "Sell",
+          "line": "Make the sale",
+          "future": false
+        },
+        {
+          "name": "Inventory",
+          "line": "Manage what you have",
+          "future": false
+        },
+        {
+          "name": "Customers",
+          "line": "Understand who buys",
+          "future": false
+        },
+        {
+          "name": "Finance",
+          "line": "Understand the money",
+          "future": false
+        },
+        {
+          "name": "Analytics",
+          "line": "Understand what happened",
+          "future": false
+        },
+        {
+          "name": "Growth",
+          "line": "Decide what to do next",
+          "future": true
+        }
+      ]
+    },
+    {
+      "id": "basics",
+      "eyebrow": "The basics are handled",
+      "title": "Built for how Bangladesh sells, so you can think about growth",
+      "body": "Nothing to connect or install. These are simply there.",
+      "items": [
+        {
+          "name": "Cash",
+          "dot": "bg-emerald-500"
+        },
+        {
+          "name": "Card",
+          "dot": "bg-sky-500"
+        },
+        {
+          "name": "Bank transfer",
+          "dot": "bg-slate-500"
+        },
+        {
+          "name": "Cheque",
+          "dot": "bg-amber-500"
+        },
+        {
+          "name": "bKash",
+          "dot": "bg-bkash"
+        },
+        {
+          "name": "Nagad",
+          "dot": "bg-nagad"
+        },
+        {
+          "name": "Rocket",
+          "dot": "bg-rocket"
+        },
+        {
+          "name": "Upay",
+          "dot": "bg-upay"
+        },
+        {
+          "name": "English and বাংলা",
+          "dot": "bg-primary"
+        },
+        {
+          "name": "Dues and VAT",
+          "dot": "bg-primary"
+        },
+        {
+          "name": "Thermal printers",
+          "dot": "bg-primary"
+        },
+        {
+          "name": "Barcode scanners",
+          "dot": "bg-primary"
+        }
+      ]
+    },
+    {
+      "id": "how",
+      "eyebrow": "How it works",
+      "title": "From first sale to first insight in an afternoon",
+      "body": "You do not need a data team. You need a few weeks of sales and a counter.",
+      "steps": [
+        {
+          "title": "Bring in your shop",
+          "body": "Import products from a CSV file or add them one by one, with units, tax and barcodes."
+        },
+        {
+          "title": "Sell as usual",
+          "body": "Scan items, split payments across cash and bKash, suspend a bill and pick it up again."
+        },
+        {
+          "title": "Act on what it finds",
+          "body": "Open the inbox, tap an opportunity, and follow the suggested next step."
+        }
+      ]
+    },
+    {
+      "id": "pricing",
+      "eyebrow": "Pricing",
+      "title": "Pays for itself with one recovered sale",
+      "note": "Pay by bKash or bank transfer. Your account is switched on when payment arrives.",
+      "best": "Best for most shops",
+      "plans": [
+        {
+          "id": "starter",
+          "label": "Starter",
+          "users": 3,
+          "price": 500,
+          "blurb": "For a single counter getting started.",
+          "usersLabel": "Up to 3 users"
+        },
+        {
+          "id": "standard",
+          "label": "Standard",
+          "users": 10,
+          "price": 1500,
+          "blurb": "For a shop with a team and a few branches.",
+          "usersLabel": "Up to 10 users",
+          "featured": true
+        },
+        {
+          "id": "premium",
+          "label": "Premium",
+          "users": null,
+          "price": 3000,
+          "blurb": "For growing chains with no user limit.",
+          "usersLabel": "Unlimited users"
+        }
+      ],
+      "planFeatures": [
+        "Opportunity Inbox and Goals",
+        "POS, stock, purchases and accounts",
+        "English and বাংলা",
+        "Your data kept apart from other shops"
+      ]
+    },
+    {
+      "id": "faq",
+      "title": "Questions owners ask first",
+      "body": "Short answers about the insights, your data, payments and branches.",
+      "items": [
+        {
+          "q": "What do I get today, and what is still coming?",
+          "a": "Today: the Opportunity Inbox (restock, win-back, dues, dead stock), smart Goals with pace and daily targets, a month-end forecast, and analytics. Coming next: Ask POS-sible, the Business Health Score, customer lifecycle and experiments."
+        },
+        {
+          "q": "How does it know what to suggest?",
+          "a": "It reads your own sales, stock, customers and dues, and applies plain rules such as sales speed against stock on hand. Nothing is guessed from other shops."
+        },
+        {
+          "q": "How much history does it need?",
+          "a": "A few weeks of sales is enough for restock and dues. Win-back and forecasts get sharper as you add more months."
+        },
+        {
+          "q": "Can I trust the numbers?",
+          "a": "Every sale, purchase and expense posts to double-entry books, so the insights and your accounts come from the same figures."
+        },
+        {
+          "q": "Which payments can I take?",
+          "a": "Cash, card, bank transfer, cheque, bKash, Nagad, Rocket and Upay. You can split one bill across several methods."
+        },
+        {
+          "q": "Does it work in Bangla, and with several branches?",
+          "a": "Yes to both. Every screen is in English and বাংলা, and stock is tracked per branch with transfers between them."
+        },
+        {
+          "q": "Is my data separate from other shops?",
+          "a": "Yes. Every shop's data is kept apart from every other shop's."
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "title": "Your sales already know what to do next",
+      "body": "Let POS-sible read them. Start in English or বাংলা.",
+      "action": "Find my first opportunity"
+    },
+    {
+      "id": "footer",
+      "title": "POS-sible",
+      "blurb": "The POS that helps you grow. Point of sale, inventory and accounting for retail shops in Bangladesh.",
+      "columns": [
+        {
+          "title": "Product",
+          "links": [
+            {
+              "href": "#inbox",
+              "label": "Opportunities"
+            },
+            {
+              "href": "#goals",
+              "label": "Goals"
+            },
+            {
+              "href": "#pricing",
+              "label": "Pricing"
+            },
+            {
+              "href": "#faq",
+              "label": "FAQ"
+            }
+          ]
+        },
+        {
+          "title": "App",
+          "links": [
+            {
+              "href": "/login",
+              "label": "Sign in"
+            },
+            {
+              "href": "$getStarted",
+              "label": "Get started"
+            },
+            {
+              "href": "/login",
+              "label": "Try the demo"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
