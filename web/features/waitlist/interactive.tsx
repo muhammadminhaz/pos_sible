@@ -4,13 +4,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import { CheckIcon, Loader2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { API_MODE } from "@/lib/data/api/mode";
+import { API_MODE, DEMO } from "@/lib/data/api/mode";
 
-/** Demo mode keeps the session in the browser, so a signed-in visitor is sent on to the app once it has loaded. */
+/** Browser-only builds keep the session in the browser, so a signed-in visitor is sent on to the app once it has loaded. Not a /demo visitor: they are only looking around. */
 export function SignedInRedirect() {
   const router = useRouter();
   useEffect(() => {
-    if (API_MODE) return;
+    if (API_MODE || DEMO) return;
     let off = () => {};
     void import("@/lib/auth/session").then(({ useSession }) => {
       const go = () => useSession.getState().userId && router.replace("/home");
