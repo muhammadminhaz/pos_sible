@@ -2,13 +2,15 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
-import { ArrowUpRightIcon, StoreIcon } from "lucide-react";
+import { ArrowUpRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import content from "@/features/landing/content.json";
 import dashboard from "@/public/welcome/dashboard.png";
 import StarBorder from "@/components/ui/star-border";
 import { TiltBackground } from "./TiltBackground";
 import { WelcomeNav } from "./WelcomeNav";
+import { Features, Squircle } from "./Features";
+import { ClientStack } from "./ClientStack";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
@@ -80,46 +82,40 @@ export function Welcome() {
           </div>
         </div>
 
-        <TrustedClients />
+        {/* One pale sheet slides up over the backdrop, so everything after the hero reads dark on light. */}
+        <div className="rounded-t-[28px] bg-[#f5f8ff] text-[#071447]">
+          <TrustedClients />
+          <Features />
+        </div>
         </div>
       </div>
     </div>
   );
 }
 
-const SLOTS = 6;
-
-/**
- * Where client logos will loop once shops sign up. Until then the loop holds open "Your shop here" slots
- * and the line invites the first ones in. Sits on the pale haze at the bottom of the card, so it uses dark ink.
- */
+/** Where client logos will go once shops sign up. Until then a deck of open "founding shop" seats shuffles itself and invites the first ones in. */
 function TrustedClients() {
-  const row = (hidden: boolean) => (
-    <ul aria-hidden={hidden || undefined} className="flex shrink-0 gap-3 pr-3">
-      {Array.from({ length: SLOTS }, (_, i) => (
-        <li key={i} className="flex h-11 items-center gap-2 rounded-full border border-dashed border-[#0a3cff]/30 bg-white/50 px-4 text-sm font-medium whitespace-nowrap text-[#0a3cff] backdrop-blur-sm">
-          <StoreIcon aria-hidden className="size-4" />
-          Your shop here
-        </li>
-      ))}
-    </ul>
-  );
   return (
-    <section aria-labelledby="clients-title" className="relative -mt-4 px-5 pb-10 text-[#071447] sm:-mt-6 sm:pb-14">
-      <div className="mx-auto flex max-w-5xl flex-col items-start gap-1.5 sm:items-center sm:text-center">
-        <h2 id="clients-title" className="font-display text-sm font-medium text-[#071447]/70">Trusted clients</h2>
-        <p className="text-lg font-semibold tracking-tight text-pretty sm:text-xl">
-          Coming soon.{" "}
-          <Link href={getStarted} className="underline decoration-[#0a3cff]/40 underline-offset-4 transition-colors hover:text-[#0a3cff] hover:decoration-[#0a3cff]">
+    <section aria-labelledby="clients-title" className="border-b border-[#071447]/8 px-5 py-16 sm:px-8 sm:py-20">
+      <div className="mx-auto grid max-w-5xl items-center gap-12 lg:grid-cols-[1fr_auto] lg:gap-20">
+        <div className="flex flex-col items-start">
+          <p className="flex items-center gap-2 font-mono text-[13px] font-medium tracking-wide uppercase">
+            <Squircle className="size-4" />
+            Trusted clients
+          </p>
+          <h2 id="clients-title" className="mt-4 font-display text-[2rem] leading-[1.08] font-semibold tracking-[-0.04em] text-balance sm:text-[2.75rem]">
+            Five founding seats.{" "}
+            <span className="font-[family-name:var(--font-serif)] text-[1.1em] font-medium tracking-[-0.02em] text-[#0a3cff] italic">Yours could be first.</span>
+          </h2>
+          <p className="mt-4 max-w-md text-pretty text-[#071447]/65 sm:text-lg">
+            We&apos;re opening POS-sible to its first shops in Bangladesh. Founding shops get a direct line to us and shape what we build next.
+          </p>
+          <Link href={getStarted} className="group mt-7 inline-flex h-12 items-center gap-3 rounded-full bg-[#071447] pr-1.5 pl-6 text-[15px] font-semibold text-white transition-transform active:scale-[0.98]">
             Become our first user
+            <ArrowSwap className="size-9 bg-white text-[#0a3cff]" />
           </Link>
-        </p>
-      </div>
-      <div className="mx-auto mt-6 flex max-w-5xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-        <div className="wl-marquee flex">
-          {row(false)}
-          {row(true)}
         </div>
+        <ClientStack />
       </div>
     </section>
   );

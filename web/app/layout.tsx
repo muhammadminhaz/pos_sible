@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Bengali } from "next/font/google";
 import { getLocale, getMessages } from "next-intl/server";
+import { Analytics } from "@vercel/analytics/next";
 import { SITE } from "@/lib/site";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -84,6 +85,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Providers locale={locale} messages={messages}>
           {children}
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
