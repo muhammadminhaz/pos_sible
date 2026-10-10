@@ -295,4 +295,15 @@ ALTER TABLE plans ALTER COLUMN currency SET NOT NULL;
 ALTER TABLE subscription_payments ALTER COLUMN currency SET NOT NULL;
 `,
   },
+  {
+    id: 16,
+    name: "waitlist",
+    sql: `
+-- Emails left on the public home page before launch. Stored lower-cased, so one address is one row.
+CREATE TABLE IF NOT EXISTS waitlist (
+  email text PRIMARY KEY,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+`,
+  },
 ];

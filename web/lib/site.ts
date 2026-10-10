@@ -1,9 +1,9 @@
 /** What the product is called and how it describes itself, in one place for the page head, social previews, manifest and sitemap. */
 export const SITE = {
   name: "POS-sible",
-  tagline: "The POS that tells you what to do next",
+  tagline: "More than a POS",
   description:
-    "POS-sible is a point of sale for retail shops that also finds your opportunities: stock about to run out, regulars who went quiet, old dues and dead stock, with a suggested next step for each. Includes barcode checkout, split payments, inventory, accounts and reports in English and Bangla.",
+    "POS-sible is more than a POS. It adds an intelligence layer on top of your sales, stock, customers and dues that drives your decisions: what to restock, who to win back, which dues to collect, where to raise prices. Includes barcode checkout, split payments, inventory, accounts and reports in English and Bangla.",
   /** The public address, used for canonical links and social previews. Set NEXT_PUBLIC_SITE_URL on the deployment. */
   url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://pos-sible.vercel.app").replace(/\/+$/, ""),
   keywords: [

@@ -25,8 +25,8 @@
     {
       "id": "hero",
       "badge": "More than a POS",
-      "title": "Know what happened. Know what to do next.",
-      "body": "POS-sible runs your counter, then reads every sale to find the money you are missing: stock about to run out, regulars who went quiet, cash stuck in old dues. Each finding comes with a next step.",
+      "title": "An intelligence layer on top of your business",
+      "body": "POS-sible runs your counter, then reads every sale, stock count and due to drive your next decision: what to restock before it runs out, which regulars to win back, which dues to collect. Each finding comes with a next step that helps you grow.",
       "primary": "Find my first opportunity",
       "secondary": "Try it with sample data",
       "trust": "Takes cash, card, bKash, Nagad, Rocket and Upay. Priced in ৳ BDT from ৳500 a month."
@@ -332,7 +332,7 @@
     {
       "id": "footer",
       "title": "POS-sible",
-      "blurb": "The POS that helps you grow. Point of sale, inventory and accounting for retail shops in Bangladesh.",
+      "blurb": "More than a POS. An intelligence layer on top of your business data that helps you grow. Point of sale, inventory and accounting for retail shops in Bangladesh.",
       "columns": [
         {
           "title": "Product",
