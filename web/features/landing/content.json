@@ -1,16 +1,8 @@
 {
   "nav": [
     {
-      "href": "#inbox",
-      "label": "Opportunities"
-    },
-    {
-      "href": "#goals",
-      "label": "Goals"
-    },
-    {
-      "href": "#intelligence",
-      "label": "Coming next"
+      "href": "#features",
+      "label": "Features"
     },
     {
       "href": "#pricing",
@@ -24,7 +16,7 @@
   "sections": [
     {
       "id": "hero",
-      "badge": "More than a POS",
+      "badge": "For retail shops in Bangladesh",
       "title": "An intelligence layer on top of your business",
       "body": "POS-sible runs your counter, then reads every sale, stock count and due to drive your next decision: what to restock before it runs out, which regulars to win back, which dues to collect. Each finding comes with a next step that helps you grow.",
       "primary": "Find my first opportunity",

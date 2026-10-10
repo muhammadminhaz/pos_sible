@@ -45,6 +45,13 @@ export const sessionStorageChoice = <S>() => {
   }));
 };
 
+/** Deletes one stored database (and any copy parked during unload). Used to wipe the demo shop. */
+export async function removeStoredDb(name: string): Promise<void> {
+  if (typeof window === "undefined" || typeof indexedDB === "undefined") return;
+  try { window.localStorage.removeItem(`${name}:unsaved`); } catch { /* storage blocked */ }
+  try { await idbRun("readwrite", (s) => s.delete(name)); } catch { /* nothing stored */ }
+}
+
 // ---- Database storage: IndexedDB, so a busy shop never hits localStorage's ~5 MB ceiling -----------------------
 
 const IDB_NAME = "posible";

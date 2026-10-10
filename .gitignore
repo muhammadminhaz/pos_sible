@@ -57,3 +57,6 @@ web/CLAUDE.md
 ssh/
 *.key
 *.pem
+
+# e2e screenshots
+web/e2e/.*-out/

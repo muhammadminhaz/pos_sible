@@ -5,6 +5,11 @@ import { createSeed, SEED_VERSION } from "@/lib/data/seed";
 import { upgradeRoles } from "@/lib/auth/permissions";
 import { stampChanges } from "./audit";
 import { dbStorage } from "./storage";
+import { DEMO } from "@/lib/data/api/mode";
+
+/** The demo shop lives under its own key, so it never touches a real local shop in the same browser. */
+export const DB_KEY = DEMO ? "posible:demo:db" : "posible:v1:db";
+export const DEMO_DB_KEY = "posible:demo:db";
 
 type DBState = { db: DB | null; hydrated: boolean };
 
@@ -17,7 +22,7 @@ export const dataContext: { current: () => DataContext | undefined } = { current
 
 export const useDB = create<DBState>()(
   persist((): DBState => ({ db: null, hydrated: false }), {
-    name: "posible:v1:db",
+    name: DB_KEY,
     version: SEED_VERSION,
     storage: dbStorage<Pick<DBState, "db">>(),
     partialize: (s) => ({ db: s.db }),

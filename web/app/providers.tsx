@@ -35,8 +35,9 @@ export function Providers({
     () => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } } }),
   );
 
-  // The public home page fetches nothing, so it skips the data gate (which seeds the browser database) and server-rendered content stays visible.
-  const landing = usePathname() === "/";
+  // The public home pages fetch nothing (and /demo seeds its own shop), so it skips the data gate (which seeds the browser database) and server-rendered content stays visible.
+  const path = usePathname();
+  const landing = path === "/" || path === "/welcome" || path === "/demo";
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

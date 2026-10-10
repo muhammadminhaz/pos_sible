@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { actor, dataContext, getDB } from "@/lib/data/store/db";
+import { createJSONStorage } from "zustand/middleware";
 import { chooseSessionStore, sessionStorageChoice } from "@/lib/data/store/storage";
+import { DEMO } from "@/lib/data/api/mode";
 import type { Role, User } from "@/lib/data/schemas";
 
 type SessionState = {
@@ -25,7 +27,10 @@ export const useSession = create<SessionState>()(
       },
       logout: () => set({ userId: null }),
     }),
-    { name: "posible:v1:session", storage: sessionStorageChoice(), partialize: (s) => ({ userId: s.userId }) },
+    // The demo sign-in lives only in this tab and under its own key.
+    DEMO
+      ? { name: "posible:demo:session", storage: createJSONStorage(() => sessionStorage), partialize: (s) => ({ userId: s.userId }) }
+      : { name: "posible:v1:session", storage: sessionStorageChoice(), partialize: (s) => ({ userId: s.userId }) },
   ),
 );
 

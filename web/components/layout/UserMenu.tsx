@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOutOnServer } from "@/lib/auth/authStore";
-import { API_MODE } from "@/lib/data/api/mode";
+import { API_MODE, DEMO } from "@/lib/data/api/mode";
+import { exitDemo } from "@/lib/demo";
 import { useSession } from "@/lib/auth/session";
 import { useCurrentUser } from "@/lib/auth/useCan";
 
@@ -26,6 +27,7 @@ export function UserMenu() {
   if (!current) return null;
   const { user, role } = current;
   const signOut = async () => {
+    if (DEMO) return exitDemo();
     if (API_MODE) await signOutOnServer();
     else logout();
     router.replace("/login");
