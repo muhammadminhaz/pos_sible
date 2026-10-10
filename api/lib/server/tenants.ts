@@ -7,41 +7,31 @@ import { defaultCode } from "./code";
 import { pool } from "./pool";
 import { insertBusiness } from "./store";
 
-const DEMO_DAYS = 90;
-
 export type NewBusiness = {
   name: string;
   admin: { username: string; password: string; firstName: string; lastName?: string; email?: string };
   /** What staff type at sign-in to reach this business. Defaults to the owner's username. */
   code?: string;
-  /** A showcase account: a fresh random three months of sample data, and no welcome wizard. */
-  demo?: boolean;
   /** The package it starts on; defaults to Standard, or the first package if that is gone. */
   plan?: string;
   /** Last chance to change the new business's data (names, roles, staff) before it is saved. */
   tailor?: (db: DB) => void;
 };
 
-/** Seed data comes with throwaway passwords. A demo keeps its sample staff switched off; a real business starts with only its owner, since every user counts toward the package limit. */
-function lockDemoAccounts(db: DB, demo: boolean): void {
-  if (!demo) db.users = db.users.filter((u) => u.id === SEED_USER);
-  for (const u of db.users) if (u.id !== SEED_USER) u.allowLogin = false;
-}
-
-/** A new business: the sample shop, one admin with the chosen credentials, and the welcome wizard still to run (not for a demo). */
+/** A new business: the sample shop, one admin with the chosen credentials, and the welcome wizard still to run. */
 export async function createBusiness(input: NewBusiness): Promise<{ businessId: string }> {
   const id = randomUUID();
-  const db = input.demo ? createSeed({ seed: Math.floor(Math.random() * 2 ** 31), days: DEMO_DAYS }) : createSeed();
-  lockDemoAccounts(db, !!input.demo);
+  const db = createSeed();
+  // Only the owner: every user counts toward the package limit.
+  db.users = db.users.filter((u) => u.id === SEED_USER);
   const admin = db.users.find((u) => u.id === SEED_USER)!;
   Object.assign(admin, {
     username: input.admin.username.trim(), password: hashPassword(input.admin.password), firstName: input.admin.firstName.trim(),
     lastName: input.admin.lastName?.trim() ?? "", email: input.admin.email?.trim() ?? "",
   });
-  for (const u of db.users) if (u.id !== SEED_USER) u.password = hashPassword(randomUUID());
   db.settings.business.name = input.name.trim();
   input.tailor?.(db);
-  db.meta.onboarding = input.demo ? { done: true, mode: "demo", completedAt: new Date().toISOString(), checklistDismissed: true, visited: [] } : { done: false };
+  db.meta.onboarding = { done: false };
   await insertBusiness(id, db, input.code?.trim().toLowerCase() || defaultCode(input.admin.username), input.plan);
   return { businessId: id };
 }

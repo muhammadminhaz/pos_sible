@@ -185,7 +185,6 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
   const [phone, setPhone] = useState("");
   const [plan, setPlan] = useState(plans.find((p) => p.id === "standard")?.id ?? plans[0]?.id ?? "");
   const [free, setFree] = useState(false);
-  const [demo, setDemo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -193,7 +192,7 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, ...(code.trim() ? { code: code.trim() } : {}), password, email, phone, plan, free, demo }) }).catch(() => null);
+    const res = await call("businesses", { method: "POST", body: JSON.stringify({ businessName: name, username, ...(code.trim() ? { code: code.trim() } : {}), password, email, phone, plan, free }) }).catch(() => null);
     setBusy(false);
     if (res?.ok) {
       toast.success("Business account created");
@@ -219,13 +218,6 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
       <div className="grid gap-1.5"><Label htmlFor="b-plan">Package</Label><PlanSelect id="b-plan" plans={plans} value={plan} onChange={setPlan} /></div>
       <p className="text-xs text-muted-foreground">The account is switched off until you activate its subscription, after its first payment arrives. It starts with every module its package includes.</p>
       <FreeSwitch id="b-free" value={free} onChange={setFree} />
-      <div className="flex items-start justify-between gap-4">
-        <div className="grid gap-0.5">
-          <Label htmlFor="b-demo">Demo account</Label>
-          <p className="text-xs text-muted-foreground">Fills the shop with three months of random sample data and skips the welcome wizard.</p>
-        </div>
-        <Switch id="b-demo" checked={demo} onCheckedChange={setDemo} />
-      </div>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
         <Button type="submit" disabled={busy || !plan || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Create business</Button>

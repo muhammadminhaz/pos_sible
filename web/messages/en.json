@@ -203,8 +203,6 @@
     "signOut": "Sign Out",
     "switchUser": "Switch User",
     "throttled": "Too many attempts. Wait a few minutes and try again.",
-    "cancelled": "Your subscription has been cancelled. Please renew your subscription and contact your administrator to regain access.",
-    "expired": "Your subscription has expired. Please renew your subscription and contact your administrator to regain access.",
     "noAccount": "New here?",
     "createAccount": "Create your shop",
     "signupTitle": "Create your shop",
@@ -226,7 +224,18 @@
     "invalid": "Wrong Username or Password",
     "demoHint": "Demo: admin / 112233 or cashier / 112233",
     "forbiddenTitle": "You don't have access",
-    "forbiddenBody": "Ask an administrator to grant the permission for this page."
+    "forbiddenBody": "Ask an administrator to grant the permission for this page.",
+    "locked": {
+      "expiredTitle": "Your subscription has ended",
+      "expiredBody": "This shop's subscription wasn't renewed, so sign-in is locked for now. Once it's renewed you can sign in again right away.",
+      "cancelledTitle": "This shop is switched off",
+      "cancelledBody": "This shop's subscription was cancelled, so sign-in is locked. Once it's renewed you can sign in again right away.",
+      "contactTitle": "Contact your administrator",
+      "contactBody": "Ask them to renew the subscription. Staff members can ask the shop owner.",
+      "safeTitle": "Your data is safe",
+      "safeBody": "Every sale, product, customer and due is kept exactly as you left it.",
+      "back": "Back to sign in"
+    }
   },
   "header": {
     "storageFailed": "Changes can't be saved in this browser.",

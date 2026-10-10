@@ -391,9 +391,9 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect((await auth.login(user, "owner-pass-1", true, "ip-free")).ok).toBe(true);
   });
 
-  it("a demo business has no onboarding; a normal one still gets the wizard", async () => {
-    const make = async (username: string, demo: boolean) => {
-      const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: username, username, password: "owner-pass-1", plan: "starter", demo }) }));
+  it("a new business starts with only its owner and the welcome wizard", async () => {
+    const make = async (username: string) => {
+      const res = await list.POST(asAdmin("/api/admin/businesses", { method: "POST", body: JSON.stringify({ businessName: username, username, password: "owner-pass-1", plan: "starter" }) }));
       expect(res.status).toBe(201);
       const made = (await res.json()).id as string;
       ids.push(made);
@@ -403,8 +403,7 @@ describe.runIf(up)("platform admin and subscriptions", () => {
       const p = { businessId: r.principal.businessId, userId: r.principal.userId, role: r.principal.role };
       return rpc.handleRpc(p, { service: "onboardingService", method: "state", args: [] });
     };
-    expect(await make(`demo${tag}`, true)).toMatchObject({ ok: true, result: { onboarding: { done: true } } });
-    expect(await make(`real${tag}`, false)).toMatchObject({ ok: true, result: { onboarding: { done: false } } });
+    expect(await make(`real${tag}`)).toMatchObject({ ok: true, result: { onboarding: { done: false } } });
   });
 
   it("staff sign in with business username + account name; a person only gets the modules the owner gave them", async () => {

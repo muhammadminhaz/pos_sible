@@ -29,8 +29,6 @@ const create = z.object({
   plan: z.string().min(1).max(40),
   modules: z.array(z.enum(MODULE_IDS)).optional(),
   free: z.boolean().optional(),
-  /** A showcase account: three months of random sample data and no welcome wizard. */
-  demo: z.boolean().optional(),
 });
 
 /** Opens a business account: its name, the sign-in the owner will use, and a package. It cannot sign in until a subscription is activated. */
@@ -39,7 +37,7 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
   const parsed = create.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, reason: "invalid", fields: parsed.error.flatten().fieldErrors }, { status: 400 });
-  const { businessName, username, password, code, plan, email, phone, modules, free, demo } = parsed.data;
+  const { businessName, username, password, code, plan, email, phone, modules, free } = parsed.data;
   await ready();
   if (!(await getPlans()).some((p) => p.id === plan)) return NextResponse.json({ ok: false, reason: "invalid", fields: { plan: ["unknown"] } }, { status: 400 });
   // Owners sign in with just their username, so that must be free everywhere; staff names only need to be free inside their business.
@@ -51,7 +49,7 @@ export async function POST(req: NextRequest) {
   }
   let businessId: string;
   try {
-    ({ businessId } = await createBusiness({ name: businessName, admin: { username, password, firstName: businessName }, code, demo, plan }));
+    ({ businessId } = await createBusiness({ name: businessName, admin: { username, password, firstName: businessName }, code, plan }));
   } catch {
     return NextResponse.json({ ok: false, reason: "username_taken" }, { status: 409 });
   }
