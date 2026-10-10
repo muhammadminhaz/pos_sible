@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import { useCan } from "@/lib/auth/useCan";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import { useSettings } from "@/lib/data/hooks/settings";
@@ -74,13 +74,12 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
         ref={ref}
         className={cn("relative border-b align-middle transition-colors animate-in fade-in slide-in-from-left-2 duration-200", over && "bg-danger/5 ring-1 ring-danger ring-inset")}
       >
-        <td className="w-8 py-2 pl-3 text-xs text-muted-foreground tabular-nums">
+        <td className="w-8 py-2 pl-3 text-xs text-muted-foreground tabular-nums max-sm:hidden">{f.number(index + 1)}</td>
+        <td className="py-2 pr-2 max-sm:pl-2">
           {/* Keyed on the flash token so re-flashing the same line remounts this overlay and replays
-              the CSS animation, without remounting the row (the qty input keeps focus). */}
+              the CSS animation, without remounting the row (the qty input keeps focus). Lives in the
+              product cell because the # cell is hidden on phones; it still covers the whole row. */}
           {flashing && <span key={flashToken} aria-hidden className="pointer-events-none absolute inset-0 animate-[pos-flash_1s_ease-out]" />}
-          {f.number(index + 1)}
-        </td>
-        <td className="py-2 pr-2">
           <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-start gap-1 text-left">
             <ChevronDownIcon className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
             <span className="min-w-0">
@@ -111,7 +110,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
               value={line.qty}
               onChange={(e) => changeQty(Number(e.target.value))}
               onKeyDown={(e) => e.key === "Enter" && focusSearch()}
-              className="h-8 w-16 px-1 text-center tabular-nums"
+              className="h-8 w-12 px-1 text-center tabular-nums sm:w-16"
             />
             <Button variant="outline" size="icon-sm" aria-label={t("pos.cart.increase")} onClick={() => changeQty(line.qty + step)}>
               <PlusIcon />
@@ -119,7 +118,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
           </div>
           <span className="mt-0.5 block text-center text-[0.6875rem] text-muted-foreground">{f.unit(line.unitName)}</span>
         </td>
-        <td className="py-2 pl-3 text-right tabular-nums">
+        <td className="py-2 pl-3 text-right tabular-nums max-sm:hidden">
           {settings?.pos.subtotalEditable && can("pos.edit_price") ? (
             <Input
               type="number"
@@ -134,8 +133,8 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
             <span className="text-sm">{f.amount(totals.netUnitInc)}</span>
           )}
         </td>
-        <td className="py-2 pl-3 pr-2 text-right text-sm font-medium tabular-nums">{f.amount(totals.subtotal)}</td>
-        <td className="w-10 py-2 pr-2">
+        <td className="py-2 pl-2 pr-1 text-right text-sm font-medium tabular-nums sm:pl-3 sm:pr-2">{f.amount(totals.subtotal)}</td>
+        <td className="w-10 py-2 pr-2 max-sm:pr-1">
           <Button variant="ghost" size="icon-sm" aria-label={t("pos.cart.remove", { name: line.name })} onClick={() => update((c) => removeLine(c, line.key))}>
             <XIcon />
           </Button>
@@ -143,7 +142,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
       </tr>
       {open && (
         <tr className="border-b bg-muted/40">
-          <td />
+          <td className="max-sm:hidden" />
           <td colSpan={5} className="py-3 pr-3">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="grid gap-1">
@@ -166,17 +165,14 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
               <div className="grid gap-1">
                 <Label className="text-xs">{t("pos.cart.discount")}</Label>
                 <div className="flex gap-1">
-                  <ToggleGroup
-                    type="single"
-                    variant="outline"
-                    size="sm"
-                    disabled={!can("pos.edit_discount")}
-                    value={line.discount?.type ?? "fixed"}
-                    onValueChange={(v) => v && update((c) => setLineDiscount(c, line.key, { type: v as "fixed" | "percentage", amount: line.discount?.amount ?? 0 }))}
-                  >
-                    <ToggleGroupItem value="fixed" aria-label={t("pos.discount.fixed")}>{settings?.business.currencySymbol || "৳"}</ToggleGroupItem>
-                    <ToggleGroupItem value="percentage" aria-label={t("pos.discount.percentage")}>%</ToggleGroupItem>
-                  </ToggleGroup>
+                  <fieldset disabled={!can("pos.edit_discount")} className="shrink-0">
+                    <SegmentedControl
+                      label={t("pos.cart.discount")}
+                      value={line.discount?.type ?? "fixed"}
+                      onValueChange={(v) => update((c) => setLineDiscount(c, line.key, { type: v as "fixed" | "percentage", amount: line.discount?.amount ?? 0 }))}
+                      options={[{ value: "fixed", label: settings?.business.currencySymbol || "৳" }, { value: "percentage", label: "%" }]}
+                    />
+                  </fieldset>
                   <Input
                     type="number"
                     min={0}

@@ -102,7 +102,7 @@ export function TileCard({ children }: { children: ReactNode }) {
  * layout is fixed.
  */
 export function CardGrid({ section, items }: { section: string; items: CardDef[] }) {
-  const { width, containerRef, mounted } = useContainerWidth();
+  const { width, containerRef, mounted } = useContainerWidth({ measureBeforeMount: true });
   const saved = useLayouts((s) => s.layouts[section]);
   const save = useLayouts((s) => s.save);
   const reset = useLayouts((s) => s.reset);

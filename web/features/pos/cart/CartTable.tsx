@@ -24,10 +24,10 @@ export function CartTable({ locationId }: { locationId: string }) {
         <caption className="sr-only">{t("caption")}</caption>
         <thead className="sticky top-0 z-10 bg-card text-xs text-muted-foreground">
           <tr className="border-b">
-            <th scope="col" className="py-2 pl-3 text-left font-medium">#</th>
-            <th scope="col" className="py-2 text-left font-medium">{t("product")}</th>
+            <th scope="col" className="py-2 pl-3 text-left font-medium max-sm:hidden">#</th>
+            <th scope="col" className="py-2 text-left font-medium max-sm:pl-3">{t("product")}</th>
             <th scope="col" className="py-2 text-left font-medium">{t("qty")}</th>
-            <th scope="col" className="py-2 pl-3 text-right font-medium">{t("price")}</th>
+            <th scope="col" className="py-2 pl-3 text-right font-medium max-sm:hidden">{t("price")}</th>
             <th scope="col" className="py-2 pl-3 pr-2 text-right font-medium">{t("subtotal")}</th>
             <th scope="col"><span className="sr-only">{t("remove", { name: "" })}</span></th>
           </tr>

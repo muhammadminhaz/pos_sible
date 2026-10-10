@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import { refreshAuth, useAuth } from "@/lib/auth/authStore";
 import { API_MODE } from "@/lib/data/api/mode";
 import { useSession } from "@/lib/auth/session";
@@ -109,13 +110,13 @@ export default function LoginPage() {
             )}
 
             {API_MODE && (
-              <div role="group" aria-label={t("auth.signIn")} className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1 text-sm">
-                {([false, true] as const).map((isStaff) => (
-                  <button key={String(isStaff)} type="button" aria-pressed={staff === isStaff} onClick={() => setStaff(isStaff)} className={`rounded-md px-2 py-1.5 font-medium transition-colors ${staff === isStaff ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                    {isStaff ? t("auth.asStaff") : t("auth.asOwner")}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                label={t("auth.signIn")}
+                className="w-full"
+                value={staff ? "staff" : "owner"}
+                onValueChange={(v) => setStaff(v === "staff")}
+                options={[{ value: "owner", label: t("auth.asOwner") }, { value: "staff", label: t("auth.asStaff") }]}
+              />
             )}
             {API_MODE && staff && (
               <div className="flex flex-col gap-1.5">

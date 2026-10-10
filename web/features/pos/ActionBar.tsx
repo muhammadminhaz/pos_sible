@@ -26,10 +26,12 @@ export function ActionBar({ location }: { location: Location }) {
   const methods = tillMethods(location.paymentMethods, labels);
   const off = cmd.empty || cmd.pending;
 
-  // Below `xl` (1280px) the bar has no room for icon + label on every button, so the label
+  // Below `sm` the bar wraps to two rows. Below `xl` (1280px) the bar has no room for icon + label on every button, so the label
   // hides and the icon plus `aria-label` carry the button; at `xl` and up the label returns.
   return (
-    <footer className="flex h-16 min-w-0 shrink-0 items-center gap-2 overflow-hidden border-t bg-card px-3">
+    <footer className="flex h-16 min-w-0 shrink-0 items-center gap-2 overflow-hidden border-t bg-card px-3 max-sm:h-auto max-sm:flex-wrap max-sm:pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      {/* Phones: these secondary actions take the first row, tenders and the total the second. */}
+      <div className="flex min-w-0 items-center gap-2 max-sm:w-full max-sm:overflow-x-auto">
       <Button variant="outline" onClick={cmd.quotation} disabled={off} aria-label={t("pos.actions.quotation")}>
         <FileTextIcon />
         <span className="hidden xl:inline">{t("pos.actions.quotation")}</span>
@@ -65,7 +67,9 @@ export function ActionBar({ location }: { location: Location }) {
         </Button>
       )}
 
-      <div className="ml-auto flex min-w-0 items-center gap-2">
+      </div>
+
+      <div className="ml-auto flex min-w-0 items-center gap-2 max-sm:w-full max-sm:justify-end">
         {methods.includes(BKASH) && (
           <Button
             size="lg"

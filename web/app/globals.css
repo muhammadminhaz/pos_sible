@@ -204,6 +204,12 @@
   html {
     @apply font-sans;
     -webkit-font-smoothing: antialiased;
+    /* Short and tall pages (tab switches, filters) would otherwise add and drop the scrollbar and jolt the layout sideways. */
+    scrollbar-gutter: stable;
+  }
+  /* The gutter already holds the scrollbar's space, so Radix's scroll lock must not add its own compensation on top. */
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
   }
   html:lang(bn) {
     font-family: var(--font-noto-sans-bengali), var(--font-inter), ui-sans-serif, system-ui, sans-serif;

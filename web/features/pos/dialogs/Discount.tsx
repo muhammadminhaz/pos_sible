@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import { useCan } from "@/lib/auth/useCan";
 import { discountValue, type DiscountInput } from "@/lib/domain/totals";
 import { useFormat } from "@/lib/i18n/format";
@@ -39,10 +39,15 @@ function DiscountForm({ locationId }: { locationId: string }) {
       <DialogHeader>
         <DialogTitle>{t("pos.discount.title")}</DialogTitle>
       </DialogHeader>
-      <ToggleGroup type="single" variant="outline" disabled={!can("pos.edit_discount")} value={type} onValueChange={(v) => v && setType(v as DiscountInput["type"])} className="w-full">
-        <ToggleGroupItem value="fixed" className="flex-1">{t("pos.discount.fixed")}</ToggleGroupItem>
-        <ToggleGroupItem value="percentage" className="flex-1">{t("pos.discount.percentage")}</ToggleGroupItem>
-      </ToggleGroup>
+      <fieldset disabled={!can("pos.edit_discount")} className="contents">
+        <SegmentedControl
+          label={t("pos.discount.title")}
+          className="w-full"
+          value={type}
+          onValueChange={(v) => setType(v as DiscountInput["type"])}
+          options={[{ value: "fixed", label: t("pos.discount.fixed") }, { value: "percentage", label: t("pos.discount.percentage") }]}
+        />
+      </fieldset>
       <div className="grid gap-2">
         <Label htmlFor="disc-amount">{t("pos.discount.amount")}</Label>
         <Input id="disc-amount" type="number" min={0} max={type === "percentage" ? 100 : undefined} step="any" autoFocus disabled={!can("pos.edit_discount")} value={amount} onChange={(e) => setAmount(e.target.value)} className="tabular-nums" />

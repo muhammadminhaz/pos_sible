@@ -502,7 +502,6 @@
     "panes": "Register View",
     "paneProducts": "Products",
     "paneCart": "Cart",
-    "narrow": "The POS needs a screen at least 768px wide. Use a tablet or computer.",
     "top": {
       "location": "Location",
       "shortcuts": "Shortcuts",

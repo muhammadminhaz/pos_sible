@@ -3,11 +3,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  ArrowLeftIcon, ClockIcon, HistoryIcon, KeyboardIcon, LockIcon, MapPinIcon, PauseCircleIcon, ReceiptIcon,
+  ArrowLeftIcon, ClockIcon, EllipsisVerticalIcon, HistoryIcon, KeyboardIcon, LockIcon, MapPinIcon, PauseCircleIcon, ReceiptIcon,
   Undo2Icon, WalletIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calculator } from "@/components/layout/Calculator";
@@ -77,9 +78,9 @@ export function TopBar({ location, allowed, register }: {
           <ArrowLeftIcon />
         </Link>
       </Button>
-      <LogoMark />
+      <LogoMark className="hidden sm:block" />
       <Select value={location?.id ?? ""} onValueChange={setLocationId}>
-        <SelectTrigger className="w-40 lg:w-52" aria-label={t("pos.top.location")}>
+        <SelectTrigger className="w-32 min-w-0 shrink sm:w-40 lg:w-52" aria-label={t("pos.top.location")}>
           <MapPinIcon className="text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
@@ -109,6 +110,8 @@ export function TopBar({ location, allowed, register }: {
             <HistoryIcon />
           </IconAction>
         )}
+        <PhoneMenu locked={locked} />
+        <div className="hidden items-center gap-0.5 sm:flex">
         <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />
         {can("expense.create") && (
           <IconAction label={t("pos.top.addExpense")} onClick={() => show("expense")} disabled={locked}>
@@ -141,7 +144,34 @@ export function TopBar({ location, allowed, register }: {
         <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />
         <LocaleToggle />
         <ThemeToggle />
+        </div>
       </div>
     </header>
+  );
+}
+
+/** Below `sm` the bar keeps back, location, suspended and recent; the rest of its actions live in this menu. */
+function PhoneMenu({ locked }: { locked: boolean }) {
+  const t = useTranslations();
+  const can = useCan();
+  const show = usePosDialogs((s) => s.show);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="sm:hidden" aria-label={t("common.more")}>
+          <EllipsisVerticalIcon />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        {can("expense.create") && <DropdownMenuItem disabled={locked} onSelect={() => show("expense")}><WalletIcon />{t("pos.top.addExpense")}</DropdownMenuItem>}
+        <DropdownMenuItem disabled={locked} onSelect={() => show("registerDetails")}><ReceiptIcon />{t("pos.top.registerDetails")}</DropdownMenuItem>
+        {can("cash_register.close") && <DropdownMenuItem disabled={locked} onSelect={() => show("registerClose")}><LockIcon />{t("pos.top.closeRegister")}</DropdownMenuItem>}
+        {can("sell_return.view") && <DropdownMenuItem asChild><Link href="/sales/returns/new"><Undo2Icon />{t("pos.top.sellReturn")}</Link></DropdownMenuItem>}
+        <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+          <LocaleToggle />
+          <ThemeToggle />
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

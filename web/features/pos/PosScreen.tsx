@@ -29,7 +29,6 @@ import { ShippingDialog } from "./dialogs/Shipping";
 import { SuspendDialog } from "./dialogs/Suspend";
 import { SuspendedSheet } from "./dialogs/Suspended";
 import { ProductGrid } from "./grid/ProductGrid";
-import { Narrow } from "./Narrow";
 import { TopBar } from "./TopBar";
 import { PaneSwitch } from "./PaneSwitch";
 import { registerGate } from "@/lib/pos/gate";
@@ -41,13 +40,12 @@ export function PosScreen() {
   const register = useCurrentRegister(location?.id ?? "");
   const gate = registerGate(location, register);
   const ready = gate === "ready";
-  // Below 1024px the cart and the product grid share the screen as two tabs.
+  // Below 1024px (tablets and phones) the cart and the product grid share the screen as two tabs.
   const [pane, setPane] = useState<"products" | "cart">("products");
 
   return (
     <>
-      <Narrow />
-      <div className="hidden h-dvh flex-col overflow-hidden bg-muted/30 md:flex" data-print-hide>
+      <div className="flex h-dvh flex-col overflow-hidden bg-muted/30" data-print-hide>
         <TopBar location={location} allowed={allowed} register={register.data ?? null} />
         {gate === "loading" ? (
           <div className="flex flex-1 gap-4 p-4">

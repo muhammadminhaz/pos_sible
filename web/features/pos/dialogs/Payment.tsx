@@ -86,8 +86,8 @@ function PaymentForm({ location }: { location: Location }) {
       <DialogHeader>
         <DialogTitle>{t("pos.pay.title")}</DialogTitle>
       </DialogHeader>
-      <div className="grid grid-cols-[1fr_16rem] gap-5">
-        <div className="grid max-h-[60vh] content-start gap-3 overflow-auto pr-1">
+      <div className="grid gap-5 sm:grid-cols-[1fr_16rem]">
+        <div className="grid max-h-[60vh] content-start gap-3 overflow-auto pr-1 max-sm:max-h-[40dvh]">
           {rows.map((r, i) => (
             <div key={r.id} className="grid gap-3 rounded-lg border bg-card p-3">
               <div className="flex items-end gap-2">
@@ -173,7 +173,7 @@ function PaymentForm({ location }: { location: Location }) {
           </div>
         </div>
 
-        <dl className="grid content-start gap-3 rounded-xl bg-muted/50 p-4 text-sm" aria-live="polite">
+        <dl className="grid content-start gap-3 rounded-xl bg-muted/50 p-4 text-sm max-sm:order-first max-sm:gap-2 max-sm:p-3" aria-live="polite">
           <div>
             <dt className="text-muted-foreground">{t("pos.totals.payable")}</dt>
             <dd className="text-2xl font-semibold tabular-nums">{f.money(payable)}</dd>

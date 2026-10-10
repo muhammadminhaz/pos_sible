@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import { useSettings } from "@/lib/data/hooks/settings";
 import { patchCart, type CartShipping, type ShippingZone } from "@/lib/pos/cart";
 import { useCart } from "@/lib/pos/store";
@@ -44,11 +44,13 @@ function ShippingForm({ locationId }: { locationId: string }) {
       </DialogHeader>
       <div className="grid gap-2">
         <Label>{t("pos.shipping.zone")}</Label>
-        <ToggleGroup type="single" variant="outline" value={s.zone ?? ""} onValueChange={(v) => v && pickZone(v as ShippingZone)} className="w-full">
-          {ZONES.map((z) => (
-            <ToggleGroupItem key={z} value={z} className="flex-1">{t(`pos.shipping.${z}`)}</ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <SegmentedControl
+          label={t("pos.shipping.zone")}
+          className="w-full"
+          value={s.zone ?? ""}
+          onValueChange={(v) => pickZone(v as ShippingZone)}
+          options={ZONES.map((z) => ({ value: z, label: t(`pos.shipping.${z}`) }))}
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="ship-charges">{t("pos.shipping.charges")}</Label>
