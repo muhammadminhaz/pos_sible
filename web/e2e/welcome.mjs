@@ -33,6 +33,8 @@ for (const [width, height] of [[1440, 900], [390, 844]]) {
   if (/[—–]/.test(body)) fail(mode, "em or en dash in page text");
   if (/framer|flowsuite|circular|react bits/i.test(body)) fail(mode, "reference branding in page text");
   if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) fail(mode, "horizontal scroll");
+  // The page scrolls inside the card, so that scroller must not move sideways either.
+  if (await page.evaluate(() => { const sc = document.querySelector("header").parentElement; sc.scrollLeft = 999; return sc.scrollLeft; })) fail(mode, "card scrolls sideways");
   for (const name of ["Get started", "See demo"])
     if (!(await page.locator("#main").getByRole("link", { name }).isVisible())) fail(mode, `CTA "${name}" not visible`);
   if (width >= 1024) for (const name of ["Features", "Pricing", "FAQ", "Contact"])

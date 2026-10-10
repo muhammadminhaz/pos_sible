@@ -2,13 +2,13 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
-import { ArrowUpRightIcon, MailIcon } from "lucide-react";
+import { ArrowUpRightIcon, StoreIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SITE } from "@/lib/site";
 import content from "@/features/landing/content.json";
 import dashboard from "@/public/welcome/dashboard.png";
 import StarBorder from "@/components/ui/star-border";
 import { TiltBackground } from "./TiltBackground";
+import { WelcomeNav } from "./WelcomeNav";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
@@ -26,52 +26,34 @@ export function Welcome() {
       {/* The dark frame is a bezel: the page scrolls inside the card, under a notch that hangs from its top edge. */}
       <div className="relative isolate h-full overflow-hidden rounded-[28px] text-white">
         <TiltBackground />
-        <div className="flex h-full flex-col overflow-y-auto overscroll-contain [scrollbar-width:none]">
-        <header className="sticky top-0 z-20 flex justify-center">
-          <nav aria-label="Main" className="wl-drop relative flex w-[calc(100%-4rem)] max-w-4xl items-center justify-between gap-3 rounded-b-[28px] bg-[#05050a] p-2 sm:p-2.5">
-            <NotchCorner side="left" />
-            <NotchCorner side="right" />
-            <Link href="/" className="flex h-12 shrink-0 items-center gap-2.5 rounded-full pr-3 pl-1.5 font-display text-[15px] font-semibold tracking-tight">
-              <Image src="/logo-192.png" alt="" width={32} height={32} className="rounded-full" />
-              {SITE.name}
-            </Link>
-            <ul className="absolute left-1/2 hidden h-12 -translate-x-1/2 items-stretch gap-1 py-1 lg:flex">
-              {content.nav.map((n) => (
-                <li key={n.href} className="flex">
-                  <NavPill href={n.href} label={n.label} />
-                </li>
-              ))}
-            </ul>
-            {/* After React Bits' GlareHover: one soft streak of light crosses the pill on hover. */}
-            <a href="#contact" className="group relative inline-flex h-12 shrink-0 items-center gap-2 overflow-hidden rounded-full bg-white px-5 text-sm font-semibold text-[#05050a] transition-transform active:scale-[0.98]">
-              <span aria-hidden className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 -skew-x-12 bg-[linear-gradient(90deg,transparent,rgb(10_60_255/0.18),transparent)] transition-transform duration-700 ease-out group-hover:translate-x-[300%] motion-reduce:hidden" />
-              <MailIcon aria-hidden className="size-4 text-[#0a3cff]" />
-              Contact
-            </a>
-          </nav>
+        {/* overflow-y alone would let it scroll sideways too; the hero also clips the Get started glow, which reaches 48px past the button. */}
+        <div className="flex h-full flex-col overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-width:none]">
+        {/* Fixed height: the nav floats in it, so the phone menu unfolds over the hero instead of pushing it down. */}
+        <header className="sticky top-0 z-20 h-16 sm:h-[68px]">
+          <WelcomeNav links={content.nav} />
         </header>
 
-        <main id="main" className="mx-auto flex w-full max-w-4xl flex-col items-center px-4 pt-14 text-center sm:pt-20">
+        <main id="main" className="mx-auto flex w-full max-w-5xl flex-col overflow-x-clip items-start px-5 pt-10 text-left sm:items-center sm:px-4 sm:pt-20 sm:text-center">
           <p className="wl-rise rounded-full bg-white/10 px-3.5 py-1.5 font-mono text-[13px] ring-1 ring-white/25 backdrop-blur-sm" style={delay(80)}>
             {hero.badge}
           </p>
 
-          <h1 className="wl-rise mt-6 pb-1 font-display text-[2rem] leading-[1.05] font-semibold tracking-[-0.045em] text-balance sm:text-6xl lg:text-[4.75rem]" style={delay(160)}>
-            The POS that tells you
+          <h1 className="wl-rise mt-6 pb-1 font-display text-[2.5rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-6xl lg:text-[4.25rem]" style={delay(160)}>
+            <span className="lg:whitespace-nowrap">It doesn&apos;t just run your shop.</span>
             <br />
-            <span className="font-[family-name:var(--font-serif)] text-[1.12em] leading-[1.1] font-medium tracking-[-0.02em] text-[#d8ecff] italic">what to do next</span>
+            <span className="font-[family-name:var(--font-serif)] text-[1.12em] leading-[1.1] font-medium tracking-[-0.02em] text-[#d8ecff] italic">It understands it.</span>
           </h1>
 
-          <p className="wl-rise mt-5 max-w-xl text-[15px] leading-relaxed text-pretty text-white sm:text-lg" style={delay(240)}>
-            Sell, track stock and collect dues in English or <span lang="bn">বাংলা</span>. Then POS-sible reads every sale and tells you what to restock, which regulars to win back and which dues to chase.
+          <p className="wl-rise mt-5 max-w-2xl text-[15px] leading-relaxed text-pretty text-white sm:text-lg" style={delay(240)}>
+            The all-in-one POS with an intelligence layer that reads every sale, stock count and due, then guides you on what to restock, who to win back and which dues to collect.
           </p>
 
-          <div className="wl-rise mt-8 flex flex-col items-center gap-3 sm:flex-row" style={delay(320)}>
-            <StarBorder as="a" href={getStarted} radius={24} color="#9fd0ff" glow={0.9} sparkle backgroundColor="#05050a" className="group h-12 gap-3 py-0 pr-1.5 pl-6 text-[15px] font-semibold shadow-[0_12px_40px_-12px_rgb(5_20_120/0.8)] active:scale-[0.98]">
+          <div className="wl-rise mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center" style={delay(320)}>
+            <StarBorder as="a" href={getStarted} radius={24} color="#9fd0ff" glow={0.9} sparkle backgroundColor="#05050a" className="group h-12 w-full justify-between gap-3 py-0 pr-1.5 pl-6 sm:w-auto text-[15px] font-semibold shadow-[0_12px_40px_-12px_rgb(5_20_120/0.8)] active:scale-[0.98]">
               Get started
               <ArrowSwap className="size-9 bg-white text-[#0a3cff]" />
             </StarBorder>
-            <Link href="/demo" className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-white pr-6 pl-1.5 text-[15px] font-semibold text-[#05050a] shadow-[0_12px_40px_-12px_rgb(5_20_120/0.5)] transition-[transform,background-color] hover:bg-[#eaf3ff] active:scale-[0.98]">
+            <Link href="/demo" className="group inline-flex h-12 w-full items-center justify-center gap-2.5 sm:w-auto sm:justify-start rounded-full bg-white pr-6 pl-1.5 text-[15px] font-semibold text-[#05050a] shadow-[0_12px_40px_-12px_rgb(5_20_120/0.5)] transition-[transform,background-color] hover:bg-[#eaf3ff] active:scale-[0.98]">
               <LiveBars />
               See demo
             </Link>
@@ -97,38 +79,49 @@ export function Welcome() {
             />
           </div>
         </div>
+
+        <TrustedClients />
         </div>
       </div>
     </div>
   );
 }
 
-/** Concave fillet that blends the notch into the bezel's top edge, as if both were cut from one piece. */
-function NotchCorner({ side }: { side: "left" | "right" }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "absolute top-0 size-7",
-        side === "left"
-          ? "right-full bg-[radial-gradient(circle_at_0_100%,transparent_27.5px,#05050a_28px)]"
-          : "left-full bg-[radial-gradient(circle_at_100%_100%,transparent_27.5px,#05050a_28px)]",
-      )}
-    />
-  );
-}
+const SLOTS = 6;
 
-/** Nav link in the style of React Bits' PillNav: a dome rises from the bottom on hover while the label slides up and a dark copy slides in. CSS only. */
-function NavPill({ href, label }: { href: string; label: string }) {
-  const slide = "transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none";
+/**
+ * Where client logos will loop once shops sign up. Until then the loop holds open "Your shop here" slots
+ * and the line invites the first ones in. Sits on the pale haze at the bottom of the card, so it uses dark ink.
+ */
+function TrustedClients() {
+  const row = (hidden: boolean) => (
+    <ul aria-hidden={hidden || undefined} className="flex shrink-0 gap-3 pr-3">
+      {Array.from({ length: SLOTS }, (_, i) => (
+        <li key={i} className="flex h-11 items-center gap-2 rounded-full border border-dashed border-[#0a3cff]/30 bg-white/50 px-4 text-sm font-medium whitespace-nowrap text-[#0a3cff] backdrop-blur-sm">
+          <StoreIcon aria-hidden className="size-4" />
+          Your shop here
+        </li>
+      ))}
+    </ul>
+  );
   return (
-    <a href={href} className="group relative flex items-center overflow-hidden rounded-full px-4 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-white/70">
-      <span aria-hidden className={cn("absolute top-full left-1/2 aspect-square w-[160%] -translate-x-1/2 rounded-full bg-white", slide, "group-hover:-translate-y-[62%] group-focus-visible:-translate-y-[62%]")} />
-      <span className="relative block">
-        <span className={cn("block", slide, "group-hover:-translate-y-[160%] group-focus-visible:-translate-y-[160%]")}>{label}</span>
-        <span aria-hidden className={cn("absolute inset-0 block translate-y-[160%] text-[#05050a]", slide, "group-hover:translate-y-0 group-focus-visible:translate-y-0")}>{label}</span>
-      </span>
-    </a>
+    <section aria-labelledby="clients-title" className="relative -mt-4 px-5 pb-10 text-[#071447] sm:-mt-6 sm:pb-14">
+      <div className="mx-auto flex max-w-5xl flex-col items-start gap-1.5 sm:items-center sm:text-center">
+        <h2 id="clients-title" className="font-display text-sm font-medium text-[#071447]/70">Trusted clients</h2>
+        <p className="text-lg font-semibold tracking-tight text-pretty sm:text-xl">
+          Coming soon.{" "}
+          <Link href={getStarted} className="underline decoration-[#0a3cff]/40 underline-offset-4 transition-colors hover:text-[#0a3cff] hover:decoration-[#0a3cff]">
+            Become our first user
+          </Link>
+        </p>
+      </div>
+      <div className="mx-auto mt-6 flex max-w-5xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+        <div className="wl-marquee flex">
+          {row(false)}
+          {row(true)}
+        </div>
+      </div>
+    </section>
   );
 }
 
