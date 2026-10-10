@@ -19,7 +19,7 @@ export function PaneSwitch({ pane, onChange, locationId }: { pane: "products" | 
     >
       <Icon className="size-4" />
       {label}
-      {!!badge && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground tabular-nums">{f.number(badge)}</span>}
+      {!!badge && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground tabular-nums">{f.number(badge)}</span>}
     </button>
   );
   return (

@@ -261,7 +261,7 @@ export function Heatmap({ grid, rowLabels, label, format }: { grid: number[][]; 
     <figure role="img" aria-label={label} className="m-0 overflow-x-auto">
       <div className="grid min-w-[560px] gap-1" style={{ gridTemplateColumns: "3rem repeat(24, minmax(0, 1fr))" }} aria-hidden>
         <span />
-        {hours.map((h) => <span key={h} className="text-center text-[10px] text-muted-foreground tabular">{h % 3 === 0 ? h : ""}</span>)}
+        {hours.map((h) => <span key={h} className="text-center text-[0.6875rem] text-muted-foreground tabular">{h % 3 === 0 ? h : ""}</span>)}
         {grid.map((row, d) => (
           <div key={d} className="contents">
             <span className="self-center text-xs text-muted-foreground">{rowLabels[d]}</span>

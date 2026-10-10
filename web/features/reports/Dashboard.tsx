@@ -34,7 +34,7 @@ function Block({ title, href, children, className, order }: { title: string; hre
   return (
     <section style={{ "--i": order } as CSSProperties} className={`${CARD} ${className ?? ""}`}>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+        <h2 className="text-base font-semibold">{title}</h2>
         {href ? <GoButton href={href} label={`${t("open")}: ${title}`} /> : null}
       </div>
       {children}
@@ -98,7 +98,7 @@ function ExpiryList({ rows, count }: { rows: ExpiryRow[]; count: { expired: numb
                 <li key={a.lotId} className="flex items-center gap-3 py-2.5">
                   <div className="grid w-11 shrink-0 place-items-center rounded-lg bg-muted/60 py-1 leading-none" title={f.date(a.expDate)}>
                     <span className="text-base font-semibold tabular">{f.number(d.getDate())}</span>
-                    <span className="mt-0.5 text-[10px] font-medium text-muted-foreground uppercase">{month.format(d)}</span>
+                    <span className="mt-0.5 text-[0.6875rem] font-medium text-muted-foreground uppercase">{month.format(d)}</span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{a.variation ? `${a.product} (${a.variation})` : a.product}</div>

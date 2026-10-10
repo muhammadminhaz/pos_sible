@@ -195,7 +195,7 @@ export default function LoginPage() {
               key={d.username}
               type="button"
               onClick={() => fillDemo(d.username)}
-              className="rounded-md border bg-card px-2 py-1 font-mono text-[11px] text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5"
+              className="rounded-md border bg-card px-2 py-1 font-mono text-xs text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5"
             >
               {d.username} · {d.role}
             </button>

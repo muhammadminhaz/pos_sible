@@ -25,7 +25,7 @@ export function Stats({ items, cols = 4 }: { items: { label: string; value: numb
 export function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className={cn(CARD, "h-full")}>
-      <h2 className="mb-4 text-base font-semibold tracking-tight">{title}</h2>
+      <h2 className="mb-4 text-base font-semibold">{title}</h2>
       {children}
     </section>
   );

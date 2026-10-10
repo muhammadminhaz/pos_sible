@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeftIcon, HomeIcon } from "lucide-react";
@@ -57,8 +58,7 @@ export function NotFoundView({ page = false }: { page?: boolean }) {
       <div className="page-in my-4 flex items-center justify-center gap-1 sm:gap-3" aria-hidden>
         <span className="bg-linear-to-b from-indigo-500 to-indigo-700 bg-clip-text text-8xl leading-none font-black tracking-tighter text-transparent sm:text-[9rem] dark:from-indigo-300 dark:to-indigo-500">4</span>
         <span className="float-slow block size-20 overflow-hidden rounded-[22%] shadow-xl shadow-indigo-500/30 ring-1 ring-black/5 sm:size-32">
-          {/* eslint-disable-next-line @next/next/no-img-element -- the app icon, static */}
-          <img src="/icon.svg" alt="" className="size-full" />
+          <Image src="/icon.svg" alt="" width={128} height={128} className="size-full" />
         </span>
         <span className="bg-linear-to-b from-indigo-500 to-indigo-700 bg-clip-text text-8xl leading-none font-black tracking-tighter text-transparent sm:text-[9rem] dark:from-indigo-300 dark:to-indigo-500">4</span>
       </div>

@@ -21,7 +21,7 @@ export function GoButton({ href, label }: { href: string; label: string }) {
     <Link
       href={href}
       aria-label={label}
-      className="grid size-8 shrink-0 place-items-center rounded-full border border-border text-foreground transition-all hover:-translate-y-0.5 hover:rotate-12 hover:bg-foreground hover:text-background focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="grid size-8 shrink-0 place-items-center rounded-full border border-border text-foreground transition-[transform,background-color,color] hover:-translate-y-0.5 hover:rotate-12 hover:bg-foreground hover:text-background focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       <ArrowUpRightIcon className="size-4" aria-hidden />
     </Link>
@@ -155,7 +155,7 @@ export function MoneyOut({ now, loading }: { now?: Kpis; loading: boolean }) {
   return (
     <div className="grid h-full min-w-0 grid-cols-1 gap-3">
       <section style={{ "--i": 4 } as CSSProperties} className={`${CARD} flex h-full flex-col`} aria-label={t("owedAndReturned")}>
-        <h2 className="mb-2 text-base font-semibold tracking-tight">{t("owedAndReturned")}</h2>
+        <h2 className="mb-2 text-base font-semibold">{t("owedAndReturned")}</h2>
         <ul className="flex flex-1 flex-col divide-y divide-border/70">
           {rows.map((r) => {
             const v = now?.[r.key];

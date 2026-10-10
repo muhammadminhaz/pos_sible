@@ -67,7 +67,7 @@ export function Header() {
   return (
     <header
       data-print-hide
-      className="@container sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4 lg:px-6"
+      className="@container sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b glass px-4 lg:px-6"
     >
       {/* Breadcrumbs stop short of the search: 100cqw - 50vw is the distance from the header's left edge to the screen centre. */}
       <div className="flex min-w-0 flex-1 items-center gap-3">

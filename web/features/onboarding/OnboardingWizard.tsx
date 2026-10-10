@@ -64,7 +64,7 @@ function Wizard() {
   const choice = (id: "demo" | "fresh", Icon: typeof StoreIcon, title: string, body: string) => (
     <button
       type="button" onClick={() => setMode(id)} aria-pressed={mode === id}
-      className={cn("flex flex-1 flex-col gap-2 rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md", mode === id ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "bg-card")}
+      className={cn("flex flex-1 flex-col gap-2 rounded-xl border p-4 text-left transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-md", mode === id ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "bg-card")}
     >
       <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="size-5" /></span>
       <span className="font-semibold">{title}</span>

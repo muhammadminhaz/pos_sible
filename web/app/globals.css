@@ -70,6 +70,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  /* Critically damped spring (no overshoot) for things the user opens and closes: sheets, dialogs, menus. */
+  --ease-spring: linear(0, 0.055, 0.1734, 0.3101, 0.4422, 0.5591, 0.6575, 0.7374, 0.8009, 0.8503, 0.8883, 0.9172, 0.9389, 0.9551, 0.9672, 0.9761, 0.9826, 0.9874, 0.9909, 0.9935, 0.9953, 0.9966, 0.9976, 0.9983, 1);
   --animate-blink-cursor: blink-cursor 1.2s step-end infinite;
   @keyframes blink-cursor {
   0%, 49% {
@@ -206,10 +208,15 @@
   html:lang(bn) {
     font-family: var(--font-noto-sans-bengali), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   }
+  /* Noto Sans Bengali reserves extra descent for vowel signs, so glyphs sit high in centered controls. */
+  html:lang(bn) :is(button, [role="tab"], [role="menuitem"], [role="option"]):not(:has(> svg:only-child)) {
+    text-box: trim-both cap alphabetic;
+    padding-top: 0.125rem;
+  }
   /* Rem stays 16px so the 4px spacing grid holds; body copy is 14px. */
   body {
     @apply bg-background text-foreground;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 1.45;
   }
   button:not(:disabled),
@@ -236,6 +243,13 @@
   [role="option"][aria-disabled="true"],
   label:has(:disabled) {
     cursor: not-allowed;
+  }
+}
+
+/* Press feedback lands on pointer-down, not on release. Buttons already scale; links, rows, tabs and menu items dim. */
+@layer base {
+  :where(a[href], [role="tab"], [role="menuitem"], [role="option"], [data-slot="table-row"]):active {
+    opacity: 0.7;
   }
 }
 
@@ -288,17 +302,17 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   to { opacity: 1; transform: none; }
 }
 /*
- * Cards and panels reveal as they arrive: a fade and rise that sharpens out of a slight blur. Siblings stagger in
+ * Cards and panels reveal as they arrive: a quick fade and short rise. Siblings stagger in
  * reading order (explicit --i, or the position among siblings), and it plays once on mount. Fill is "backwards" so the
  * card keeps its normal styles (and hover transforms) afterwards.
  */
 @keyframes reveal {
-  from { opacity: 0; transform: translateY(18px) scale(0.985); filter: blur(5px); }
-  to { opacity: 1; transform: none; filter: blur(0); }
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
 }
 .reveal {
-  animation: reveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-  animation-delay: calc(var(--i, var(--n, 0)) * 70ms);
+  animation: reveal 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, var(--n, 0)) * 30ms);
 }
 .reveal:nth-child(2) { --n: 1; }
 .reveal:nth-child(3) { --n: 2; }
@@ -331,19 +345,14 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
 .pop { animation: pop 0.3s ease-out; }
 .draw-line { stroke-dasharray: var(--len, 1000); animation: draw 1.4s 0.2s ease-out both; }
 .grow-bar { transform-origin: bottom; animation: grow-y 0.7s ease-out both; }
-.float-slow { animation: float 5s ease-in-out infinite; }
-
-@keyframes rise {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+/* A 5s loop sits at the vestibular frequency, so it only runs when motion is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  .float-slow { animation: float 5s ease-in-out infinite; }
 }
+
 @keyframes grow-x {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
-}
-@keyframes shine {
-  from { transform: translateX(-100%) skewX(-20deg); }
-  to { transform: translateX(400%) skewX(-20deg); }
 }
 @keyframes shimmer {
   from { background-position: 200% 0; }
@@ -354,18 +363,6 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   60% { transform: scale(1.2); opacity: 1; }
   100% { transform: scale(1); }
 }
-/* Table rows rise in one after another (the first dozen; later ones just appear). */
-[data-slot="table-body"] > [data-slot="table-row"] { animation: rise 0.32s ease-out both; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(2) { animation-delay: 25ms; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(3) { animation-delay: 50ms; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(4) { animation-delay: 75ms; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(5) { animation-delay: 100ms; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(6) { animation-delay: 125ms; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(7) { animation-delay: 150ms; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(8) { animation-delay: 175ms; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(9) { animation-delay: 200ms; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(10) { animation-delay: 225ms; }
-[data-slot="table-body"] > [data-slot="table-row"]:nth-child(n + 11) { animation-delay: 250ms; }
 /* A soft light that follows the pointer across a card (set by MicroInteractions). */
 [data-spotlight] { position: relative; }
 [data-spotlight]::before {
@@ -414,7 +411,6 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   .card-glow::before, .card-glow::after { transition-duration: 0.01s; }
 }
 /* Ticks and switches answer with a small pop. */
-[data-slot="checkbox"][data-state="checked"] { animation: pop 0.25s ease-out; }
 [data-slot="checkbox-indicator"] > svg { animation: tick 0.28s ease-out; }
 [data-slot="radio-group-indicator"] > * { animation: tick 0.28s ease-out; }
 [data-slot="switch"]:active [data-slot="switch-thumb"] { width: 1.125rem; }
@@ -426,14 +422,38 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
 }
 .grow-x { transform-origin: left; animation: grow-x 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+/* Less motion, not less feedback: movement goes, short colour and opacity changes stay. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     animation-delay: 0ms !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+    transition-property: opacity, color, background-color, border-color !important;
+    transition-duration: 150ms !important;
+    transition-delay: 0ms !important;
   }
+}
+
+/* Floating chrome (the app header): content scrolls underneath a translucent, blurred layer. */
+.glass {
+  background: color-mix(in oklch, var(--background) 72%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border-color: color-mix(in oklch, var(--border) 60%, transparent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass { background: var(--background); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--border); }
+  [class*="backdrop-blur"] { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+@media (prefers-contrast: more) {
+  .glass { background: var(--background); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--foreground); }
+  :root { --border: color-mix(in oklch, var(--foreground) 45%, transparent); --input: var(--border); }
+}
+
+/* Dialogs grow from the control that opened them (position set by MicroInteractions; centred when opened by keyboard). */
+[data-slot="dialog-content"], [data-slot="alert-dialog-content"] {
+  transform-origin: calc(50% + var(--click-x, 50vw) - 50vw) calc(50% + var(--click-y, 50vh) - 50vh);
 }
 
 /* Loading sweep along the top edge while a route is on its way (app/(app)/loading.tsx). */
@@ -532,9 +552,6 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
 /* Rows that scroll sideways with their own arrows: no scrollbar track at all, so nothing is reserved under them. */
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
-@media (prefers-reduced-motion: reduce) {
-  * { transition: none; }
-}
   ::view-transition-old(root), ::view-transition-new(root) {
     animation: none;
     mix-blend-mode: normal;
@@ -545,3 +562,22 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
 html[data-magicui-theme-vt="active"] { overflow-x: hidden; }
 html[data-magicui-theme-vt="active"]::view-transition-group(root) { animation-duration: var(--magicui-theme-toggle-vt-duration); }
 html[data-magicui-theme-vt="active"]::view-transition-new(root) { clip-path: var(--magicui-theme-vt-clip-from); }
+
+/* Marketing home page: vertical stripes (not a grid) behind the hero mockup and the call-out panels.
+   Fixed colours, so the white text on top clears AA in both themes. */
+.bg-stripes {
+  background:
+    linear-gradient(to bottom, transparent 45%, oklch(0.58 0.19 275)),
+    repeating-linear-gradient(90deg, oklch(0.54 0.21 275) 0 3.5%, oklch(0.49 0.22 275) 3.5% 7%);
+}
+.bg-stripes-fade {
+  background:
+    linear-gradient(to bottom, transparent 55%, var(--background)),
+    repeating-linear-gradient(90deg, oklch(0.54 0.21 275) 0 3.5%, oklch(0.49 0.22 275) 3.5% 7%);
+}
+.bg-panel { background: linear-gradient(to bottom, oklch(0.49 0.22 275), oklch(0.56 0.2 275)); }
+.font-display { font-family: var(--font-geist), var(--font-sans); }
+.landing-lift { transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s, border-color 0.25s; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .landing-lift:hover { transform: translateY(-4px); }
+}

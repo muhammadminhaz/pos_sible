@@ -43,7 +43,7 @@ function Thumb({ p }: { p: ProductRow }) {
     .join("")
     .toUpperCase();
   return (
-    <span className="grid size-8 place-items-center rounded-md border bg-muted text-[11px] font-semibold text-muted-foreground">
+    <span className="grid size-8 place-items-center rounded-md border bg-muted text-xs font-semibold text-muted-foreground">
       {initials}
     </span>
   );

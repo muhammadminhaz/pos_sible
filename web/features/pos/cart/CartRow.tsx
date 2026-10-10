@@ -90,8 +90,8 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
                 {line.maxQty !== null && (
                   <span className={cn(over && "font-medium text-danger")}>· {t("pos.cart.stockLeft", { qty: f.qty(line.maxQty) })}</span>
                 )}
-                {needsSerials && <Badge variant="outline" className="h-4 px-1 text-[10px]">{t("pos.cart.serials")}</Badge>}
-                {line.discount && <Badge variant="secondary" className="h-4 px-1 text-[10px]">{t("pos.cart.discount")}</Badge>}
+                {needsSerials && <Badge variant="outline" className="h-5 px-1.5 text-[0.6875rem]">{t("pos.cart.serials")}</Badge>}
+                {line.discount && <Badge variant="secondary" className="h-5 px-1.5 text-[0.6875rem]">{t("pos.cart.discount")}</Badge>}
               </span>
             </span>
           </button>
@@ -117,7 +117,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
               <PlusIcon />
             </Button>
           </div>
-          <span className="mt-0.5 block text-center text-[10px] text-muted-foreground">{f.unit(line.unitName)}</span>
+          <span className="mt-0.5 block text-center text-[0.6875rem] text-muted-foreground">{f.unit(line.unitName)}</span>
         </td>
         <td className="py-2 pl-3 text-right tabular-nums">
           {settings?.pos.subtotalEditable && can("pos.edit_price") ? (
@@ -158,7 +158,7 @@ export function CartRow({ locationId, line, index, totals, expanded, onToggle }:
                   className="h-8 tabular-nums"
                 />
                 {line.taxRate > 0 && (
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {`${f.percent(line.taxRate)} · ${line.taxType === "inclusive" ? t("pos.cart.taxInc") : t("pos.cart.taxExc")} · ${f.amount(totals.unitTax)}`}
                   </span>
                 )}

@@ -16,7 +16,7 @@ export default async function AuthLayout({ children }: LayoutProps<"/">) {
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div className="relative flex flex-col px-4 py-6 sm:px-10">
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+          <span className="flex items-center gap-2 text-sm font-semibold">
             <LogoMark className="size-7" />
             POS-sible
           </span>

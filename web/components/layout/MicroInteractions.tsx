@@ -21,9 +21,22 @@ export function MicroInteractions() {
         el.style.setProperty("--my", `${e.clientY - r.top}px`);
       });
     };
+    const root = document.documentElement;
+    const mark = (e: PointerEvent) => {
+      root.style.setProperty("--click-x", `${e.clientX}px`);
+      root.style.setProperty("--click-y", `${e.clientY}px`);
+    };
+    const clearMark = () => {
+      root.style.removeProperty("--click-x");
+      root.style.removeProperty("--click-y");
+    };
+    document.addEventListener("pointerdown", mark, { passive: true, capture: true });
+    document.addEventListener("keydown", clearMark, { passive: true, capture: true });
     document.addEventListener("pointermove", move, { passive: true });
     return () => {
       document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerdown", mark, { capture: true });
+      document.removeEventListener("keydown", clearMark, { capture: true });
       cancelAnimationFrame(frame);
     };
   }, []);
