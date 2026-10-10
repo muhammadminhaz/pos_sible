@@ -65,6 +65,8 @@
 .branched-menu__chev { margin-left: auto; flex: none; width: 14px; height: 14px; opacity: 0.55; transition: transform var(--bm-fold) var(--bm-ease-out); }
 .branched-menu__section[data-open] .branched-menu__chev { transform: rotate(90deg); }
 .branched-menu__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-block: 0.15em; }
+/* Noto Sans Bengali ink sits high in its line box; drop the label so it lines up with the icon. */
+html:lang(bn) .branched-menu__label { translate: 0 0.1875rem; }
 
 .branched-menu__section[data-open] .branched-menu__head { color: var(--bm-ink); }
 

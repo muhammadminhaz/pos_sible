@@ -76,8 +76,8 @@ export function Header() {
           <Breadcrumbs />
         </div>
       </div>
-      {/* Pinned to the centre of the screen, not the header, so the sidebar's width never shifts it. */}
-      <div className="md:fixed md:top-0 md:left-1/2 md:flex md:h-14 md:w-[min(24rem,34vw)] md:-translate-x-1/2 md:items-center">
+      {/* backdrop-filter makes the header the containing block for fixed children, so left-1/2 would track the header. left: 100% (the header's width) minus 50vw is the screen centre in header coordinates. */}
+      <div className="md:fixed md:top-0 md:left-[calc(100%-50vw)] md:flex md:h-14 md:w-[min(24rem,34vw)] md:-translate-x-1/2 md:items-center">
         <SearchTrigger />
       </div>
       <div className="flex shrink-0 items-center justify-end gap-1">

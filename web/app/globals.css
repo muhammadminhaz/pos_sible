@@ -209,9 +209,13 @@
     font-family: var(--font-noto-sans-bengali), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   }
   /* Noto Sans Bengali reserves extra descent for vowel signs, so glyphs sit high in centered controls. */
-  html:lang(bn) :is(button, [role="tab"], [role="menuitem"], [role="option"]):not(:has(> svg:only-child)) {
+  html:lang(bn) :is(button, [role="tab"], [role="menuitem"], [role="option"]):not([data-size^="icon"], [aria-label]:has(> svg:only-child)) {
     text-box: trim-both cap alphabetic;
-    padding-top: 0.125rem;
+    padding-top: 0.375rem;
+  }
+  /* The padding above moves the whole content box down 3px; pull icons back so only the text shifts. */
+  html:lang(bn) :is(button, [role="tab"], [role="menuitem"], [role="option"]):not([data-size^="icon"], [aria-label]:has(> svg:only-child), .branched-menu__head) > svg {
+    translate: 0 -0.1875rem;
   }
   /* Rem stays 16px so the 4px spacing grid holds; body copy is 14px. */
   body {
