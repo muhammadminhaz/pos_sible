@@ -176,7 +176,7 @@ export function Dashboard() {
   const range = rf.filter.from && rf.filter.to ? { from: rf.filter.from, to: rf.filter.to } : presetRange("thisMonth", today, fyStartMonth);
   const kpis = useDashboardKpis({ locationId: loc, ...range });
   const prev = useDashboardKpis({ locationId: loc, ...previousRange(range) });
-  const extras = useReport("dashboard", rf.filter, () => dashboardReports.extras(rf.filter));
+  const extras = useReport("dashboard", { ...rf.filter, ...range }, () => dashboardReports.extras({ ...rf.filter, ...range }));
   const first = useReport("dashboard-first", {}, () => dashboardReports.firstDate());
   const x = extras.data;
   const defs: FilterDef[] = [

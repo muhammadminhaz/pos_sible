@@ -125,12 +125,12 @@ function toRows(db: DB, locationId?: string): ProductRow[] {
   const vars = Map.groupBy(db.variations, (v) => v.productId);
   const stock = new Map<string, number>();
   for (const l of db.stockLots) {
-    if (locationId && l.locationId !== locationId) continue;
+    if (locationId && !anyOf(locationId, l.locationId)) continue;
     stock.set(l.productId, (stock.get(l.productId) ?? 0) + l.qtyRemaining);
   }
   const sold = new Map<string, number>();
   for (const t of db.transactions) {
-    if (locationId && t.locationId !== locationId) continue;
+    if (locationId && !anyOf(locationId, t.locationId)) continue;
     const sign = t.type === "sell" && t.status === "final" ? 1 : t.type === "sell_return" ? -1 : 0;
     if (sign) for (const l of t.lines) sold.set(l.productId, (sold.get(l.productId) ?? 0) + sign * l.qty);
   }
@@ -205,7 +205,7 @@ export const productsService = service("productsService", {
         (!f.brandId || anyOf(f.brandId, p.brandId)) &&
         (!f.unitId || anyOf(f.unitId, p.unitId)) &&
         (!f.taxId || anyOf(f.taxId, p.taxId)) &&
-        (!f.locationId || p.locationIds.includes(f.locationId)) &&
+        (!f.locationId || p.locationIds.some((id) => anyOf(f.locationId, id))) &&
         (!f.active || p.active === (f.active === "active")) &&
         (f.notForSale === undefined || anyOf(f.notForSale, p.notForSale)),
     );

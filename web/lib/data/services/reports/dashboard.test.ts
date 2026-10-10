@@ -40,6 +40,14 @@ describe("dashboard extras", () => {
     expect(e.topProducts.length).toBeLessThanOrEqual(5);
   });
 
+  it("several locations picked at once chart the sum of each, not nothing", () => {
+    const ids = seed.locations.map((l) => l.id);
+    const sum = (loc?: string) => salesByDay(seed, 30, today, loc).reduce((s, r) => s + r.sales, 0);
+    expect(sum(ids.join(","))).toBeGreaterThan(0);
+    near(sum(ids.join(",")), ids.reduce((s, id) => s + sum(id), 0));
+    near(sum(ids.join(",")), sum());
+  });
+
   it("sizes the sales trend to the selected range and never runs past today", () => {
     const today = "2026-09-27";
     expect(dashboardExtras(seed, { today }).salesByDay).toHaveLength(30);

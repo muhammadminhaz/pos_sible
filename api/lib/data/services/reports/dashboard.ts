@@ -5,7 +5,7 @@ import { getDB } from "@/lib/data/store/db";
 import { todayISO } from "@/lib/dates";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
-import { delay } from "../_util";
+import { anyOf, delay } from "../_util";
 import { dayOf, inScope, isFinalSale, isReceivedPurchase, names, type ReportFilter } from "./_shared";
 import { firstDate } from "./analytics";
 import { stockExpiry, type ExpiryRow } from "./stock";
@@ -41,7 +41,7 @@ export function salesByDay(d: DB, days: number, today: string, locationId?: stri
   const out = Array.from({ length: days }, (_, i) => ({ date: format(addDays(start, i), "yyyy-MM-dd"), sales: 0 }));
   const idx = new Map(out.map((r, i) => [r.date, i]));
   for (const t of d.transactions) {
-    if (!isFinalSale(t) || (locationId && t.locationId !== locationId)) continue;
+    if (!isFinalSale(t) || (locationId && !anyOf(locationId, t.locationId))) continue;
     const i = idx.get(dayOf(t.date));
     if (i !== undefined) out[i].sales = roundMoney(out[i].sales + t.totals.total);
   }
@@ -52,7 +52,7 @@ export function salesByDay(d: DB, days: number, today: string, locationId?: stri
 export function stockAlerts(d: DB, locationId?: string | null): StockAlert[] {
   const held = new Map<string, number>();
   for (const l of d.stockLots) {
-    if (locationId && l.locationId !== locationId) continue;
+    if (locationId && !anyOf(locationId, l.locationId)) continue;
     const k = `${l.variationId}|${l.locationId}`;
     held.set(k, roundMoney((held.get(k) ?? 0) + l.qtyRemaining, 4));
   }
@@ -60,7 +60,7 @@ export function stockAlerts(d: DB, locationId?: string | null): StockAlert[] {
   for (const v of d.variations) {
     const p = d.products.find((x) => x.id === v.productId);
     if (!p || !p.manageStock || p.alertQty == null) continue;
-    for (const loc of d.locations.filter((l) => !locationId || l.id === locationId).filter((l) => p.locationIds.includes(l.id))) {
+    for (const loc of d.locations.filter((l) => !locationId || anyOf(locationId, l.id)).filter((l) => p.locationIds.includes(l.id))) {
       const stock = held.get(`${v.id}|${loc.id}`) ?? 0;
       if (stock <= p.alertQty) out.push({ variationId: v.id, product: p.name, variation: p.type === "variable" ? v.name : "", sku: v.sku, locationName: loc.name, stock, alertQty: p.alertQty, unit: d.units.find((u) => u.id === p.unitId)?.shortName ?? "" });
     }
