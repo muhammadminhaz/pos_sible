@@ -14,7 +14,7 @@
 | Type | Web-based point of sale plus inventory, purchasing, CRM-lite, expenses, accounting, and reporting |
 | Tenancy | One business with many **Business Locations** (demo has 2: *Rango Electronics (BL0001)* and *Nipun Poultry and Fish Feed (BL0003)*) |
 | Users | Many users, and each record stores who added it. Users can be assigned to contacts, and there are sales commission agents, delivery persons, and service staff |
-| Currency / locale | BDT (৳), dd-mm-yyyy dates, 12h time. Many UI languages (English, Spanish, Albanian, Hindi, Dutch, French, German, Arabic, …) |
+| Currency / locale | BDT (৳), dd/mm/yyyy dates, 12h time. Many UI languages (English, Spanish, Albanian, Hindi, Dutch, French, German, Arabic, …) |
 | Local payment methods | Advance, Cash, Card, Cheque, Bank Transfer, Other, plus custom methods (Nagad, Bkash, Rocket, Upay, Nagad Merchant, Bkash Merchant) |
 | Payment accounts | Bkash, Nagad (demo) |
 | Industries served | Electronics, feed and grocery (units such as `bag (1bag=50KG)`, `Dram (1 Dram=185KG)`), repair shops (**Technicians**), and restaurants (tables, modifiers, kitchen, service staff; these modules can be toggled) |

@@ -10,6 +10,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "e2e": "node e2e/smoke.mjs",
+    "e2e:landing": "node e2e/landing.mjs",
     "e2e:onboarding": "node e2e/onboarding.mjs",
     "e2e:team": "node e2e/team.mjs",
     "e2e:admin": "node e2e/admin.mjs",
