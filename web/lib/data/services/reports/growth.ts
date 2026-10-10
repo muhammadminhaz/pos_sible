@@ -161,7 +161,47 @@ export type GoalProgress = Goal & {
   daysLeft: number;
   status: GoalStatus;
   previous: number;
+  /** How to close the gap when a running total is behind with days still left. */
+  plan?: GapPlan;
 };
+
+export type GapRoute = {
+  kind: "customers" | "basket" | "both";
+  /** Extra customers a day. */
+  customers: number;
+  /** Extra on every average sale. */
+  basket: number;
+  /** What the route adds by the end of the period. */
+  adds: number;
+};
+export type GapPlan = {
+  /** Where today's pace falls short of the target. */
+  shortfall: number;
+  /** Extra a day, on top of today's pace, that closes it. */
+  perDay: number;
+  /** Today's average sale; routes only exist for sales goals with orders to read. */
+  aov: number;
+  routes: GapRoute[];
+};
+
+/**
+ * Splits the daily lift into things a counter can do: more customers at today's average sale, a bigger
+ * average sale from the same customers, or half the customers plus a smaller basket rise.
+ */
+export function closeGap(shortfall: number, daysLeft: number, ordersPerDay: number, aov: number): GapPlan {
+  const perDay = Math.ceil(shortfall / daysLeft);
+  const plan: GapPlan = { shortfall: roundMoney(shortfall), perDay, aov: roundMoney(aov), routes: [] };
+  if (!(aov > 0 && ordersPerDay > 0)) return plan;
+  const route = (kind: GapRoute["kind"], customers: number, basket: number): GapRoute =>
+    ({ kind, customers, basket, adds: roundMoney(((ordersPerDay + customers) * (aov + basket) - ordersPerDay * aov) * daysLeft) });
+  const more = Math.ceil(perDay / aov);
+  plan.routes.push(route("customers", more, 0), route("basket", 0, Math.ceil(perDay / ordersPerDay)));
+  if (more >= 2) {
+    const half = Math.floor(more / 2);
+    plan.routes.push(route("both", half, Math.max(0, Math.ceil((perDay - half * aov) / (ordersPerDay + half)))));
+  }
+  return plan;
+}
 
 const PERIOD = {
   month: [startOfMonth, endOfMonth, subMonths],
@@ -188,6 +228,9 @@ export function metricValue(d: DB, metric: GoalMetric, f: ReportFilter): number 
   return headline(d, f)[metric];
 }
 
+/** Totals that build up day by day, so a shortfall can become "this much more a day". */
+const GAP_METRICS = new Set<GoalMetric>(["sales", "grossProfit", "netProfit", "orders"]);
+
 export function goalProgress(d: DB, g: Goal): GoalProgress {
   const now = today(d);
   const { from, to } = periodRange(g.period, now);
@@ -200,9 +243,16 @@ export function goalProgress(d: DB, g: Goal): GoalProgress {
   const status: GoalStatus = ceiling
     ? value > g.target ? "over" : projected > g.target ? "behind" : "ahead"
     : value >= g.target ? "achieved" : projected >= g.target ? "ahead" : "behind";
+  const daysLeft = total - gone;
+  let plan: GapPlan | undefined;
+  if (status === "behind" && !ceiling && daysLeft > 0 && GAP_METRICS.has(g.metric)) {
+    const h = g.metric === "sales" ? headline(d, { from, to: now }) : null;
+    plan = closeGap(g.target - projected, daysLeft, h ? h.orders / gone : 0, h?.aov ?? 0);
+  }
   return {
-    ...g, from, to, value: roundMoney(value), projected, elapsed: Math.round((gone / total) * 100), daysLeft: total - gone, status,
+    ...g, from, to, value: roundMoney(value), projected, elapsed: Math.round((gone / total) * 100), daysLeft, status,
     previous: roundMoney(metricValue(d, g.metric, periodRange(g.period, now, 1))),
+    ...(plan && { plan }),
   };
 }
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { CoinsIcon, EllipsisIcon, PencilIcon, PiggyBankIcon, PlusIcon, ReceiptIcon, RefreshCwIcon, ShoppingCartIcon, TargetIcon, Trash2Icon, TrendingUpIcon, TriangleAlertIcon, UserPlusIcon, UsersIcon, WalletIcon, type LucideIcon } from "lucide-react";
+import { BlendIcon, CoinsIcon, EllipsisIcon, PencilIcon, PiggyBankIcon, PlusIcon, ReceiptIcon, RefreshCwIcon, ShoppingBasketIcon, ShoppingCartIcon, TargetIcon, Trash2Icon, TrendingUpIcon, TriangleAlertIcon, UserPlusIcon, UsersIcon, WalletIcon, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { CARD } from "@/components/shared/card-surface";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import RubberSegment from "@/components/ui/rubber-segment";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GOAL_METRICS, GOAL_PERIODS, type GoalMetric, type GoalPeriod } from "@/lib/data/schemas";
-import { goalsService, type GoalInput, type GoalProgress } from "@/lib/data/services/reports/growth";
+import { goalsService, type GapPlan, type GapRoute, type GoalInput, type GoalProgress } from "@/lib/data/services/reports/growth";
 import { useFormat } from "@/lib/i18n/format";
 import { toast } from "@/lib/toast";
 import { useCountUp } from "@/lib/useCountUp";
@@ -27,8 +27,6 @@ const ICON: Record<GoalMetric, LucideIcon> = {
   sales: CoinsIcon, grossProfit: TrendingUpIcon, netProfit: PiggyBankIcon, orders: ShoppingCartIcon, aov: ReceiptIcon, newCustomers: UserPlusIcon, activeCustomers: UsersIcon, expenses: WalletIcon,
 };
 const IS_MONEY = (m: GoalMetric) => m !== "orders" && m !== "newCustomers" && m !== "activeCustomers";
-/** Only totals that build up day by day can be turned into "how much per day from here". */
-const PER_DAY = new Set<GoalMetric>(["sales", "grossProfit", "netProfit", "orders"]);
 const NO_PROJECTION = new Set<GoalMetric>(["aov", "activeCustomers"]);
 const STARTERS: { metric: GoalMetric; key: "sales" | "newCustomers" | "expenses" }[] = [
   { metric: "sales", key: "sales" }, { metric: "newCustomers", key: "newCustomers" }, { metric: "expenses", key: "expenses" },
@@ -52,6 +50,7 @@ function GoalCard({ g, onEdit, onDelete }: { g: GoalProgress; onEdit: () => void
   const t = useTranslations("possible");
   const tc = useTranslations("common");
   const amount = useAmount();
+  const f = useFormat();
   const reduced = useReducedMotion();
   const Icon = ICON[g.metric];
   const ceiling = g.metric === "expenses";
@@ -62,8 +61,7 @@ function GoalCard({ g, onEdit, onDelete }: { g: GoalProgress; onEdit: () => void
   let guide: string | null = null;
   if (g.status === "achieved") guide = t("reached", { days: g.daysLeft });
   else if (ceiling) guide = g.status === "over" ? null : t("leftToSpend", { amount: amount(g.metric, g.target - g.value) });
-  else if (g.status === "behind" && PER_DAY.has(g.metric) && g.daysLeft > 0) guide = t("needPerDay", { amount: amount(g.metric, Math.ceil((g.target - g.value) / g.daysLeft)) });
-  else if (!NO_PROJECTION.has(g.metric)) guide = t("projection", { amount: amount(g.metric, g.projected) });
+  else if (!g.plan && !NO_PROJECTION.has(g.metric)) guide = t("projection", { amount: amount(g.metric, g.projected) });
 
   return (
     <article className={cn(CARD, "flex flex-col", g.status === "achieved" && "ring-2 ring-primary/50")}>
@@ -89,6 +87,7 @@ function GoalCard({ g, onEdit, onDelete }: { g: GoalProgress; onEdit: () => void
       <div className="mt-5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className={cn("text-3xl leading-tight font-semibold tabular tracking-tight", g.status === "over" && "text-danger")}>{amount(g.metric, g.metric === "aov" ? g.value : shown)}</span>
         <span className="text-sm text-muted-foreground">{ceiling ? t("limit", { target: amount(g.metric, g.target) }) : t("of", { target: amount(g.metric, g.target) })}</span>
+        {!ceiling && g.status !== "achieved" && <span className="text-sm font-medium text-muted-foreground tabular">· {f.percent(Math.round((g.value / g.target) * 1000) / 10)}</span>}
       </div>
 
       <div className="relative mt-4" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t("progressLabel", { pct })}>
@@ -117,8 +116,64 @@ function GoalCard({ g, onEdit, onDelete }: { g: GoalProgress; onEdit: () => void
         </motion.span>
         {guide && <span className="text-sm text-muted-foreground">{guide}</span>}
       </div>
+      {g.plan && <GapPanel g={g} plan={g.plan} />}
       <p className="mt-auto pt-4 text-xs text-muted-foreground">{t("previous", { period: t(`periodWord.${g.period}`), amount: amount(g.metric, g.previous) })}</p>
     </article>
+  );
+}
+
+// ── Behind pace: what it takes to still get there ──────────────────────
+
+const ROUTE_ICON: Record<GapRoute["kind"], LucideIcon> = { customers: UsersIcon, basket: ShoppingBasketIcon, both: BlendIcon };
+
+function GapPanel({ g, plan }: { g: GoalProgress; plan: GapPlan }) {
+  const t = useTranslations("possible");
+  const f = useFormat();
+  const amount = useAmount();
+  const reduced = useReducedMotion();
+  // Orders projected at today's pace are fractional; a count reads as whole ones.
+  const shown = (n: number) => amount(g.metric, IS_MONEY(g.metric) ? n : Math.round(n));
+  const detail = (r: GapRoute) =>
+    r.kind === "customers" ? t("route.customers.detail", { n: r.customers, aov: f.money(plan.aov) })
+      : r.kind === "basket" ? t("route.basket.detail", { from: f.money(plan.aov), to: f.money(plan.aov + r.basket) })
+        : t("route.both.detail", { n: r.customers, lift: f.money(r.basket) });
+
+  return (
+    <section className="mt-4 rounded-2xl bg-muted/50 p-4" aria-label={t("waysTitle")}>
+      <dl className="grid grid-cols-2 gap-3">
+        <div>
+          <dt className="text-xs text-muted-foreground">{t("expected")}</dt>
+          <dd className="mt-0.5 text-lg font-semibold tabular tracking-tight">{shown(g.projected)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">{t("missBy")}</dt>
+          <dd className="mt-0.5 text-lg font-semibold tabular tracking-tight text-warning-foreground">{shown(plan.shortfall)}</dd>
+        </div>
+      </dl>
+      <p className="mt-3 text-sm text-pretty">{IS_MONEY(g.metric) ? t("recommend", { amount: amount(g.metric, plan.perDay), days: g.daysLeft }) : t("recommendCount", { n: plan.perDay, days: g.daysLeft })}</p>
+      {plan.routes.length > 0 && (
+        <>
+          <h4 className="mt-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{t("waysTitle")}</h4>
+          <ul className="mt-2 grid gap-2">
+            {plan.routes.map((r, i) => {
+              const RouteIcon = ROUTE_ICON[r.kind];
+              return (
+                <motion.li key={r.kind} className="flex items-center gap-3 rounded-xl bg-card p-3 shadow-xs"
+                  initial={reduced ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 24, delay: 0.08 * i }}>
+                  <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><RouteIcon className="size-4" aria-hidden /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium">{t(`route.${r.kind}.title`)}</span>
+                    <span className="block text-xs text-pretty text-muted-foreground tabular">{detail(r)}</span>
+                  </span>
+                  <span className="shrink-0 text-sm font-semibold text-success-foreground tabular">{t("approx", { amount: f.money(r.adds) })}</span>
+                </motion.li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+    </section>
   );
 }
 

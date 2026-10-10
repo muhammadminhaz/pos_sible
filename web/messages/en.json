@@ -2320,7 +2320,6 @@
       "over": "Over the Limit"
     },
     "projection": "At this pace you'll reach {amount}",
-    "needPerDay": "{amount} a day from here gets you there",
     "leftToSpend": "{amount} Left to Spend",
     "reached": "Reached with {days, plural, =0 {no days} one {# day} other {# days}} to spare",
     "previous": "Last {period}: {amount}",
@@ -2356,6 +2355,26 @@
       "expenses": "Keep Expenses in Check"
     },
     "goalsErrorTitle": "We couldn't load your goals",
-    "celebrate": "You reached your {metric} goal!"
+    "celebrate": "You reached your {metric} goal!",
+    "expected": "Expected",
+    "missBy": "Likely to miss by",
+    "recommend": "POS-sible recommends {amount} more a day for the remaining {days, plural, one {# day} other {# days}}.",
+    "recommendCount": "POS-sible recommends {n, plural, one {# more sale} other {# more sales}} a day for the remaining {days, plural, one {# day} other {# days}}.",
+    "waysTitle": "Ways to get there",
+    "approx": "≈ +{amount}",
+    "route": {
+      "customers": {
+        "title": "More customers",
+        "detail": "+{n, plural, one {# customer} other {# customers}} a day at {aov} a sale"
+      },
+      "basket": {
+        "title": "Bigger baskets",
+        "detail": "Average sale from {from} to {to}"
+      },
+      "both": {
+        "title": "A bit of both",
+        "detail": "+{n, plural, one {# customer} other {# customers}} a day and +{lift} on every sale"
+      }
+    }
   }
 }

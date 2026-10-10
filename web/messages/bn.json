@@ -2320,7 +2320,6 @@
       "over": "সীমা ছাড়িয়েছে"
     },
     "projection": "এই গতিতে হবে {amount}",
-    "needPerDay": "এখন থেকে দিনে {amount} হলেই পৌঁছে যাবেন",
     "leftToSpend": "আরও {amount} খরচ করা যাবে",
     "reached": "{days, plural, =0 {শেষ দিনে} other {# দিন হাতে রেখে}} অর্জিত",
     "previous": "গত {period}: {amount}",
@@ -2356,6 +2355,26 @@
       "expenses": "খরচ নিয়ন্ত্রণে রাখুন"
     },
     "goalsErrorTitle": "লক্ষ্যগুলো আনা গেল না",
-    "celebrate": "আপনার {metric} লক্ষ্য পূরণ হয়েছে!"
+    "celebrate": "আপনার {metric} লক্ষ্য পূরণ হয়েছে!",
+    "expected": "সম্ভাব্য",
+    "missBy": "যতটা কম পড়তে পারে",
+    "recommend": "বাকি {days, plural, other {# দিন}} প্রতিদিন আরও {amount} করার পরামর্শ দিচ্ছে POS-sible।",
+    "recommendCount": "বাকি {days, plural, other {# দিন}} প্রতিদিন আরও {n, plural, other {#টি}} বিক্রির পরামর্শ দিচ্ছে POS-sible।",
+    "waysTitle": "যেভাবে পৌঁছাবেন",
+    "approx": "≈ +{amount}",
+    "route": {
+      "customers": {
+        "title": "আরও কাস্টমার",
+        "detail": "দিনে আরও {n, plural, other {# জন}} কাস্টমার, প্রতি বিক্রি {aov}"
+      },
+      "basket": {
+        "title": "বড় ঝুড়ি",
+        "detail": "গড় বিক্রি {from} থেকে {to}"
+      },
+      "both": {
+        "title": "দুটোই একটু করে",
+        "detail": "দিনে আরও {n, plural, other {# জন}} কাস্টমার, প্রতি বিক্রিতে +{lift}"
+      }
+    }
   }
 }
