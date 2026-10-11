@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { BanknoteIcon, Building2Icon, CreditCardIcon, LayoutDashboardIcon, Loader2Icon, LogOutIcon, MenuIcon, PackageIcon, ShieldCheckIcon } from "lucide-react";
+import { BanknoteIcon, Building2Icon, CreditCardIcon, LayoutDashboardIcon, Loader2Icon, LogOutIcon, MenuIcon, PackageIcon } from "lucide-react";
 import { cn } from "cn";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -39,8 +40,11 @@ function SidebarBody({ me, onNavigate, onSignOut }: { me: Me; onNavigate?: () =>
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-14 shrink-0 items-center gap-2.5 border-b px-4">
-        <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground"><ShieldCheckIcon className="size-4" /></span>
-        <span className="text-[15px] font-semibold tracking-tight">Platform admin</span>
+        <Image src="/logo-192.png" alt="" width={32} height={32} className="size-8 shrink-0" />
+        <span className="grid leading-tight">
+          <span className="text-[15px] font-semibold tracking-tight">{SITE.name}</span>
+          <span className="text-xs text-muted-foreground">Platform admin</span>
+        </span>
       </div>
       <nav aria-label="Admin" className="flex flex-1 flex-col gap-0.5 px-3 py-3">
         {NAV.map(({ href, label, icon: Icon }) => {
@@ -149,7 +153,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu" onClick={() => setMenu(true)}><MenuIcon /></Button>
             <ThemeToggle />
           </header>
-          <main className="mx-auto grid w-full max-w-6xl grid-cols-[minmax(0,1fr)] content-start gap-4 px-4 py-8 sm:px-6">{children}</main>
+          <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 lg:px-6">{children}</main>
         </div>
       </div>
     </Ctx.Provider>
@@ -174,7 +178,7 @@ function SignIn({ onDone }: { onDone: () => void }) {
   return (
     <main className="mx-auto grid min-h-dvh w-full max-w-sm content-center gap-6 px-4">
       <div className="flex flex-col items-center gap-2 text-center">
-        <span className="grid size-11 place-items-center rounded-xl bg-primary text-primary-foreground"><ShieldCheckIcon className="size-6" /></span>
+        <Image src="/logo-192.png" alt="" width={48} height={48} className="size-12" priority />
         <h1 className="text-2xl font-semibold tracking-tight">Platform admin</h1>
         <p className="text-sm text-muted-foreground">Sign in to manage business accounts and subscriptions.</p>
       </div>
@@ -199,14 +203,3 @@ function SignIn({ onDone }: { onDone: () => void }) {
 }
 
 /** Page title block used by every admin page: the same as the business app's. */
-export function AdminHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
-  return (
-    <div className="mb-2 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="mt-1 text-muted-foreground">{description}</p>}
-      </div>
-      {actions}
-    </div>
-  );
-}

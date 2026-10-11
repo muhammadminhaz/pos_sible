@@ -35,7 +35,6 @@ export function DashboardRange({ value, onChange, allFrom }: { value?: DateRange
         thumbColor="var(--foreground)"
         textColor="var(--foreground)"
         activeTextColor="var(--background)"
-        radius={999}
         inset={3}
         size="md"
       />

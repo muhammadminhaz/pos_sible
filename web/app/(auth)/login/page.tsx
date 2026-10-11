@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SegmentedControl from "@/components/arc/segmented-control/segmented-control";
 import { refreshAuth, useAuth } from "@/lib/auth/authStore";
-import { API_MODE } from "@/lib/data/api/mode";
+import { API_MODE, DEMO } from "@/lib/data/api/mode";
+import { exitDemo } from "@/lib/demo";
 import { useSession } from "@/lib/auth/session";
 import Link from "next/link";
 import { contactHref } from "@/lib/site";
@@ -47,7 +48,9 @@ export default function LoginPage() {
     if (API_MODE && useAuth.getState().status === "loading") void refreshAuth();
   }, []);
   useEffect(() => {
-    if (userId) router.replace("/home");
+    // A tab that ran the demo still holds its sign-in; signing in for real ends the demo instead of reopening it.
+    if (DEMO) void exitDemo("/login");
+    else if (userId) router.replace("/home");
   }, [userId, router]);
 
   const onSubmit = form.handleSubmit(async ({ business, username, password, remember }) => {

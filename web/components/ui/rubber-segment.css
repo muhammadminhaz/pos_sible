@@ -3,9 +3,9 @@
   --rs-thumb: #fafafa;
   --rs-ink: #fafafa;
   --rs-ink-active: #18181b;
-  --rs-radius: 10px;
+  --rs-radius: 8px;
   --rs-inset: 3px;
-  --rs-thumb-radius: 7px;
+  --rs-thumb-radius: 5px;
   --rs-h: 36px;
   --rs-font: 13px;
   --rs-pad: 14px;
@@ -99,13 +99,25 @@
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: auto;
-  background: var(--rs-thumb);
   color: var(--rs-ink-active);
   pointer-events: none;
   transition: opacity 180ms ease;
 }
 
+/* The black pill behind the active label; the thumb above it only clips the light copy of the labels. */
+.rubber-segment__pill {
+  position: absolute;
+  top: var(--rs-inset);
+  left: var(--rs-inset);
+  height: calc(var(--rs-h) - var(--rs-inset) * 2);
+  border-radius: var(--rs-thumb-radius);
+  background: var(--rs-thumb);
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
 /* A value that matches no slot (e.g. a custom date range) leaves the thumb out. */
+.rubber-segment[data-empty] .rubber-segment__pill,
 .rubber-segment[data-empty] .rubber-segment__thumb {
   opacity: 0;
 }

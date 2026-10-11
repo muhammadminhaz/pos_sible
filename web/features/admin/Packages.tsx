@@ -14,7 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { AdminHeader, useAdmin } from "./AdminShell";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { useAdmin } from "./AdminShell";
 import { call, formatMoney, priceText, termText, type ModuleDef, type PeriodUnit, type Plan } from "./api";
 import { CurrencyPicker, sortAndPage } from "./parts";
 
@@ -58,12 +59,11 @@ export function PackagesPage() {
 
   return (
     <>
-      <AdminHeader
+      <PageHeader
         title="Packages"
         description="A package says how long a term lasts, what it costs, which modules a business can use and how many users it can have."
-        actions={<Button onClick={() => setEditing("new")}><PlusIcon />New package</Button>}
+        actions={<><CurrencyPicker /><Button onClick={() => setEditing("new")}><PlusIcon />New package</Button></>}
       />
-      <div className="flex justify-end"><CurrencyPicker /></div>
       <DataTable
         tableId="admin-packages" columns={columns} data={page} total={sorted.length} loading={!businesses} query={query} onQueryChange={setQuery} exportName="packages" audit={false} fill="22rem"
         exportRows={async () => sorted} getRowId={(p) => p.id}

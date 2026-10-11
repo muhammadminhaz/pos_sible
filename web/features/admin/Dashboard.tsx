@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Building2Icon, CircleCheckIcon, DatabaseIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { AdminHeader, useAdmin } from "./AdminShell";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { useAdmin } from "./AdminShell";
 import { day, formatBytes, monthlyRevenue } from "./api";
 import { RevenueSummary } from "./Revenue";
 import { BarRow, Empty, Panel, StateBadge, StatCard } from "./parts";
@@ -21,7 +22,8 @@ export function DashboardPage() {
 
   return (
     <>
-      <AdminHeader title="Dashboard" description="How the platform is doing. Totals only: each business's own data stays private to it." />
+      <PageHeader title="Dashboard" description="How the platform is doing. Totals only: each business's own data stays private to it." />
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <RevenueSummary compact />
       <section aria-label="Totals" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard loading={!businesses} label="Businesses" count={list.length} hint={`${list.filter((b) => b.state === "active").length} with an active subscription`} />
@@ -65,6 +67,7 @@ export function DashboardPage() {
         <Panel title="Most storage" description="Space the records take in the database.">
           {biggest.length === 0 ? <Empty icon={DatabaseIcon}>Nothing stored yet.</Empty> : biggest.map((b) => <div key={b.id} className="mb-3 last:mb-0"><BarRow label={b.name} value={b.storageBytes} max={biggest[0].storageBytes} right={formatBytes(b.storageBytes)} /></div>)}
         </Panel>
+      </div>
       </div>
     </>
   );

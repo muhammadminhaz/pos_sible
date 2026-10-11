@@ -15,8 +15,8 @@ export async function enterDemo(): Promise<boolean> {
   return true;
 }
 
-/** Ends the demo: forgets the sign-in, drops the shop (also wiped on the next normal load) and goes back to the welcome page. */
-export async function exitDemo(): Promise<void> {
+/** Ends the demo: forgets the sign-in, drops the shop (also wiped on the next normal load) and goes to `to`, the home page by default. */
+export async function exitDemo(to = "/"): Promise<void> {
   useDB.persist.clearStorage();
   try {
     sessionStorage.removeItem(DEMO_FLAG);
@@ -24,6 +24,5 @@ export async function exitDemo(): Promise<void> {
   } catch { /* storage blocked */ }
   await removeStoredDb(DEMO_DB_KEY);
   // A full load on purpose: the data mode is read once per page load.
-  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-  location.assign("/");
+  location.assign(to);
 }

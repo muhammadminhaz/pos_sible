@@ -75,7 +75,7 @@ const nearestSlot = (slots: Slot[], x: number) => {
  */
 export default function RubberSegment({
   items, value, defaultValue, onChange, trackColor = "#27272a", thumbColor = "#fafafa", textColor = "#fafafa", activeTextColor = "#18181b",
-  size = "md", radius = 10, inset = 3, equalSlots = true, stretch = 100, squash = 3, speed = 1, glide = 75, draggable = true, disabled = false,
+  size = "md", radius = 8, inset = 3, equalSlots = true, stretch = 100, squash = 3, speed = 1, glide = 75, draggable = true, disabled = false,
   className = "", "aria-label": ariaLabel = "Segmented control",
 }: RubberSegmentProps) {
   const list = items.map((item) => (typeof item === "string" ? { value: item, label: item, icon: undefined as ReactNode } : item));
@@ -97,8 +97,13 @@ export default function RubberSegment({
   const edgeL = useMotionValue(0);
   const edgeR = useMotionValue(0);
   const innerW = useMotionValue(0);
-  const thumbRadius = Math.max(0, radius - inset);
+  const preset = SIZES[size] || SIZES.md;
+  // A pill radius (999) is capped to the real height, so the clip-path and border never rely on the browser shrinking an oversized radius.
+  const trackRadius = Math.min(radius, preset.height / 2);
+  const thumbRadius = Math.max(0, trackRadius - inset);
   const clipPath = useTransform(() => `inset(0 ${Math.max(0, innerW.get() - edgeR.get())}px 0 ${Math.max(0, edgeL.get())}px round ${thumbRadius}px)`);
+  const pillX = useTransform(() => Math.max(0, edgeL.get()));
+  const pillW = useTransform(() => Math.max(0, Math.min(innerW.get(), edgeR.get()) - Math.max(0, edgeL.get())));
 
   const t = (seconds: number) => seconds / speed;
 
@@ -305,8 +310,6 @@ export default function RubberSegment({
     itemRefs.current[next]?.focus();
   };
 
-  const preset = SIZES[size] || SIZES.md;
-
   return (
     <div
       ref={trackRef}
@@ -319,7 +322,7 @@ export default function RubberSegment({
       className={`rubber-segment${className ? ` ${className}` : ""}`}
       style={{
         "--rs-track": trackColor, "--rs-thumb": thumbColor, "--rs-ink": textColor, "--rs-ink-active": activeTextColor,
-        "--rs-radius": `${radius}px`, "--rs-inset": `${inset}px`, "--rs-thumb-radius": `${thumbRadius}px`,
+        "--rs-radius": `${trackRadius}px`, "--rs-inset": `${inset}px`, "--rs-thumb-radius": `${thumbRadius}px`,
         "--rs-h": `${preset.height}px`, "--rs-font": `${preset.font}px`, "--rs-pad": `${preset.pad}px`, "--rs-min": `${preset.min}px`,
       } as CSSProperties}
       onPointerMove={handlePointerMove}
@@ -346,6 +349,8 @@ export default function RubberSegment({
           {item.label}
         </button>
       ))}
+      {/* The pill is painted with border-radius: a rounded clip-path alone can stay square in Chrome until something repaints it. */}
+      <motion.div className="rubber-segment__pill" aria-hidden="true" style={{ x: pillX, width: pillW }} />
       <motion.div className="rubber-segment__thumb" aria-hidden="true" style={{ clipPath }}>
         {list.map((item) => (
           <span key={item.value} className="rubber-segment__item rubber-segment__copy">

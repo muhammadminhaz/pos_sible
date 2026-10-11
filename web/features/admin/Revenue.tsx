@@ -7,7 +7,8 @@ import { cn } from "cn";
 import { CARD } from "@/components/shared/card-surface";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AdminHeader, useAdmin } from "./AdminShell";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { useAdmin } from "./AdminShell";
 import { day, formatMoney, monthlyRevenue, shortMonth, termText } from "./api";
 import { ColumnsChart, RevenueChart } from "./charts";
 import { BarRow, BigMoney, Delta, Empty, Panel, StatCard } from "./parts";
@@ -87,7 +88,8 @@ export function RevenuePage() {
 
   return (
     <>
-      <AdminHeader title="Revenue" description="Money you've received for subscriptions, and what's coming in each month." />
+      <PageHeader title="Revenue" description="Money you've received for subscriptions, and what's coming in each month." />
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <RevenueSummary />
       <section aria-label="Totals" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard loading={loading && !businesses} label="Monthly run rate" count={mrr} money hint={`From ${paying.length} paying business${paying.length === 1 ? "" : "es"}`} />
@@ -133,6 +135,7 @@ export function RevenuePage() {
         </Panel>
       </div>
       <p className="px-1 text-xs text-muted-foreground">Only real payments count: one is recorded, dated that day, each time you activate a paid subscription. Free accounts never add to revenue. Run rate spreads each package price over 30 days.</p>
+      </div>
     </>
   );
 }
