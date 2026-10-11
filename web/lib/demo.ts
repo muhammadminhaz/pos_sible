@@ -21,6 +21,7 @@ export async function exitDemo(to = "/"): Promise<void> {
   try {
     sessionStorage.removeItem(DEMO_FLAG);
     sessionStorage.removeItem("posible:demo:session");
+    sessionStorage.removeItem("posible:demo:banner-hidden");
   } catch { /* storage blocked */ }
   await removeStoredDb(DEMO_DB_KEY);
   // A full load on purpose: the data mode is read once per page load.
