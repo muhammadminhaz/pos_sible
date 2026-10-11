@@ -26,7 +26,7 @@ export default async function AuthLayout({ children }: LayoutProps<"/">) {
         {/* Only this column may scroll, and only on screens too short to hold the form. */}
         <div className="flex min-h-0 flex-col overflow-y-auto px-5 py-5 [scrollbar-width:none] sm:px-10 sm:py-6">
           <div className="flex items-center justify-between">
-            <Link href="/welcome" className="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight">
+            <Link href="/" className="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight">
               <Image src="/logo-192.png" alt="" width={32} height={32} />
               {SITE.name}
             </Link>

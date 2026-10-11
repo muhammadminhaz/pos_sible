@@ -3,21 +3,19 @@ import Link from "next/link";
 import { ArrowUpRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SITE, contactHref, getStarted } from "@/lib/site";
-import StarBorder from "@/components/ui/star-border";
 import { Threads } from "./TiltBackground";
 import { Wordmark } from "./Wordmark";
 
 
-// ponytail: section links point at /welcome; switch them to / when the landing page replaces the waitlist.
 const COLUMNS = [
-  { title: "Product", links: [{ href: "/welcome", label: "Home" }, { href: "/welcome#features", label: "Features" }, { href: "/welcome#why", label: "Why POS-sible" }, { href: "/welcome#faq", label: "FAQ" }] },
+  { title: "Product", links: [{ href: "/", label: "Home" }, { href: "/#features", label: "Features" }, { href: "/#why", label: "Why POS-sible" }, { href: "/#faq", label: "FAQ" }] },
   { title: "Get going", links: [{ href: "/demo", label: "Try the demo" }, { href: getStarted, label: "Get started" }, { href: "/login", label: "Sign in" }] },
   { title: "Connect", links: [{ href: contactHref({ topic: "call" }), label: "Book a call" }, { href: "/contact", label: "Contact Us" }, { href: contactHref({ topic: "support" }), label: "Support" }] },
 ];
 const LEGAL = [{ href: "/privacy", label: "Privacy policy" }, { href: "/terms", label: "Terms of service" }];
 
 /**
- * Contact Us lands here. Flat brand blue with the hero's threads: a centered call to action, the brand beside link columns, a legal bar, then the wordmark.
+ * Contact Us lands here. Flat brand blue with the hero's threads: a one-line call to action, the brand beside link columns, a legal bar, then the wordmark.
  * It tucks 32px under whatever sits above it, so a rounded sheet above (z-10) shows blue behind its corners, not the bezel.
  */
 export function SiteFooter() {
@@ -28,24 +26,21 @@ export function SiteFooter() {
       </div>
 
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        {/* Call to action, centered. */}
-        <div className="flex flex-col items-center pt-20 pb-20 text-center sm:pt-28 sm:pb-24">
-          <h2 id="contact-title" className="max-w-2xl font-display text-[2.25rem] leading-[1.05] font-semibold tracking-[-0.04em] text-balance sm:text-6xl">
-            Ready to hear what{" "}
-            <span className="font-[family-name:var(--font-serif)] text-[1.1em] font-medium tracking-[-0.02em] text-[#d8ecff] italic">your sales are saying?</span>
+        {/* Call to action: one quiet line and a button. */}
+        <div className="flex flex-col items-start gap-5 py-14 sm:flex-row sm:items-center sm:justify-between sm:py-16">
+          <h2 id="contact-title" className="font-display text-xl font-medium tracking-[-0.02em] text-balance sm:text-2xl">
+            Ready to hear what <span className="font-[family-name:var(--font-serif)] text-[1.15em] text-[#d8ecff] italic">your sales are saying?</span>
           </h2>
-          <p className="mt-5 max-w-md text-pretty text-white/80 sm:text-lg">Take a 20-minute call with us. We&apos;ll look at how your shop runs and show you what POS-sible would find in it.</p>
-          <StarBorder as="a" href={contactHref({ topic: "call" })} radius={24} color="#9fd0ff" glow={0.9} backgroundColor="#05050a" className="group mt-8 h-12 justify-between gap-3 py-0 pr-1.5 pl-6 text-[15px] font-semibold active:scale-[0.98]">
+          <a href={contactHref({ topic: "call" })} className="group inline-flex h-11 shrink-0 items-center gap-2.5 rounded-full bg-white py-0 pr-1.5 pl-5 text-sm font-semibold text-[#05050a] transition-transform active:scale-[0.98]">
             Book a discovery call
-            <ArrowSwap className="size-9 bg-white text-[#0a3cff]" />
-          </StarBorder>
-          <Link href="/demo" className="mt-4 text-sm font-medium text-white/80 underline-offset-4 hover:text-white hover:underline">or explore the demo first</Link>
+            <ArrowSwap className="size-8 bg-[#0a3cff] text-white" />
+          </a>
         </div>
 
         {/* Brand on the left, link columns on the right. */}
         <div className="grid gap-12 border-t border-white/20 py-14 lg:grid-cols-[1.2fr_2fr]">
           <div>
-            <Link href="/welcome" aria-label={`${SITE.name} home`} className="inline-flex">
+            <Link href="/" aria-label={`${SITE.name} home`} className="inline-flex">
               <Image src="/logo-192.png" alt="" width={36} height={36} />
             </Link>
             <p className="mt-5 font-display text-lg font-semibold tracking-tight">The POS that thinks ahead.</p>

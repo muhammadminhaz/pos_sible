@@ -25,5 +25,5 @@ export async function exitDemo(): Promise<void> {
   await removeStoredDb(DEMO_DB_KEY);
   // A full load on purpose: the data mode is read once per page load.
   // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-  location.assign("/welcome");
+  location.assign("/");
 }

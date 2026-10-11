@@ -1,4 +1,4 @@
-// Checks the /welcome hero: one h1, no console errors, no horizontal scroll, no a11y violations, no em dashes,
+// Checks the landing page on /: one h1, no console errors, no horizontal scroll, no a11y violations, no em dashes,
 // the nav and CTAs show, the dashboard screenshot loads, See demo runs a private demo shop, and the background tilts with the pointer only when motion is allowed.
 // Usage: npx next dev -p 3111 &  then  E2E_URL=http://localhost:3111 npm run e2e:welcome   (OUT=dir keeps screenshots)
 import { mkdirSync, readFileSync } from "node:fs";
@@ -17,7 +17,7 @@ async function open(ctx, mode) {
   const page = await ctx.newPage();
   page.on("pageerror", (e) => fail(mode, `page error ${e.message}`));
   page.on("console", (m) => m.type() === "error" && !/favicon|Failed to load resource/.test(m.text()) && fail(mode, `console ${m.text()}`));
-  await page.goto(`${BASE}/welcome`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
   await page.locator("h1").waitFor();
   return page;
 }
@@ -96,7 +96,7 @@ for (const reducedMotion of ["no-preference", "reduce"]) {
   await page.screenshot({ path: `${OUT}/demo.png` });
 
   await page.getByRole("button", { name: "Exit demo" }).click();
-  await page.waitForURL(/\/welcome/, { timeout: 30000 }).catch(() => fail(mode, "exit did not return to /welcome"));
+  await page.waitForURL((u) => u.pathname === "/", { timeout: 30000 }).catch(() => fail(mode, "exit did not return to /"));
   await page.waitForTimeout(500);
   if (await page.evaluate(() => sessionStorage.getItem("posible:demo"))) fail(mode, "demo flag still set after exit");
   if (await idb("posible:demo:db")) fail(mode, "demo shop still stored after exit");

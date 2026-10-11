@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "premium-landing-designer": {
+      "source": "icemusike/nanobananaads",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/premium-landing-designer/SKILL.md",
+      "computedHash": "77d8ece33042c5d0e4d676b5be93a090e8ef23b7e636bc85e351b8ac6fbbc6d7"
+    }
+  }
+}

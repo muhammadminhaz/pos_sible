@@ -78,7 +78,9 @@ export function WelcomeNav({ links }: { links: NavLink[] }) {
           ))}
         </ul>
         <div className="hidden items-center gap-1 lg:flex">
-          <Link href="/login" className="flex h-12 items-center rounded-full px-4 text-sm font-medium text-white/85 transition-colors hover:text-white">Sign in</Link>
+          <div className="flex h-12">
+            <NavPill href="/login" label="Sign in" />
+          </div>
           <ContactPill className="inline-flex" />
         </div>
         <button
@@ -146,13 +148,14 @@ function NotchCorner({ side }: { side: "left" | "right" }) {
 /** Nav link in the style of React Bits' PillNav: a dome rises from the bottom on hover while the label slides up and a dark copy slides in. CSS only. */
 function NavPill({ href, label }: { href: string; label: string }) {
   const slide = "transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none";
+  const Tag = href.startsWith("/") ? Link : "a";
   return (
-    <a href={href} className="group relative flex items-center overflow-hidden rounded-full px-4 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+    <Tag href={href} className="group relative flex items-center overflow-hidden rounded-full px-4 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-white/70">
       <span aria-hidden className={cn("absolute top-full left-1/2 aspect-square w-[160%] -translate-x-1/2 rounded-full bg-white", slide, "group-hover:-translate-y-[62%] group-focus-visible:-translate-y-[62%]")} />
       <span className="relative block">
         <span className={cn("block", slide, "group-hover:-translate-y-[160%] group-focus-visible:-translate-y-[160%]")}>{label}</span>
         <span aria-hidden className={cn("absolute inset-0 block translate-y-[160%] text-[#05050a]", slide, "group-hover:translate-y-0 group-focus-visible:translate-y-0")}>{label}</span>
       </span>
-    </a>
+    </Tag>
   );
 }

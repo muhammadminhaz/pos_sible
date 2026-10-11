@@ -37,7 +37,7 @@ export function Providers({
 
   // The public home pages fetch nothing (and /demo seeds its own shop), so it skips the data gate (which seeds the browser database) and server-rendered content stays visible.
   const path = usePathname();
-  const landing = path === "/" || path === "/welcome" || path === "/demo";
+  const landing = path === "/" || path === "/demo";
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

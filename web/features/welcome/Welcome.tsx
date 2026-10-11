@@ -13,7 +13,7 @@ import { Faq, PricingPlans, WhyChoose } from "./Sections";
 
 const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
-/** Hero for the coming landing page. Lives on /welcome until it replaces the waitlist on `/`. Nav anchors point at sections still to be built. */
+/** The public landing page, served at `/`. */
 export function Welcome() {
   return (
     <LandingShell home backdrop={<TiltBackground />}>

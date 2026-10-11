@@ -60,7 +60,7 @@ export function ContactPage({ plan: planId, topic }: { plan?: string; topic?: st
             <span>
               ৳{plan.price.toLocaleString("en-IN")} a month, {plan.usersLabel.toLowerCase()}
             </span>
-            <Link href="/welcome#pricing" className="text-white/75 underline underline-offset-4 hover:text-white">Change plan</Link>
+            <Link href="/#pricing" className="text-white/75 underline underline-offset-4 hover:text-white">Change plan</Link>
           </p>
         )}
       </div>

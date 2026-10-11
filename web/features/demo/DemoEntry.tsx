@@ -38,7 +38,7 @@ export function DemoEntry() {
           <p className="mt-2 text-sm text-muted-foreground">
             Your browser is blocking site storage, which the demo needs to keep its sample shop. Allow storage for this site, or leave private browsing, and try again.
           </p>
-          <Link href="/welcome" className="mt-5 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground">Back to the home page</Link>
+          <Link href="/" className="mt-5 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground">Back to the home page</Link>
         </div>
       ) : (
         <div role="status" className="flex flex-col items-center gap-3">
