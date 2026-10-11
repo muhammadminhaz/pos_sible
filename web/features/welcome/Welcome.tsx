@@ -18,18 +18,18 @@ export function Welcome() {
   return (
     <LandingShell home backdrop={<TiltBackground />}>
         {/* The hero clips the Get started glow, which reaches 48px past the button. */}
-        <main id="main" data-hero className="mx-auto flex w-full max-w-5xl flex-col overflow-x-clip items-start px-5 pt-24 text-left sm:items-center sm:px-4 sm:pt-28 sm:text-center">
-          <h1 className="wl-rise pb-1 font-display text-[2.5rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-6xl lg:text-[4.25rem]" style={delay(160)}>
+        <main id="main" data-hero className="mx-auto flex w-full max-w-5xl flex-col overflow-x-clip items-start px-5 pt-24 text-left sm:items-center sm:px-4 sm:pt-36 sm:text-center lg:pt-44">
+          <h1 className="wl-rise pb-1 font-display text-[2.5rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-7xl lg:text-[4.25rem] xl:text-[5.25rem]" style={delay(160)}>
             <span className="lg:whitespace-nowrap">It doesn&apos;t just run your shop.</span>
             <br />
             <span className="font-[family-name:var(--font-serif)] text-[1.12em] leading-[1.1] font-medium tracking-[-0.02em] text-[#d8ecff] italic">It understands it.</span>
           </h1>
 
-          <p className="wl-rise mt-5 max-w-2xl text-[15px] leading-relaxed text-pretty text-white sm:text-lg" style={delay(240)}>
+          <p className="wl-rise mt-5 max-w-2xl text-[15px] leading-relaxed text-pretty text-white/90 sm:mt-7 sm:text-xl" style={delay(240)}>
             The POS that reads your sales and tells you what to do next.
           </p>
 
-          <div className="wl-rise mt-8 flex w-full items-center gap-2.5 sm:w-auto sm:gap-3" style={delay(320)}>
+          <div className="wl-rise mt-8 flex w-full items-center gap-2.5 sm:mt-10 sm:w-auto sm:gap-3" style={delay(320)}>
             <StarBorder as="a" href={getStarted} radius={24} color="#9fd0ff" glow={0.9} sparkle backgroundColor="#05050a" className="group h-12 min-w-0 flex-1 justify-between gap-2 py-0 pr-1.5 pl-2 text-sm sm:flex-none sm:gap-3 sm:pl-6 sm:text-[15px] font-semibold shadow-[0_12px_40px_-12px_rgb(5_20_120/0.8)] active:scale-[0.98]">
               <span className="flex-1 text-center sm:flex-none">Get started</span>
               <ArrowSwap className="size-9 bg-white text-[#0a3cff]" />
@@ -42,7 +42,7 @@ export function Welcome() {
         </main>
 
         {/* The whole screenshot shows, fading into the card at the bottom. */}
-        <div className="wl-rise mx-auto mt-auto w-full max-w-5xl px-3 pt-12 [mask-image:linear-gradient(to_bottom,black_60%,transparent)] sm:px-8 sm:pt-16" style={delay(440)}>
+        <div className="wl-rise mx-auto mt-auto w-full max-w-5xl px-3 pt-12 [mask-image:linear-gradient(to_bottom,black_60%,transparent)] sm:px-8 sm:pt-24 lg:pt-28" style={delay(440)}>
           <div className="rounded-t-2xl bg-white/30 p-1.5 pb-0 shadow-[0_-20px_80px_-20px_rgb(5_20_120/0.35)] ring-1 ring-white/60 backdrop-blur-md sm:p-2.5 sm:pb-0">
             <div aria-hidden className="flex gap-1.5 px-2 pb-2 sm:pb-2.5">
               <span className="size-2.5 rounded-full bg-[#ff5f57] ring-1 ring-black/10" />

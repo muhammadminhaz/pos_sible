@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { BanIcon, Building2Icon, EyeIcon, EyeOffIcon, Loader2Icon, PlusIcon, RefreshCwIcon, SettingsIcon, Trash2Icon } from "lucide-react";
+import { BanIcon, Building2Icon, EyeIcon, EyeOffIcon, Loader2Icon, PlusIcon, ReceiptIcon, RefreshCwIcon, SettingsIcon, Trash2Icon } from "lucide-react";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { toast } from "@/lib/toast";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -14,13 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Flag, isPhoneOk, PhoneInput } from "@/components/shared/PhoneInput";
 import { DataTable, RowActions, useTableQuery } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { FilterBar, useUrlFilters, type FilterDef } from "@/components/shared/FilterBar";
 import { decodeRange } from "@/components/shared/FilterBar/useUrlFilters";
 import { Switch } from "@/components/ui/switch";
-import { AdminHeader, useAdmin } from "./AdminShell";
-import { call, day, formatBytes, STATE_LABEL, type Business, type ModuleDef, type Plan } from "./api";
-import { inRange, sortAndPage, StateBadge } from "./parts";
-import { ActivateForm, CancelDialog, planText } from "./SubscriptionDialogs";
+import { useAdmin } from "./AdminShell";
+import { call, day, formatBytes, priceText, STATE_LABEL, type Business, type ModuleDef, type Plan } from "./api";
+import { CurrencyPicker, inRange, sortAndPage, StateBadge } from "./parts";
+import { ActivateForm, CancelDialog, PaymentsDialog, planText } from "./SubscriptionDialogs";
 
 function PlanSelect({ id, plans, value, onChange }: { id: string; plans: Plan[]; value: string; onChange: (v: string) => void }) {
   return (
@@ -88,11 +89,11 @@ function PasswordField({ id, name, value, onChange, label, autoComplete }: { id:
   );
 }
 
-type Url = { plan?: string; status?: string; free?: string; joined?: string };
-const URL_KEYS = ["plan", "status", "free", "joined"] as const;
+type Url = { plan?: string; status?: string; free?: string; joined?: string; ends?: string };
+const URL_KEYS = ["plan", "status", "free", "joined", "ends"] as const;
 const SORTS: Record<string, (b: Business) => string | number> = {
   name: (b) => b.name.toLowerCase(), code: (b) => b.code, ownerUsername: (b) => (b.ownerUsername ?? "").toLowerCase(), planLabel: (b) => b.planLabel.toLowerCase(),
-  modules: (b) => b.modules.length, state: (b) => b.state, expiresAt: (b) => b.expiresAt ?? "", users: (b) => b.users, storageBytes: (b) => b.storageBytes, lastActiveAt: (b) => b.lastActiveAt ?? "",
+  modules: (b) => b.modules.length, state: (b) => b.state, lastPaidAt: (b) => b.lastPaidAt ?? "", expiresAt: (b) => (b.free ? "9999" : (b.expiresAt ?? "")), price: (b) => (b.free ? 0 : b.price), users: (b) => b.users, storageBytes: (b) => b.storageBytes, lastActiveAt: (b) => b.lastActiveAt ?? "",
 };
 
 export function BusinessesPage() {
@@ -104,15 +105,17 @@ export function BusinessesPage() {
   const [deleting, setDeleting] = useState<Business | null>(null);
   const [activating, setActivating] = useState<Business | null>(null);
   const [cancelling, setCancelling] = useState<Business | null>(null);
+  const [viewing, setViewing] = useState<Business | null>(null);
 
   const term = query.search.trim().toLowerCase();
   const planIds = url.plan?.split(",");
   const states = url.status?.split(",");
   const joined = decodeRange(url.joined);
+  const ends = decodeRange(url.ends);
   const filtered = (businesses ?? []).filter((b) =>
     (!term || b.name.toLowerCase().includes(term) || (b.ownerUsername ?? "").toLowerCase().includes(term) || b.code.includes(term)) &&
     (!planIds || planIds.includes(b.plan)) && (!states || states.includes(b.state)) && (url.free !== "1" || b.free) &&
-    inRange(b.createdAt, joined));
+    inRange(b.createdAt, joined) && inRange(b.expiresAt, ends));
   const { sorted, page: rows } = sortAndPage(filtered, query, SORTS);
 
   const col = (id: string, label: string, cell: ColumnDef<Business>["cell"], meta: ColumnDef<Business>["meta"] = {}): ColumnDef<Business> => ({ id, accessorFn: SORTS[id], header: label, cell, meta: { label, ...meta } });
@@ -121,10 +124,20 @@ export function BusinessesPage() {
     col("code", "Business code", ({ row }) => <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{row.original.code}</code>),
     col("ownerUsername", "Owner username", ({ row }) => <span className="text-muted-foreground">{row.original.ownerUsername ?? "—"}</span>),
     { id: "contact", header: "Contact", enableSorting: false, accessorFn: (b) => [b.contactEmail, b.contactPhone].filter(Boolean).join(" · "), meta: { label: "Contact" }, cell: ({ row }) => <Contact email={row.original.contactEmail} phone={row.original.contactPhone} /> },
-    col("planLabel", "Package", ({ row }) => <>{row.original.planLabel}{row.original.free && <span className="ml-2 rounded-full bg-success-soft px-2 py-0.5 text-xs text-success-foreground">Free</span>}</>),
+    col("planLabel", "Package", ({ row }) => {
+      const b = row.original;
+      return (
+        <div className="grid gap-0.5">
+          <span className="whitespace-nowrap">{b.planLabel}{b.free && <span className="ml-2 rounded-full bg-success-soft px-2 py-0.5 text-xs text-success-foreground">Free</span>}</span>
+          {b.nextPlanLabel && <span className="text-xs text-muted-foreground">Then {b.nextPlanLabel}</span>}
+        </div>
+      );
+    }, { csv: (b) => b.planLabel }),
     col("modules", "Modules", ({ row }) => <span className="text-muted-foreground">{row.original.modules.length}/{modules.length}</span>, { csv: (b) => b.modules.length }),
     col("state", "Subscription", ({ row }) => <StateBadge state={row.original.state} />, { csv: (b) => STATE_LABEL[b.state] }),
-    col("expiresAt", "Ends", ({ row }) => <span className="whitespace-nowrap">{day(row.original.expiresAt)}</span>, { csv: (b) => day(b.expiresAt) }),
+    col("lastPaidAt", "Last paid", ({ row }) => <span className="whitespace-nowrap">{day(row.original.lastPaidAt)}</span>, { csv: (b) => day(b.lastPaidAt) }),
+    col("expiresAt", "Ends", ({ row }) => <span className="whitespace-nowrap">{row.original.free ? "Never" : day(row.original.expiresAt)}</span>, { csv: (b) => (b.free ? "Never" : day(b.expiresAt)) }),
+    col("price", "Price", ({ row }) => <span className="whitespace-nowrap tabular-nums">{row.original.free ? "Free" : priceText(row.original)}</span>, { align: "right", csv: (b) => (b.free ? "Free" : priceText(b)) }),
     col("users", "Users", ({ row }) => <span className="tabular-nums">{row.original.users}{row.original.maxUsers !== null ? ` / ${row.original.maxUsers}` : ""}</span>, { align: "right", csv: (b) => b.users }),
     col("storageBytes", "Storage", ({ row }) => <span className="whitespace-nowrap tabular-nums">{formatBytes(row.original.storageBytes)}</span>, { align: "right", csv: (b) => formatBytes(b.storageBytes) }),
     col("lastActiveAt", "Last active", ({ row }) => <span className="whitespace-nowrap">{day(row.original.lastActiveAt)}</span>, { csv: (b) => day(b.lastActiveAt) }),
@@ -133,7 +146,8 @@ export function BusinessesPage() {
       cell: ({ row }) => (
         <RowActions items={[
           { label: "Manage account", icon: SettingsIcon, onClick: () => setManaging(row.original) },
-          { label: "Activate subscription", icon: RefreshCwIcon, onClick: () => setActivating(row.original) },
+          { label: "Activate or change package", icon: RefreshCwIcon, onClick: () => setActivating(row.original) },
+          { label: "Payments and proof", icon: ReceiptIcon, onClick: () => setViewing(row.original) },
           { label: "Cancel subscription", icon: BanIcon, destructive: true, onClick: () => setCancelling(row.original), hidden: row.original.state === "cancelled" },
           { label: "Delete business", icon: Trash2Icon, destructive: true, onClick: () => setDeleting(row.original) },
         ]} />
@@ -145,16 +159,21 @@ export function BusinessesPage() {
     { key: "status", label: "Subscription", type: "select", options: Object.entries(STATE_LABEL).map(([value, label]) => ({ value, label })) },
     { key: "free", label: "Free accounts", type: "toggle" },
     { key: "joined", label: "Joined", type: "daterange" },
+    { key: "ends", label: "Ends", type: "daterange" },
   ];
+  const addButton = <Button onClick={() => setAdding(true)}><PlusIcon />Add business</Button>;
 
   return (
     <>
-      <AdminHeader
+      <PageHeader
         title="Businesses"
-        description="Each business is a separate account. You see its package, users and storage, never its data."
-        actions={<Button onClick={() => setAdding(true)}><PlusIcon />Add business</Button>}
+        description="Each business and its subscription. You see its package, users and storage, never its data."
+        actions={<><CurrencyPicker />{addButton}</>}
+        actionsHiddenOnMobile
       />
-      <FilterBar defs={defs} value={url} onChange={(p) => { setUrl(p); setQuery({ page: 0 }); }} onReset={() => { reset(); setQuery({ page: 0 }); }} />
+      <div className="mb-4">
+        <FilterBar defs={defs} mobileActions={addButton} value={url} onChange={(p) => { setUrl(p); setQuery({ page: 0 }); }} onReset={() => { reset(); setQuery({ page: 0 }); }} />
+      </div>
       <DataTable
         tableId="admin-businesses" columns={columns} data={rows} total={sorted.length} loading={!businesses} query={query} onQueryChange={setQuery} exportName="businesses" audit={false} fill="22rem"
         exportRows={async () => sorted} getRowId={(b) => b.id}
@@ -170,6 +189,7 @@ export function BusinessesPage() {
       <Dialog open={activating !== null} onOpenChange={(o) => !o && setActivating(null)}>
         <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">{activating && <ActivateForm key={activating.id} business={activating} plans={plans} onClose={() => setActivating(null)} onDone={async () => { setActivating(null); await reload(); }} />}</DialogContent>
       </Dialog>
+      <PaymentsDialog business={viewing} onClose={() => setViewing(null)} />
       <CancelDialog business={cancelling} onClose={() => setCancelling(null)} onDone={async () => { setCancelling(null); await reload(); }} />
       <DeleteDialog business={deleting} onClose={() => setDeleting(null)} onDone={async () => { setDeleting(null); await reload(); }} />
     </>

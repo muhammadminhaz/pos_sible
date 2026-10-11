@@ -8,6 +8,11 @@ export type Business = {
   status: "active" | "cancelled"; expiresAt: string | null; state: "active" | "cancelled" | "expired";
   users: number; maxUsers: number | null; storageBytes: number; lastActiveAt: string | null;
 };
+/** One row of the subscription history: an activation (with the payment it recorded) or a cancellation. */
+export type HistoryEntry = {
+  id: string; kind: "activation" | "cancellation"; businessId: string | null; businessName: string; planLabel: string;
+  terms: number | null; periodUnit: PeriodUnit | null; periodCount: number | null; amount: number; at: string; reference: string | null; paymentId: number | null; hasProof: boolean;
+};
 export type Me = { username: string; plans: Plan[]; modules: ModuleDef[]; currency: string; rates?: { at: string | null; covers: boolean } };
 export type RevenueReport = {
   total: number; thisMonth: number; lastMonth: number; payments: number; firstPaymentAt: string | null;

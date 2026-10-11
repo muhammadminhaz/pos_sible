@@ -35,7 +35,7 @@ check(await admin.getByRole("navigation", { name: "Admin" }).getByRole("link", {
 
 // Businesses: add one with just a name, username, password and package.
 await admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Businesses" }).click();
-await admin.getByRole("heading", { name: "Businesses" }).waitFor();
+await admin.getByRole("heading", { name: "Businesses", exact: true, level: 1 }).waitFor();
 await admin.getByRole("button", { name: "Add business" }).click();
 check(!(await admin.getByLabel("Owner name").isVisible().catch(() => false)), "no owner name field");
 await admin.getByLabel("Business name").fill(name);
@@ -50,7 +50,7 @@ check(await bd.locator("svg").first().isVisible(), "the country list shows a fla
 check((await bd.innerText()).includes("+880"), "and its dial code");
 await bd.click();
 await admin.getByLabel("Phone (optional)").fill("01711000111");
-await admin.getByLabel("Package").click();
+await admin.getByRole("dialog").getByLabel("Package").click();
 await admin.getByRole("option", { name: /Starter/ }).click();
 await admin.getByRole("button", { name: "Create business" }).click();
 const row = admin.locator("tr", { hasText: name });
@@ -63,8 +63,8 @@ const body = await admin.locator("main").innerText();
 check(!body.includes("scrypt$") && !body.includes("zeta-owner-pass"), "no credentials or records on the page");
 
 // A new business is switched off until the subscription is activated, and a payment needs a transaction ID or proof.
-await row.getByRole("button", { name: /Actions for/ }).click();
-await admin.getByRole("menuitem", { name: "Activate subscription" }).click();
+await row.getByRole("button", { name: /^Actions/ }).click();
+await admin.getByRole("menuitem", { name: "Activate or change package" }).click();
 check(/Active until/.test(await admin.getByRole("dialog").innerText()), "activating previews the end date");
 check(await admin.getByRole("button", { name: "Activate", exact: true }).isDisabled(), "activating a paid package needs a transaction ID or proof");
 await admin.getByLabel("Transaction ID").fill("TXN-E2E-1");
@@ -80,7 +80,7 @@ for (const [link, heading] of [["Packages", "Packages"], ["Subscriptions", "Subs
   const axe = await admin.evaluate(async () => (await window.axe.run({ exclude: [[".swipe-toast"]] })).violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html.slice(0, 80)).join(" | ")}`));
   check(axe.length === 0, `${heading} page is accessible ${axe.join("; ")}`);
 }
-check(/Monthly revenue/.test(await admin.locator("main").innerText()), "the dashboard shows revenue");
+check(/Monthly run rate/.test(await admin.locator("main").innerText()), "the dashboard shows revenue");
 
 // The owner can use the app…
 const shop = await newPage();
@@ -108,7 +108,7 @@ await staffPage.close();
 
 // …until the subscription is cancelled.
 await admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Businesses" }).click();
-await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
+await admin.locator("tr", { hasText: name }).getByRole("button", { name: /^Actions/ }).click();
 await admin.getByRole("menuitem", { name: "Cancel subscription" }).click();
 await admin.getByRole("alertdialog").getByRole("button", { name: "Cancel subscription" }).click();
 await admin.locator("tr", { hasText: name }).getByText("Cancelled").waitFor();
@@ -116,13 +116,13 @@ await shop.reload();
 await shop.waitForURL(/\/login/, { timeout: 15000 });
 check(true, "a live session ends when the subscription is cancelled");
 await signIn("zeta-owner-pass");
-const msg = shop.getByText(/renew your subscription/i);
+const msg = shop.getByText(/subscription (was|has been) cancelled/i).first();
 await msg.waitFor({ timeout: 8000 });
-check(/administrator/i.test(await msg.innerText()) && /cancelled/i.test(await msg.innerText()), "sign-in says the subscription is cancelled and to renew and contact the administrator");
+check(/cancelled/i.test(await msg.innerText()) && /renew/i.test(await msg.innerText()), "sign-in says the subscription is cancelled and needs renewing");
 
 // Activating again brings it back, with the payment written down.
-await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
-await admin.getByRole("menuitem", { name: "Activate subscription" }).click();
+await admin.locator("tr", { hasText: name }).getByRole("button", { name: /^Actions/ }).click();
+await admin.getByRole("menuitem", { name: "Activate or change package" }).click();
 check(/Active until/.test(await admin.getByRole("dialog").innerText()), "activating previews the new end date");
 await admin.getByLabel("Transaction ID").fill("TXN-E2E-2");
 await admin.getByRole("button", { name: "Activate", exact: true }).click();
@@ -131,8 +131,17 @@ await signIn("zeta-owner-pass");
 await shop.waitForURL(/\/home/);
 check(true, "after activating, the owner can sign in again");
 
+// Subscriptions is the history: both activations with their transaction IDs, and the cancellation between them.
+await admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Subscriptions" }).click();
+await admin.getByRole("heading", { name: "Subscriptions", level: 1 }).waitFor();
+await admin.locator("tr", { hasText: "TXN-E2E-2" }).waitFor();
+const history = (await admin.locator("tr", { hasText: name }).allInnerTexts()).join("\n");
+check(history.includes("TXN-E2E-1") && history.includes("TXN-E2E-2") && /Cancelled/.test(history) && (history.match(/Activated/g) ?? []).length === 2, "the subscription history lists both activations and the cancellation");
+await admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Businesses" }).click();
+await admin.getByRole("heading", { name: "Businesses", level: 1 }).waitFor();
+
 // A new password can be set (never read); the old one stops working.
-await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
+await admin.locator("tr", { hasText: name }).getByRole("button", { name: /^Actions/ }).click();
 await admin.getByRole("menuitem", { name: "Manage account" }).click();
 await admin.getByLabel("New password").fill("brand-new-pass-1");
 await admin.getByRole("button", { name: "Set password" }).click();
@@ -146,7 +155,7 @@ await shop.waitForURL(/\/home/);
 check(true, "the new password works");
 
 // Delete needs the username typed.
-await admin.locator("tr", { hasText: name }).getByRole("button", { name: /Actions for/ }).click();
+await admin.locator("tr", { hasText: name }).getByRole("button", { name: /^Actions/ }).click();
 await admin.getByRole("menuitem", { name: "Delete business" }).click();
 const confirm = admin.getByRole("button", { name: "Delete business" });
 check(await confirm.isDisabled(), "delete is disabled until the username is typed");
