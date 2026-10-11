@@ -8,7 +8,7 @@ import { Wordmark } from "./Wordmark";
 
 
 const COLUMNS = [
-  { title: "Product", links: [{ href: "/", label: "Home" }, { href: "/#features", label: "Features" }, { href: "/#why", label: "Why POS-sible" }, { href: "/#faq", label: "FAQ" }] },
+  { title: "Product", links: [{ href: "/", label: "Home" }, { href: "/#features", label: "Features" }, { href: "/#why", label: "Why POS-sible" }, { href: "/#faq", label: "FAQ" }, { href: "/changelog", label: "Changelog" }] },
   { title: "Get going", links: [{ href: "/demo", label: "Try the demo" }, { href: getStarted, label: "Get started" }, { href: "/login", label: "Sign in" }] },
   { title: "Connect", links: [{ href: contactHref({ topic: "call" }), label: "Book a call" }, { href: "/contact", label: "Contact Us" }, { href: contactHref({ topic: "support" }), label: "Support" }] },
 ];

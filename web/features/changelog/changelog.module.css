@@ -1,0 +1,12 @@
+/* Arc's tokens for the changelog feed, pinned to the landing sheet's light palette so the page reads the same in any app theme. */
+.sheet {
+  --background: #f5f8ff; --foreground: #071447; --surface: #ffffff; --surface-muted: #e9efff;
+  --text-secondary: rgb(7 20 71 / 0.75); --text-muted: rgb(7 20 71 / 0.55);
+  --border: rgb(7 20 71 / 0.12); --border-subtle: rgb(7 20 71 / 0.07); --border-strong: rgb(7 20 71 / 0.22);
+  --accent: #0a3cff; --accent-foreground: #ffffff; --success: #0f8a5f; --danger: #d92d20;
+  --radius-pill: 999px; --radius-panel: 20px; --shadow-resting: 0 1px 2px rgb(7 20 71 / 0.06);
+  --font-body: inherit; --font-display: var(--font-geist, inherit);
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-base: 1rem; --text-lg: 1.125rem; --text-3xl: 1.875rem;
+  --leading-body: 1.55; --leading-display: 1.1; --tracking-body: 0; --tracking-display: -0.02em;
+  --duration-instant: 90ms; --duration-fast: 160ms; --duration-standard: 240ms; --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+}
