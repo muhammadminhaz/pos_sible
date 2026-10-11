@@ -6,10 +6,10 @@ export const SITE = {
     "POS-sible is more than a POS. It adds an intelligence layer on top of your sales, stock, customers and dues that drives your decisions: what to restock, who to win back, which dues to collect, where to raise prices. Includes barcode checkout, split payments, inventory, accounts and reports in English and Bangla.",
   /** The public address, used for canonical links and social previews. Set NEXT_PUBLIC_SITE_URL on the deployment. */
   url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://pos-sible.vercel.app").replace(/\/+$/, ""),
-  /** The sales and support address, offered on /contact. Set NEXT_PUBLIC_CONTACT_EMAIL. */
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || null,
-  /** Booking page for a call with sales (Cal.com, Calendly...), offered on /contact. Set NEXT_PUBLIC_DISCOVERY_CALL_URL. */
-  discoveryCallUrl: process.env.NEXT_PUBLIC_DISCOVERY_CALL_URL || null,
+  /** The sales and support address, offered on /contact. NEXT_PUBLIC_CONTACT_EMAIL overrides it; set it empty to hide email. */
+  contactEmail: (process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@skorbit-labs.com") || null,
+  /** Booking page for a discovery call, offered on /contact. NEXT_PUBLIC_DISCOVERY_CALL_URL overrides it; set it empty to hide booking. */
+  discoveryCallUrl: (process.env.NEXT_PUBLIC_DISCOVERY_CALL_URL ?? "https://cal.com/asiful-islam-dm/30min") || null,
   keywords: [
     "point of sale", "POS with analytics", "business growth software", "POS software", "retail POS", "inventory management", "stock management", "billing software",
     "accounting software", "barcode scanner POS", "multi-location retail", "Bangladesh POS", "Bangla POS", "POS-sible",

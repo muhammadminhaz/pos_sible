@@ -15,6 +15,12 @@ describe("contact links", () => {
     expect(s.emailHref("POS-sible Standard plan")).toBe("mailto:sales@example.com?subject=POS-sible%20Standard%20plan");
   });
 
+  it("defaults to the Skorbit Labs address and booking page", async () => {
+    const s = await load({});
+    expect(s.emailHref("x")).toBe("mailto:hello@skorbit-labs.com?subject=x");
+    expect(s.bookingHref("x")).toBe("https://cal.com/asiful-islam-dm/30min?notes=x");
+  });
+
   it("offers nothing it cannot deliver", async () => {
     const s = await load({ NEXT_PUBLIC_DISCOVERY_CALL_URL: "", NEXT_PUBLIC_CONTACT_EMAIL: "" });
     expect(s.bookingHref("x")).toBeNull();
