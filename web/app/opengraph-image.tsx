@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { SITE } from "@/lib/site";
 
@@ -5,57 +7,58 @@ export const alt = `${SITE.name}: ${SITE.tagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const CHIPS = ["POS & barcode", "Inventory", "Accounts", "Reports", "English + বাংলা"];
+// The hero's outlines and threads (TiltBackground's WIDE layout), redrawn for a 1200x630 card.
+const BOXES = [
+  { x: 40, y: 60, w: 220, h: 140 },
+  { x: 90, y: 250, w: 170, h: 200 },
+  { x: 30, y: 500, w: 240, h: 150 },
+  { x: 930, y: 40, w: 240, h: 160 },
+  { x: 960, y: 250, w: 190, h: 190 },
+  { x: 900, y: 490, w: 270, h: 160 },
+  { x: 360, y: -60, w: 480, h: 200 },
+];
+const THREADS = "M260 130 H360 M270 480 H330 M840 120 H930 M960 345 H900";
+const DOTS = [[260, 130], [360, 130], [330, 480], [840, 120], [930, 120], [900, 345]];
 
-/** The picture shown when a POS-sible link is shared: the mark, the name, what it does, and a rising sales line. */
-export default function OpenGraphImage() {
+/** The picture shown when a POS-sible link is shared: the hero's blue, its threads, the logo, and one line on what it does. */
+export default async function OpenGraphImage() {
+  const logo = `data:image/png;base64,${(await readFile(join(process.cwd(), "public/logo-192.png"))).toString("base64")}`;
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #4338ca 100%)", color: "white", fontFamily: "sans-serif" }}>
-        {/* soft colour behind everything */}
-        <div style={{ position: "absolute", top: -180, right: -120, width: 620, height: 620, borderRadius: 620, background: "rgba(129,140,248,0.35)", display: "flex" }} />
-        <div style={{ position: "absolute", bottom: -260, left: -160, width: 640, height: 640, borderRadius: 640, background: "rgba(16,185,129,0.18)", display: "flex" }} />
-
-        {/* the sales line, running along the bottom */}
-        <svg width="1200" height="200" viewBox="0 0 1200 260" preserveAspectRatio="none" style={{ position: "absolute", left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#a5b4fc" stopOpacity="0.35" />
-              <stop offset="1" stopColor="#a5b4fc" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor="#a5b4fc" />
-              <stop offset="1" stopColor="#34d399" />
-            </linearGradient>
-          </defs>
-          <path d="M0 210 C 140 205, 190 150, 320 160 S 520 215, 640 150 S 860 60, 1000 80 S 1130 40, 1200 20 L1200 260 L0 260 Z" fill="url(#fill)" />
-          <path d="M0 210 C 140 205, 190 150, 320 160 S 520 215, 640 150 S 860 60, 1000 80 S 1130 40, 1200 20" fill="none" stroke="url(#line)" strokeWidth="7" strokeLinecap="round" />
-          <circle cx="1000" cy="80" r="11" fill="#34d399" />
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          position: "relative",
+          color: "white",
+          // Electric blue base, a deeper pool top-left, a bright bloom top-right, and the hero's pale sky haze rising from the bottom-right.
+          backgroundColor: "#0a3cff",
+          backgroundImage: [
+            "radial-gradient(ellipse 60% 70% at 88% 108%, rgba(230,246,255,0.95), rgba(159,208,255,0.6) 40%, transparent 72%)",
+            "radial-gradient(ellipse 45% 55% at 100% 0%, rgba(63,130,255,0.85), transparent 70%)",
+            "radial-gradient(ellipse 55% 70% at 0% 0%, rgba(4,22,140,0.9), transparent 70%)",
+            "radial-gradient(ellipse 40% 50% at 10% 100%, rgba(26,79,255,0.9), transparent 70%)",
+            "linear-gradient(160deg, #0a3cff 0%, #1a4fff 50%, #3f82ff 100%)",
+          ].join(", "),
+        }}
+      >
+        <svg width="1200" height="630" viewBox="0 0 1200 630" style={{ position: "absolute", left: 0, top: 0 }}>
+          <g fill="none" stroke="white" strokeOpacity="0.18" strokeWidth="1.5">
+            {BOXES.map((b) => <rect key={`${b.x}-${b.y}`} x={b.x} y={b.y} width={b.w} height={b.h} rx="26" />)}
+            <path d={THREADS} />
+          </g>
+          {DOTS.map(([cx, cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="4" fill="white" fillOpacity="0.4" />)}
         </svg>
 
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 84px 70px", width: "100%" }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            {/* the app mark: indigo tile, receipt, rising line */}
-            <svg width="132" height="132" viewBox="0 0 64 64" style={{ borderRadius: 29 }}>
-              <defs>
-                <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stopColor="#6366f1" />
-                  <stop offset="1" stopColor="#4338ca" />
-                </linearGradient>
-              </defs>
-              <rect width="64" height="64" fill="url(#tile)" />
-              <path d="M16 11h32a2 2 0 0 1 2 2v39l-4.5-3.2-4.5 3.2-4.5-3.2-4.5 3.2-4.5-3.2-4.5 3.2-1.5-1V13a2 2 0 0 1 2-2z" fill="#fff" />
-              <path d="M20 40l7-8 6 5 10-13" fill="none" stroke="#4f46e5" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="43" cy="24" r="3.1" fill="#10b981" />
-              <path d="M20 21h12" stroke="#c7d2fe" strokeWidth="3" strokeLinecap="round" />
-            </svg>
-            <div style={{ display: "flex", fontSize: 128, fontWeight: 800, letterSpacing: -4, marginLeft: 36 }}>{SITE.name}</div>
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", width: "100%", padding: "0 110px" }}>
+          <div style={{ display: "flex", alignItems: "center", padding: "10px 26px 10px 10px", borderRadius: 999, background: "#05050a" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse renders plain img */}
+            <img src={logo} width={56} height={56} alt="" style={{ borderRadius: 14 }} />
+            <div style={{ display: "flex", marginLeft: 16, fontSize: 32, letterSpacing: -0.5 }}>{SITE.name}</div>
           </div>
-          <div style={{ display: "flex", marginTop: 34, fontSize: 42, fontWeight: 500, color: "#e0e7ff", maxWidth: 1040, lineHeight: 1.2 }}>{SITE.tagline}</div>
-          <div style={{ display: "flex", flexWrap: "wrap", marginTop: 34 }}>
-            {CHIPS.map((c) => (
-              <div key={c} style={{ display: "flex", marginRight: 14, marginBottom: 12, padding: "10px 24px", borderRadius: 999, background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.28)", fontSize: 26, color: "#eef2ff" }}>{c}</div>
-            ))}
+          <div style={{ display: "flex", marginTop: 44, fontSize: 70, lineHeight: 1.05, letterSpacing: -2.8, textAlign: "center", maxWidth: 980, textShadow: "0 6px 40px rgba(4,22,140,0.45)" }}>
+            The POS that reads your sales and tells you what to do next.
           </div>
         </div>
       </div>
