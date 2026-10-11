@@ -18,7 +18,7 @@ export function Welcome() {
   return (
     <LandingShell home backdrop={<TiltBackground />}>
         {/* The hero clips the Get started glow, which reaches 48px past the button. */}
-        <main id="main" data-hero className="mx-auto flex w-full max-w-5xl flex-col overflow-x-clip items-start px-5 pt-14 text-left sm:items-center sm:px-4 sm:pt-28 sm:text-center">
+        <main id="main" data-hero className="mx-auto flex w-full max-w-5xl flex-col overflow-x-clip items-start px-5 pt-24 text-left sm:items-center sm:px-4 sm:pt-28 sm:text-center">
           <h1 className="wl-rise pb-1 font-display text-[2.5rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-6xl lg:text-[4.25rem]" style={delay(160)}>
             <span className="lg:whitespace-nowrap">It doesn&apos;t just run your shop.</span>
             <br />
@@ -29,12 +29,12 @@ export function Welcome() {
             The POS that reads your sales and tells you what to do next.
           </p>
 
-          <div className="wl-rise mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center" style={delay(320)}>
-            <StarBorder as="a" href={getStarted} radius={24} color="#9fd0ff" glow={0.9} sparkle backgroundColor="#05050a" className="group h-12 w-full justify-between gap-3 py-0 pr-1.5 pl-6 sm:w-auto text-[15px] font-semibold shadow-[0_12px_40px_-12px_rgb(5_20_120/0.8)] active:scale-[0.98]">
+          <div className="wl-rise mt-8 flex w-full items-center gap-2.5 sm:w-auto sm:gap-3" style={delay(320)}>
+            <StarBorder as="a" href={getStarted} radius={24} color="#9fd0ff" glow={0.9} sparkle backgroundColor="#05050a" className="group h-12 min-w-0 flex-1 justify-between gap-2 py-0 pr-1.5 pl-4 text-sm sm:flex-none sm:gap-3 sm:pl-6 sm:text-[15px] font-semibold shadow-[0_12px_40px_-12px_rgb(5_20_120/0.8)] active:scale-[0.98]">
               Get started
               <ArrowSwap className="size-9 bg-white text-[#0a3cff]" />
             </StarBorder>
-            <Link href="/demo" className="group inline-flex h-12 w-full items-center justify-center gap-2.5 sm:w-auto sm:justify-start rounded-full bg-white pr-6 pl-1.5 text-[15px] font-semibold text-[#05050a] shadow-[0_12px_40px_-12px_rgb(5_20_120/0.5)] transition-[transform,background-color] hover:bg-[#eaf3ff] active:scale-[0.98]">
+            <Link href="/demo" className="group inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-white pr-4 pl-1.5 text-sm sm:flex-none sm:justify-start sm:gap-2.5 sm:pr-6 sm:text-[15px] font-semibold text-[#05050a] shadow-[0_12px_40px_-12px_rgb(5_20_120/0.5)] transition-[transform,background-color] hover:bg-[#eaf3ff] active:scale-[0.98]">
               <LiveBars />
               See demo
             </Link>
