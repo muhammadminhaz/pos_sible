@@ -3,12 +3,13 @@
 import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
+import { SunMoonIcon } from "@/components/arc/icon-morph/icon-morph";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { buttonVariants } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Both icons are always rendered and switched by the `dark` class, so server and client markup match before the theme is known.
-const icons = (
+// Until the theme is known both icons render and the `dark` class picks one, so server and client markup match.
+const staticIcons = (
   <>
     <SunIcon className="dark:hidden" />
     <MoonIcon className="hidden dark:block" />
@@ -18,6 +19,8 @@ const icons = (
 export function ThemeToggle() {
   const t = useTranslations("header");
   const { resolvedTheme, setTheme } = useTheme();
+  // Once the theme is known the icon morphs between sun and moon; it starts at the right state, so nothing animates on load.
+  const icons = resolvedTheme ? <SunMoonIcon state={resolvedTheme === "dark"} size={16} strokeWidth={2} /> : staticIcons;
 
   return (
     <Tooltip>
