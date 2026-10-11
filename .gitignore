@@ -60,3 +60,10 @@ ssh/
 
 # e2e screenshots
 web/e2e/.*-out/
+
+# Local tool state
+.tokensave/
+.vitest/
+.agents/
+.mcp.json
+skills-lock.json
