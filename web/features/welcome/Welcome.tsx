@@ -26,7 +26,7 @@ export function Welcome() {
           </h1>
 
           <p className="wl-rise mt-5 max-w-2xl text-[15px] leading-relaxed text-pretty text-white/90 sm:mt-7 sm:text-xl" style={delay(240)}>
-            The POS that reads your sales and tells you what to do next.
+            More than a point of sale. POS-sible tracks every sale, product and expense, then finds the opportunities to grow.
           </p>
 
           <div className="wl-rise mt-8 flex w-full items-center gap-2.5 sm:mt-10 sm:w-auto sm:gap-3" style={delay(320)}>
