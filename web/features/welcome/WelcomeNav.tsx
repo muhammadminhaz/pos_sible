@@ -77,7 +77,10 @@ export function WelcomeNav({ links }: { links: NavLink[] }) {
             </li>
           ))}
         </ul>
-        <ContactPill className="hidden lg:inline-flex" />
+        <div className="hidden items-center gap-1 lg:flex">
+          <Link href="/login" className="flex h-12 items-center rounded-full px-4 text-sm font-medium text-white/85 transition-colors hover:text-white">Sign in</Link>
+          <ContactPill className="inline-flex" />
+        </div>
         <button
           type="button"
           aria-expanded={open}
@@ -104,8 +107,9 @@ export function WelcomeNav({ links }: { links: NavLink[] }) {
               </li>
             ))}
           </ul>
-          <div className="px-3 pt-5 pb-2">
+          <div className="grid gap-2 px-3 pt-5 pb-2">
             <ContactPill onClick={close} className="flex w-full justify-center text-[15px]" />
+            <Link href="/login" onClick={close} className="flex h-12 items-center justify-center rounded-full text-[15px] font-medium text-white ring-1 ring-white/25 hover:bg-white/10">Sign in</Link>
           </div>
         </div>
       </div>
