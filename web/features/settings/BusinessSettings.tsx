@@ -86,7 +86,7 @@ export function BusinessSettings() {
             hidden={HIDDEN[tab] ?? []}
             options={{
               defaultTaxId: taxOptions, defaultUnitId: unitOptions,
-              themeColor: ["indigo", "blue", "black", "purple", "green", "red", "amber", "sky"].map((v) => ({ value: v, label: v[0].toUpperCase() + v.slice(1) })),
+              themeColor: ["blue", "indigo", "black", "purple", "green", "red", "amber", "sky"].map((v) => ({ value: v, label: v[0].toUpperCase() + v.slice(1) })),
             }}
             extra={(d) =>
               tab === "business" ? <SetupAgain />

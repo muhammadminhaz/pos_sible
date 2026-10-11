@@ -3,15 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRightIcon, MailIcon } from "lucide-react";
+import { ArrowUpRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SITE } from "@/lib/site";
 
 type NavLink = { href: string; label: string };
 
 /**
- * The black notch hanging from the card's top edge. From 1024px: logo, centered links and Contact.
- * Below that it spans the card like the reference: logo and a menu button, and the notch unfolds over the hero into the menu: the links, then a full-width Contact.
+ * The black notch hanging from the card's top edge. From 1024px: logo, centered links and Contact Us.
+ * Below that it spans the card like the reference: logo and a menu button, and the notch unfolds over the hero into the menu: the links, then a full-width Contact Us.
  */
 export function WelcomeNav({ links }: { links: NavLink[] }) {
   const [open, setOpen] = useState(false);
@@ -29,15 +29,45 @@ export function WelcomeNav({ links }: { links: NavLink[] }) {
     };
   }, [open]);
 
+  // Hidden once the hero has scrolled away; back when the pointer nears the top, on scrolling up, or when a link takes keyboard focus.
+  const [away, setAway] = useState(false);
+  useEffect(() => {
+    const scroller = ref.current?.closest("[data-scroller]");
+    const hero = scroller?.querySelector("[data-hero]");
+    if (!scroller || !hero) return;
+    let last = scroller.scrollTop;
+    let up = false;
+    let near = false;
+    const update = () => setAway(hero.getBoundingClientRect().bottom < 0 && !up && !near);
+    const scroll = () => {
+      const y = scroller.scrollTop;
+      if (Math.abs(y - last) > 4) up = y < last;
+      last = y;
+      update();
+    };
+    const move = (e: PointerEvent) => {
+      near = e.clientY < 96 || !!ref.current?.contains(e.target as Node);
+      update();
+    };
+    scroller.addEventListener("scroll", scroll, { passive: true });
+    addEventListener("pointermove", move, { passive: true });
+    return () => {
+      scroller.removeEventListener("scroll", scroll);
+      removeEventListener("pointermove", move);
+    };
+  }, []);
+
   const close = () => setOpen(false);
 
   return (
+    // The drop-in animation owns the nav's transform, so hiding slides this wrapper instead.
+    <div className={cn("pointer-events-auto absolute inset-x-0 top-0 transition-transform duration-500 ease-[var(--wl-ease)] has-[:focus-visible]:translate-y-0 motion-reduce:transition-none", away && !open && "-translate-y-24")}>
     <nav ref={ref} aria-label="Main" className="wl-drop absolute inset-x-0 top-0 mx-auto w-full max-w-4xl rounded-b-[24px] bg-[#05050a] p-2 sm:p-2.5 lg:w-[calc(100%-4rem)] lg:rounded-b-[28px]">
       <NotchCorner side="left" />
       <NotchCorner side="right" />
       <div className="flex items-center justify-between gap-3">
         <Link href="/" className="flex h-12 shrink-0 items-center gap-2.5 rounded-full pr-3 pl-1.5 font-display text-[15px] font-semibold tracking-tight">
-          <Image src="/logo-192.png" alt="" width={32} height={32} className="rounded-full" />
+          <Image src="/logo-192.png" alt="" width={32} height={32} />
           {SITE.name}
         </Link>
         <ul className="absolute left-1/2 hidden h-12 -translate-x-1/2 items-stretch gap-1 py-1 lg:flex">
@@ -80,16 +110,16 @@ export function WelcomeNav({ links }: { links: NavLink[] }) {
         </div>
       </div>
     </nav>
+    </div>
   );
 }
 
 /** After React Bits' GlareHover: one soft streak of light crosses the pill on hover. */
 function ContactPill({ className, onClick }: { className: string; onClick?: () => void }) {
   return (
-    <a href="#contact" onClick={onClick} className={cn("group relative h-12 shrink-0 items-center gap-2 overflow-hidden rounded-full bg-white px-5 text-sm font-semibold text-[#05050a] transition-transform active:scale-[0.98]", className)}>
+    <a href="/contact" onClick={onClick} className={cn("group relative h-12 shrink-0 items-center gap-2 overflow-hidden rounded-full bg-white px-5 text-sm font-semibold text-[#05050a] transition-transform active:scale-[0.98]", className)}>
       <span aria-hidden className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 -skew-x-12 bg-[linear-gradient(90deg,transparent,rgb(10_60_255/0.18),transparent)] transition-transform duration-700 ease-out group-hover:translate-x-[300%] motion-reduce:hidden" />
-      <MailIcon aria-hidden className="size-4 text-[#0a3cff]" />
-      Contact
+      Contact Us
     </a>
   );
 }

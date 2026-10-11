@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from "react";
-import { AnimatePresence, MotionConfig, motion, useInView } from "motion/react";
-import { BadgePercentIcon, CheckIcon, HandCoinsIcon, PackageIcon, ScanLineIcon, TruckIcon, UserRoundIcon } from "lucide-react";
+import { AnimatePresence, MotionConfig, type MotionValue, animate, easeInOut, motion, useInView, useMotionValue, useTransform } from "motion/react";
+import { BadgePercentIcon, BookOpenIcon, CheckIcon, HandCoinsIcon, InboxIcon, PackageIcon, ScanLineIcon, ShoppingBasketIcon, TargetIcon, TruckIcon, UserRoundIcon, UsersRoundIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -17,7 +17,7 @@ const onReduceChange = (cb: () => void) => {
 export const useStill = () => useSyncExternalStore(onReduceChange, () => matchMedia(REDUCE).matches, () => false);
 
 /** Counts 0..steps-1 forever, every `ms`, only while `ref` is on screen and motion is allowed; otherwise holds `rest`. */
-function useLoop(ref: RefObject<Element | null>, steps: number, ms: number, rest = steps - 1) {
+export function useLoop(ref: RefObject<Element | null>, steps: number, ms: number, rest = steps - 1) {
   const reduce = useStill();
   const seen = useInView(ref, { amount: 0.3 });
   const [step, setStep] = useState(0);
@@ -63,34 +63,64 @@ export function Features() {
           </p>
         </div>
 
-        <div className="mx-auto mt-14 grid max-w-6xl gap-4 sm:mt-16 md:grid-cols-2 lg:grid-cols-3">
-          <Tile className="md:col-span-2" tone="blue" visual={<Inbox />} title="Opportunity inbox" body="All day it scans sales, stock and dues, ranks what it finds by money at stake and keeps the list fresh." />
-          <Tile visual={<Forecast />} title="Sales you can see coming" body="Spot the slow Saturday before it happens, with a forecast drawn from your own history." />
-          <Tile visual={<Checkout />} title="Checkout in seconds" body="Scan, split one bill across cash, card, bKash or Nagad, and print to a thermal printer." />
-          <Tile visual={<Stock />} title="Stock in every branch" body="Live counts per location, and a transfer suggested before any shelf runs empty." />
-          <Tile visual={<Bilingual />} title="English or বাংলা" body="Every screen, receipt and report in either language. Switch any time, nothing changes underneath." />
+        {/* 12 columns from 1024px: rows of 5+7, 4+4+4, 7+5, so the wide tiles zigzag like a magazine spread. */}
+        <div className="mx-auto mt-14 grid max-w-6xl gap-4 sm:mt-16 md:grid-cols-2 lg:grid-cols-12">
+          <Tile className="lg:col-span-5" visual={<Window tab="Counter 1" className="max-w-[300px]"><Checkout /></Window>} title="Checkout in seconds" body="Scan, split one bill across cash, card, bKash or Nagad, and print to a thermal printer." />
+          <Tile className="md:col-span-2 lg:col-span-7" visual={<Window tab="Opportunity inbox" className="max-w-xl"><Inbox /></Window>} title="Opportunity inbox" body="All day it scans sales, stock and dues, ranks what it finds by money at stake and keeps the list fresh." />
+          <Tile className="lg:col-span-4" visual={<Forecast />} title="Sales you can see coming" body="Spot the slow Saturday before it happens, with a forecast drawn from your own history." />
+          <Tile className="lg:col-span-4" visual={<Goals />} title="Goals that show the way" body="Set a monthly target. See your pace and exactly how much to add each day to reach it." />
+          <Tile className="md:col-span-2 lg:col-span-4" visual={<Stock />} title="Stock in every branch" body="Live counts per location, and a transfer suggested before any shelf runs empty." />
+          <Tile className="md:col-span-2 lg:col-span-7" visual={<Pipeline />} title="One sale, every book updated" body="Each sale moves stock, posts to double-entry books and feeds the inbox. Your insights and your accounts read the same numbers." />
+          <Tile className="md:col-span-2 lg:col-span-5" visual={<Bilingual />} title="English or বাংলা" body="Every screen, receipt and report in either language. Switch any time, nothing changes underneath." />
         </div>
       </section>
     </MotionConfig>
   );
 }
 
-/** The visual loops forever, so it is hidden from screen readers; the title and body say the same thing once. */
-function Tile({ visual, title, body, tone = "light", className }: { visual: ReactNode; title: string; body: string; tone?: "light" | "blue"; className?: string }) {
+/** Soft porcelain card: copy on top, the visual below on a pale wash. The visual loops forever, so it is hidden from screen readers; the copy says the same thing once. */
+function Tile({ visual, title, body, className }: { visual: ReactNode; title: string; body: string; className?: string }) {
   return (
     <motion.article
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.8, ease }}
-      className={cn("flex flex-col overflow-hidden rounded-[24px] ring-1", tone === "blue" ? "bg-[linear-gradient(140deg,#0a3cff,#3f82ff_55%,#9fd0ff)] text-white ring-white/20" : "bg-white ring-[#071447]/8", className)}
+      className={cn("flex flex-col overflow-hidden rounded-[22px] bg-[linear-gradient(165deg,#ffffff_0%,#f1f5ff_55%,#e4edff_100%)] shadow-[inset_0_1px_0_white,0_24px_48px_-36px_rgb(7_20_71/0.35)] ring-1 ring-[#071447]/[0.07]", className)}
     >
-      <div aria-hidden className="relative flex min-h-72 flex-1 items-center justify-center p-5 sm:p-8">{visual}</div>
-      <div className="px-6 pb-6">
-        <h3 className="font-display text-lg font-semibold tracking-tight">{title}</h3>
-        <p className={cn("mt-1.5 text-[15px] leading-relaxed text-pretty", tone === "blue" ? "text-white/80" : "text-[#071447]/60")}>{body}</p>
+      <div className="px-6 pt-6 sm:px-7 sm:pt-7">
+        <h3 className="font-display text-[17px] font-semibold tracking-tight">{title}</h3>
+        <p className="mt-1 max-w-md text-[15px] leading-relaxed text-pretty text-[#071447]/60">{body}</p>
       </div>
+      <div aria-hidden className="relative flex min-h-72 flex-1 items-center justify-center px-5 pt-8 pb-6 sm:px-8">{visual}</div>
     </motion.article>
+  );
+}
+
+/** A ghost browser window: hollow traffic lights and one tab, the app inside sitting on white. Sinks into the tile's bottom edge. */
+function Window({ tab, children, className }: { tab: string; children: ReactNode; className?: string }) {
+  return (
+    <div className={cn("-mb-6 w-full self-end rounded-t-[22px] bg-white/55 px-2 pb-2 shadow-[inset_0_1px_0_white,0_30px_60px_-30px_rgb(7_20_71/0.35)] ring-1 ring-[#071447]/[0.06]", className)}>
+      <div className="flex h-10 items-end gap-3 px-2">
+        <span className="flex gap-1.5 pb-3.5">
+          {[0, 1, 2].map((i) => <span key={i} className="size-2.5 rounded-full ring-1 ring-[#071447]/15" />)}
+        </span>
+        <span className="flex h-8 min-w-0 items-center gap-2 rounded-t-xl bg-white px-3.5 text-xs font-medium ring-1 ring-[#071447]/[0.06]">
+          <span className="grid size-4 place-items-center rounded bg-[#0a3cff] text-[9px] font-bold text-white">P</span>
+          <span className="truncate">{tab}</span>
+        </span>
+      </div>
+      <div className="rounded-[14px] bg-white ring-1 ring-[#071447]/[0.06]">{children}</div>
+    </div>
+  );
+}
+
+/** White node with a soft lift, the building block of the diagrams. `on` fills it blue. */
+function Chip({ on, children, className }: { on?: boolean; children: ReactNode; className?: string }) {
+  return (
+    <span className={cn("grid size-11 shrink-0 place-items-center rounded-2xl ring-1 transition-colors duration-500 [&_svg]:size-[18px]", on ? "bg-[#0a3cff] text-white ring-[#0a3cff]" : "bg-white text-[#071447]/70 shadow-[0_10px_24px_-12px_rgb(7_20_71/0.35)] ring-[#071447]/[0.06]", className)}>
+      {children}
+    </span>
   );
 }
 
@@ -110,7 +140,7 @@ function Inbox() {
   const step = useLoop(ref, FINDS.length, 2800, 0);
   const shown = [0, 1, 2].map((i) => FINDS[(step + FINDS.length - i) % FINDS.length]);
   return (
-    <div ref={ref} className={cn(panel, "w-full max-w-xl p-4 shadow-[0_30px_60px_-20px_rgb(5_20_120/0.45)] sm:p-5")}>
+    <div ref={ref} className="p-4 sm:p-5">
       <div className="flex items-center justify-between gap-3">
         <p className="min-w-0 truncate text-sm font-semibold">Today&apos;s opportunities</p>
         <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#0a3cff]/10 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-[#0a3cff]">
@@ -152,20 +182,37 @@ function Inbox() {
 // A week of sales, then a dashed forecast for the coming days.
 const LINE = "M8 92 C40 88 52 60 78 64 S118 40 140 52 S176 78 196 58 S236 22 258 34";
 const AHEAD = "M258 34 C276 40 288 30 312 26";
-const LOOP = { duration: 5, repeat: Infinity, ease: "easeInOut" } as const;
+const useKeys = (t: MotionValue<number>, times: number[], values: number[]) => useTransform(t, times, values, { ease: easeInOut });
 
-/** The week draws itself, the forecast reaches ahead, it holds, then fades and starts over. Reduced motion shows the finished chart. */
+// The finished chart: where the loop rests offscreen and under reduced motion.
+const HOLD = 0.6;
+
+/**
+ * The week draws itself, the forecast reaches ahead, it holds, then fades and starts over. Reduced motion shows the finished chart.
+ * One clock drives every part: separate keyframe loops drift apart (motion runs opacity off-thread, pathLength on the main thread), which flashed the full chart at each restart.
+ */
 function Forecast() {
+  const ref = useRef<HTMLDivElement>(null);
   const reduce = useStill();
-  const loop = <T,>(frames: T[], times: number[], still: T) => (reduce ? { animate: still, transition: { duration: 0 } } : { animate: frames, transition: { ...LOOP, times } });
-  const fill = loop([0, 0, 1, 1, 0], [0, 0.3, 0.45, 0.85, 1], 1);
-  const line = loop([0, 1, 1, 1], [0, 0.35, 0.85, 1], 1);
-  const fade = loop([1, 1, 1, 0], [0, 0.35, 0.85, 1], 1);
-  const ahead = loop([0, 0, 1, 1, 1], [0, 0.35, 0.5, 0.85, 1], 1);
-  const aheadFade = loop([0, 0, 0.55, 0.55, 0], [0, 0.35, 0.5, 0.85, 1], 0.55);
-  const dot = loop([0, 0, 1.4, 1, 1, 0], [0, 0.33, 0.4, 0.45, 0.85, 1], 1);
+  const seen = useInView(ref, { amount: 0.3 });
+  const t = useMotionValue(HOLD);
+  useEffect(() => {
+    if (reduce || !seen) {
+      t.set(HOLD);
+      return;
+    }
+    const run = animate(t, [0, 1], { duration: 5, ease: "linear", repeat: Infinity });
+    return () => run.stop();
+  }, [reduce, seen, t]);
+  const fill = useKeys(t, [0, 0.3, 0.45, 0.85, 1], [0, 0, 1, 1, 0]);
+  const line = useKeys(t, [0, 0.35, 0.85, 1], [0, 1, 1, 1]);
+  // Starts hidden too: a round cap on a zero-length path still paints a dot.
+  const fade = useKeys(t, [0, 0.02, 0.85, 1], [0, 1, 1, 0]);
+  const ahead = useKeys(t, [0, 0.35, 0.5, 0.85, 1], [0, 0, 1, 1, 1]);
+  const aheadFade = useKeys(t, [0, 0.35, 0.5, 0.85, 1], [0, 0, 0.55, 0.55, 0]);
+  const dot = useKeys(t, [0, 0.33, 0.4, 0.45, 0.85, 1], [0, 0, 1.4, 1, 1, 0]);
   return (
-    <div className={cn(panel, "w-full max-w-xs p-4")}>
+    <div ref={ref} className={cn(panel, "w-full max-w-xs p-4")}>
       <div className="flex items-baseline justify-between">
         <p className="text-xs text-[#071447]/55">This week</p>
         <p className="text-xs font-medium text-emerald-600">+12.4%</p>
@@ -178,10 +225,10 @@ function Forecast() {
             <stop offset="1" stopColor="#0a3cff" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <motion.path d={`${LINE} V110 H8 Z`} fill="url(#fc-fill)" animate={{ opacity: fill.animate }} transition={fill.transition} />
-        <motion.path d={LINE} fill="none" stroke="#0a3cff" strokeWidth="2.5" strokeLinecap="round" animate={{ pathLength: line.animate, opacity: fade.animate }} transition={line.transition} />
-        <motion.path d={AHEAD} fill="none" stroke="#0a3cff" strokeWidth="2.5" strokeDasharray="4 6" strokeLinecap="round" animate={{ pathLength: ahead.animate, opacity: aheadFade.animate }} transition={ahead.transition} />
-        <motion.circle cx="258" cy="34" r="5" fill="white" stroke="#0a3cff" strokeWidth="2.5" animate={{ scale: dot.animate }} transition={dot.transition} />
+        <motion.path d={`${LINE} V110 H8 Z`} fill="url(#fc-fill)" style={{ opacity: fill }} />
+        <motion.path d={LINE} fill="none" stroke="#0a3cff" strokeWidth="2.5" strokeLinecap="round" style={{ pathLength: line, opacity: fade }} />
+        <motion.path d={AHEAD} fill="none" stroke="#0a3cff" strokeWidth="2.5" strokeDasharray="4 6" strokeLinecap="round" style={{ pathLength: ahead, opacity: aheadFade }} />
+        <motion.circle cx="258" cy="34" r="5" fill="white" stroke="#0a3cff" strokeWidth="2.5" style={{ scale: dot }} />
       </svg>
       <div className="mt-2 flex justify-between text-[11px] text-[#071447]/45">
         {["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Next"].map((d) => <span key={d}>{d}</span>)}
@@ -200,7 +247,7 @@ function Checkout() {
   const total = items.reduce((sum, [, price]) => sum + price, 0);
   const paid = step >= 6;
   return (
-    <div ref={ref} className={cn(panel, "relative w-full max-w-[260px] overflow-hidden p-4")}>
+    <div ref={ref} className="relative overflow-hidden rounded-[14px] p-4">
       <div className="flex items-center gap-1.5 text-xs text-[#071447]/55">
         <ScanLineIcon className="size-3.5 text-[#0a3cff]" />
         {step < 3 ? "Scanning…" : paid ? "Sale complete" : "Split payment"}
@@ -333,6 +380,94 @@ function Bilingual() {
             </AnimatePresence>
           </li>
         ))}
+      </ul>
+    </div>
+  );
+}
+
+const ROUTES = [
+  { icon: UsersRoundIcon, at: "top-0 left-1/2 -translate-x-1/2 -translate-y-1/2" },
+  { icon: ShoppingBasketIcon, at: "top-1/2 right-0 translate-x-1/2 -translate-y-1/2" },
+  { icon: TargetIcon, at: "top-1/2 left-0 -translate-x-1/2 -translate-y-1/2" },
+];
+const PACE = [0.48, 0.57, 0.65, 0.72];
+
+/** The goal ring fills as each route to it lights up: more customers, bigger baskets, a daily target. */
+function Goals() {
+  const ref = useRef<HTMLDivElement>(null);
+  const step = useLoop(ref, PACE.length, 1500);
+  return (
+    <div ref={ref} className="relative mt-2 mb-6 size-52">
+      <svg viewBox="0 0 200 200" className="absolute inset-0 size-full animate-[spin_40s_linear_infinite] motion-reduce:animate-none">
+        <circle cx="100" cy="100" r="99" fill="none" stroke="#3f82ff" strokeOpacity="0.45" strokeDasharray="2 7" strokeLinecap="round" />
+      </svg>
+      <div className="absolute inset-9 grid place-items-center rounded-full bg-white shadow-[0_20px_40px_-20px_rgb(7_20_71/0.4)] ring-1 ring-[#071447]/[0.06]">
+        <svg viewBox="0 0 100 100" className="absolute inset-2 -rotate-90">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#0a3cff" strokeOpacity="0.08" strokeWidth="6" />
+          <motion.circle cx="50" cy="50" r="44" fill="none" stroke="#0a3cff" strokeWidth="6" strokeLinecap="round" initial={false} animate={{ pathLength: PACE[step] }} transition={{ duration: 1, ease }} />
+        </svg>
+        <p className="text-center">
+          <span className="block font-display text-2xl font-semibold tracking-tight tabular-nums">{Math.round(PACE[step] * 100)}%</span>
+          <span className="block text-[11px] text-[#071447]/55">of ৳5L goal</span>
+        </p>
+      </div>
+      {ROUTES.map((r, i) => (
+        <Chip key={i} on={step === i} className={cn("absolute", r.at)}>
+          <r.icon />
+        </Chip>
+      ))}
+      <span className="absolute bottom-0 left-1/2 flex -translate-x-1/2 translate-y-1/2 items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium whitespace-nowrap shadow-[0_10px_24px_-12px_rgb(7_20_71/0.35)] ring-1 ring-[#071447]/[0.06]">
+        <span className="size-1.5 rounded-full bg-emerald-500" />
+        ৳3,200 a day to get there
+      </span>
+    </div>
+  );
+}
+
+const POSTS = [
+  { icon: PackageIcon, label: "Stock", note: "−2 Coca-Cola" },
+  { icon: BookOpenIcon, label: "Books", note: "Sale posted" },
+  { icon: InboxIcon, label: "Inbox", note: "Restock in 4 days" },
+];
+
+/** A sale flows into POS-sible and fans out: stock, books, then the inbox light up in turn. */
+function Pipeline() {
+  const ref = useRef<HTMLDivElement>(null);
+  const step = useLoop(ref, POSTS.length + 3, 1000); // 0 sale, 1 POS-sible, 2-4 each post, 5 all lit
+  return (
+    <div ref={ref} className="flex items-center">
+      {/* The label hangs below the chip, so the chip itself stays on the line through the logo. */}
+      <span className="relative">
+        <Chip on={step === 0}><ScanLineIcon /></Chip>
+        <span className="absolute top-full left-1/2 mt-2 -translate-x-1/2 text-[11px] font-medium text-[#071447]/55">Sale</span>
+      </span>
+      <svg viewBox="0 0 40 4" preserveAspectRatio="none" className="h-1 w-6 sm:w-12">
+        <path d="M0 2 H40" stroke="#3f82ff" strokeWidth="2" strokeDasharray="4 5" className="wl-flow" />
+      </svg>
+      <span className={cn("grid size-20 shrink-0 place-items-center rounded-[26px] bg-white shadow-[0_24px_48px_-20px_rgb(10_60_255/0.45)] ring-2 transition-colors duration-500 sm:size-24", step === 1 ? "ring-[#0a3cff]" : "ring-[#9fd0ff]")}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- decorative 48px logo, already cached by the nav */}
+        <img src="/logo-192.png" alt="" className="size-11 sm:size-12" />
+      </span>
+      <svg viewBox="0 0 40 132" className="h-[132px] w-6 shrink-0 sm:w-12" preserveAspectRatio="none">
+        <g fill="none" stroke="#3f82ff" strokeWidth="2" strokeDasharray="4 5" className="wl-flow">
+          <path d="M0 66 C20 66 20 18 40 18" />
+          <path d="M0 66 H40" />
+          <path d="M0 66 C20 66 20 114 40 114" />
+        </g>
+      </svg>
+      <ul className="grid gap-3">
+        {POSTS.map((p, i) => {
+          const lit = step >= i + 2;
+          return (
+            <li key={p.label} className={cn("flex h-9 items-center gap-2 rounded-xl pr-3 pl-1.5 text-xs font-medium ring-1 transition-all duration-500", lit ? "bg-white shadow-[0_10px_24px_-12px_rgb(7_20_71/0.35)] ring-[#0a3cff]/25" : "bg-white/50 text-[#071447]/45 ring-[#071447]/[0.06]")}>
+              <span className={cn("grid size-6 place-items-center rounded-lg transition-colors duration-500", lit ? "bg-[#0a3cff] text-white" : "bg-[#071447]/5")}>
+                <p.icon className="size-3.5" />
+              </span>
+              {p.label}
+              <span className={cn("hidden whitespace-nowrap text-[#071447]/50 sm:inline", !lit && "opacity-0")}>{p.note}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

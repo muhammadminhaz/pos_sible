@@ -32,8 +32,7 @@ API variables:
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Platform owner login for the `/admin` console. In production admin sign-in stays disabled while the password is still the default `11111111`. Never stored in the database. |
 | `PG_POOL_MAX` | Connection pool size (default 10). |
 
-Web variables (build time): `NEXT_PUBLIC_DATA_MODE`, `BACKEND_URL`, `NEXT_PUBLIC_ALLOW_SIGNUP` (the sign-up link),
-`NEXT_PUBLIC_SHOW_DEMO_LOGINS` (quick-fill demo accounts on the sign-in page).
+Web variables (build time): `NEXT_PUBLIC_DATA_MODE`, `BACKEND_URL`, `NEXT_PUBLIC_ALLOW_SIGNUP` (the sign-up link).
 
 ## How the two projects connect
 

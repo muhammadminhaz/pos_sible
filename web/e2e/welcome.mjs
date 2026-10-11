@@ -59,7 +59,7 @@ for (const reducedMotion of ["no-preference", "reduce"]) {
   const mode = `[tilt ${reducedMotion}]`;
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion });
   const page = await open(ctx, mode);
-  const transform = () => page.locator("[data-tilt]").evaluate((e) => e.style.transform);
+  const transform = () => page.locator("[data-tilt] >> nth=0").evaluate((e) => e.style.transform);
   await page.mouse.move(100, 100);
   await page.waitForTimeout(600);
   const t0 = await transform();

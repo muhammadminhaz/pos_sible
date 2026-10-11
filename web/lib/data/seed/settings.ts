@@ -112,7 +112,7 @@ export function defaultSettings(startDate: string): Settings {
       denominationStrict: false,
     },
     dashboard: { stockExpiryAlertDays: 30 },
-    system: { themeColor: "indigo", defaultPageSize: 25, showHelpText: true },
+    system: { themeColor: "blue", defaultPageSize: 25, showHelpText: true },
     prefixes: {
       purchase: "PO",
       purchaseReturn: "PR",

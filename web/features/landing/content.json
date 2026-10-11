@@ -244,7 +244,7 @@
       "id": "pricing",
       "eyebrow": "Pricing",
       "title": "Pays for itself with one recovered sale",
-      "note": "Pay by bKash or bank transfer. Your account is switched on when payment arrives.",
+      "note": "Every plan starts with a short call with our sales team. We set up your account after the call. Pay by bKash or bank transfer.",
       "best": "Best for most shops",
       "plans": [
         {
@@ -253,7 +253,13 @@
           "users": 3,
           "price": 500,
           "blurb": "For a single counter getting started.",
-          "usersLabel": "Up to 3 users"
+          "usersLabel": "Up to 3 users",
+          "modules": [
+            "pos",
+            "sales",
+            "expenses",
+            "reports"
+          ]
         },
         {
           "id": "standard",
@@ -262,7 +268,15 @@
           "price": 1500,
           "blurb": "For a shop with a team and a few branches.",
           "usersLabel": "Up to 10 users",
-          "featured": true
+          "featured": true,
+          "modules": [
+            "pos",
+            "sales",
+            "expenses",
+            "reports",
+            "purchases",
+            "stock"
+          ]
         },
         {
           "id": "premium",
@@ -270,14 +284,54 @@
           "users": null,
           "price": 3000,
           "blurb": "For growing chains with no user limit.",
-          "usersLabel": "Unlimited users"
+          "usersLabel": "Unlimited users",
+          "modules": [
+            "pos",
+            "sales",
+            "expenses",
+            "reports",
+            "purchases",
+            "stock",
+            "accounts"
+          ]
         }
       ],
       "planFeatures": [
+        "Dashboard, products and contacts",
         "Opportunity Inbox and Goals",
-        "POS, stock, purchases and accounts",
         "English and বাংলা",
         "Your data kept apart from other shops"
+      ],
+      "body": "Clear monthly prices in Taka. Each plan adds more of the shop to POS-sible, and more people to run it.",
+      "modules": [
+        {
+          "id": "pos",
+          "label": "POS"
+        },
+        {
+          "id": "sales",
+          "label": "Sales"
+        },
+        {
+          "id": "purchases",
+          "label": "Purchases"
+        },
+        {
+          "id": "stock",
+          "label": "Stock transfers and adjustments"
+        },
+        {
+          "id": "expenses",
+          "label": "Expenses"
+        },
+        {
+          "id": "accounts",
+          "label": "Accounts"
+        },
+        {
+          "id": "reports",
+          "label": "Reports"
+        }
       ]
     },
     {

@@ -19,7 +19,7 @@ import type { Settings } from "@/lib/data/schemas";
 import { currencyOptions, currencySymbol } from "@/lib/i18n/currencies";
 
 const COLORS: { id: Settings["system"]["themeColor"]; swatch: string }[] = [
-  { id: "indigo", swatch: "#4f46e5" }, { id: "blue", swatch: "#2563eb" }, { id: "sky", swatch: "#0284c7" }, { id: "green", swatch: "#059669" },
+  { id: "blue", swatch: "#0a3cff" }, { id: "indigo", swatch: "#4f46e5" }, { id: "sky", swatch: "#0284c7" }, { id: "green", swatch: "#059669" },
   { id: "amber", swatch: "#d97706" }, { id: "red", swatch: "#dc2626" }, { id: "purple", swatch: "#9333ea" }, { id: "black", swatch: "#27272a" },
 ];
 /**
@@ -41,7 +41,7 @@ function Wizard() {
   const { complete, skip } = useOnboardingActions();
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<"demo" | "fresh">("demo");
-  const [f, setF] = useState({ businessName: "", locationName: "", phone: "", city: "", currency: "BDT", themeColor: "indigo" as Settings["system"]["themeColor"] });
+  const [f, setF] = useState({ businessName: "", locationName: "", phone: "", city: "", currency: "BDT", themeColor: "blue" as Settings["system"]["themeColor"] });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((s) => ({ ...s, [k]: v }));
   const steps = 3;
   const busy = complete.isPending || skip.isPending;
@@ -138,7 +138,7 @@ function Wizard() {
                   {COLORS.map((c) => (
                     <button
                       key={c.id} type="button" role="radio" aria-checked={f.themeColor === c.id} aria-label={c.id}
-                      onClick={() => { set("themeColor", c.id); document.documentElement.setAttribute("data-accent", c.id === "indigo" ? "" : c.id); }}
+                      onClick={() => { set("themeColor", c.id); document.documentElement.setAttribute("data-accent", c.id === "blue" ? "" : c.id); }}
                       className={cn("grid size-10 place-items-center rounded-full text-white shadow-sm transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none", f.themeColor === c.id && "scale-110 ring-2 ring-offset-2 ring-offset-background")}
                       style={{ backgroundColor: c.swatch }}
                     >

@@ -92,7 +92,7 @@
   --card-foreground: oklch(0.21 0.006 285.885);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.006 285.885);
-  --primary: oklch(0.55 0.2 275);
+  --primary: oklch(0.5 0.28 264.5);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.967 0.001 286.375); /* zinc-100 */
   --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -103,7 +103,7 @@
   --destructive: oklch(0.514 0.222 16.935); /* rose-700: AA as text on its own tint */
   --border: oklch(0.92 0.004 286.32); /* zinc-200 */
   --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.55 0.2 275 / 55%);
+  --ring: oklch(0.5 0.28 264.5 / 55%);
 
   --success: oklch(0.508 0.118 165.612); /* emerald-700: AA as text */
   --success-foreground: oklch(0.432 0.095 166.913); /* emerald-800 */
@@ -118,7 +118,7 @@
   --info-foreground: oklch(0.443 0.11 240.79); /* sky-800 */
   --info-soft: oklch(0.977 0.013 236.62); /* sky-50 */
 
-  --chart-1: oklch(0.55 0.2 275);
+  --chart-1: oklch(0.5 0.28 264.5);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.645 0.246 16.439);
@@ -126,12 +126,12 @@
 
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.37 0.013 285.805); /* zinc-700 */
-  --sidebar-primary: oklch(0.55 0.2 275);
+  --sidebar-primary: oklch(0.5 0.28 264.5);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.967 0.001 286.375);
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.55 0.2 275 / 55%);
+  --sidebar-ring: oklch(0.5 0.28 264.5 / 55%);
 }
 
 .dark {
@@ -141,7 +141,7 @@
   --card-foreground: oklch(0.967 0.001 286.375);
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.967 0.001 286.375);
-  --primary: oklch(0.68 0.17 275);
+  --primary: oklch(0.68 0.19 262);
   --primary-foreground: oklch(0.141 0.005 285.823);
   --secondary: oklch(0.274 0.006 286.033); /* zinc-800 */
   --secondary-foreground: oklch(0.967 0.001 286.375);
@@ -152,7 +152,7 @@
   --destructive: oklch(0.712 0.194 13.428); /* rose-400 */
   --border: oklch(0.274 0.006 286.033); /* zinc-800 */
   --input: oklch(0.37 0.013 285.805);
-  --ring: oklch(0.68 0.17 275 / 55%);
+  --ring: oklch(0.68 0.19 262 / 55%);
 
   --success: oklch(0.765 0.177 163.223); /* emerald-400 */
   --success-foreground: oklch(0.845 0.143 164.978); /* emerald-300 */
@@ -167,7 +167,7 @@
   --info-foreground: oklch(0.828 0.111 230.318); /* sky-300 */
   --info-soft: oklch(0.293 0.066 243.157); /* sky-950 */
 
-  --chart-1: oklch(0.68 0.17 275);
+  --chart-1: oklch(0.68 0.19 262);
   --chart-2: oklch(0.765 0.177 163.223);
   --chart-3: oklch(0.828 0.189 84.429);
   --chart-4: oklch(0.712 0.194 13.428);
@@ -175,12 +175,12 @@
 
   --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.871 0.006 286.286);
-  --sidebar-primary: oklch(0.68 0.17 275);
+  --sidebar-primary: oklch(0.68 0.19 262);
   --sidebar-primary-foreground: oklch(0.141 0.005 285.823);
   --sidebar-accent: oklch(0.274 0.006 286.033);
   --sidebar-accent-foreground: oklch(0.967 0.001 286.375);
   --sidebar-border: oklch(0.274 0.006 286.033);
-  --sidebar-ring: oklch(0.68 0.17 275 / 55%);
+  --sidebar-ring: oklch(0.68 0.19 262 / 55%);
 }
 
 /* Right-edge fade on scrollable tables while there is more to scroll to. */
@@ -291,8 +291,8 @@
 }
 
 /* Accent colour chosen in Settings → System. Indigo is the default (no attribute). */
-html[data-accent="blue"] { --primary: oklch(0.55 0.19 255); --primary-foreground: oklch(0.985 0 0); --ring: oklch(0.55 0.19 255 / 55%); --sidebar-primary: oklch(0.55 0.19 255); --sidebar-primary-foreground: oklch(0.985 0 0); --sidebar-ring: oklch(0.55 0.19 255 / 55%); }
-html.dark[data-accent="blue"] { --primary: oklch(0.68 0.16 255); --primary-foreground: oklch(0.141 0.005 285.823); --ring: oklch(0.68 0.16 255 / 55%); --sidebar-primary: oklch(0.68 0.16 255); --sidebar-primary-foreground: oklch(0.141 0.005 285.823); --sidebar-ring: oklch(0.68 0.16 255 / 55%); }
+html[data-accent="indigo"] { --primary: oklch(0.55 0.2 275); --primary-foreground: oklch(0.985 0 0); --ring: oklch(0.55 0.2 275 / 55%); --sidebar-primary: oklch(0.55 0.2 275); --sidebar-primary-foreground: oklch(0.985 0 0); --sidebar-ring: oklch(0.55 0.2 275 / 55%); }
+html.dark[data-accent="indigo"] { --primary: oklch(0.68 0.17 275); --primary-foreground: oklch(0.141 0.005 285.823); --ring: oklch(0.68 0.17 275 / 55%); --sidebar-primary: oklch(0.68 0.17 275); --sidebar-primary-foreground: oklch(0.141 0.005 285.823); --sidebar-ring: oklch(0.68 0.17 275 / 55%); }
 html[data-accent="purple"] { --primary: oklch(0.54 0.2 305); --primary-foreground: oklch(0.985 0 0); --ring: oklch(0.54 0.2 305 / 55%); --sidebar-primary: oklch(0.54 0.2 305); --sidebar-primary-foreground: oklch(0.985 0 0); --sidebar-ring: oklch(0.54 0.2 305 / 55%); }
 html.dark[data-accent="purple"] { --primary: oklch(0.7 0.17 305); --primary-foreground: oklch(0.141 0.005 285.823); --ring: oklch(0.7 0.17 305 / 55%); --sidebar-primary: oklch(0.7 0.17 305); --sidebar-primary-foreground: oklch(0.141 0.005 285.823); --sidebar-ring: oklch(0.7 0.17 305 / 55%); }
 html[data-accent="green"] { --primary: oklch(0.55 0.15 150); --primary-foreground: oklch(0.985 0 0); --ring: oklch(0.55 0.15 150 / 55%); --sidebar-primary: oklch(0.55 0.15 150); --sidebar-primary-foreground: oklch(0.985 0 0); --sidebar-ring: oklch(0.55 0.15 150 / 55%); }
@@ -600,6 +600,7 @@ html[data-magicui-theme-vt="active"]::view-transition-new(root) { clip-path: var
 @keyframes wl-drop { from { transform: translateY(-100%); } }
 @keyframes wl-sway { 50% { transform: translate3d(var(--x), var(--y), 0) rotate(var(--r)); } }
 @keyframes wl-pulse { 50% { opacity: 0.35; } }
+@keyframes wl-flow { to { stroke-dashoffset: -18; } }
 /* See demo icon on /welcome: bars at 45/80/60% idle like a small live chart. */
 .demo-bar:nth-child(1) { transform: scaleY(0.45); }
 .demo-bar:nth-child(2) { transform: scaleY(0.8); }
@@ -611,6 +612,7 @@ html[data-magicui-theme-vt="active"]::view-transition-new(root) { clip-path: var
   .wl-sway-a { --x: 24px; --y: -10px; --r: 1.2deg; animation: wl-sway 18s ease-in-out infinite; transform-origin: 20% 50%; }
   .wl-sway-b { --x: -28px; --y: 12px; --r: -1deg; animation: wl-sway 22s ease-in-out infinite; transform-origin: 80% 50%; }
   .wl-pulse { animation: wl-pulse 2.4s ease-in-out infinite; }
+  .wl-flow { animation: wl-flow 0.9s linear infinite; }
   .demo-bar { animation: demo-bar 1.8s ease-in-out calc(var(--i) * -0.6s) infinite; }
   .group:hover .demo-bar { animation-duration: 0.7s; animation-delay: calc(var(--i) * 0.12s); }
 }

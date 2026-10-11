@@ -50,6 +50,16 @@ function ThreadLines({ layout, className }: { layout: Threads; className: string
   );
 }
 
+/** The hero's outlines and threads, tall on phones and wide from 640px. */
+export function Threads() {
+  return (
+    <>
+      <ThreadLines layout={TALL} className="sm:hidden" />
+      <ThreadLines layout={WIDE} className="hidden sm:block" />
+    </>
+  );
+}
+
 /** Blue backdrop that tilts like a 3D plane toward the pointer. Static with reduced motion or a touch-only device. */
 export function TiltBackground() {
   const reduce = useReducedMotion();
@@ -79,8 +89,7 @@ export function TiltBackground() {
         style={{ rotateX, rotateY, x, y }}
         className="absolute -inset-[8%] bg-[linear-gradient(180deg,#0a3cff_0%,#1a4fff_42%,#3f82ff_58%,#9fd0ff_76%,#e6f6ff_92%)]"
       >
-        <ThreadLines layout={TALL} className="sm:hidden" />
-        <ThreadLines layout={WIDE} className="hidden sm:block" />
+        <Threads />
         {/* Pale sky haze rising from the bottom, brightest toward the right, as in the reference. */}
         <div className="absolute inset-x-0 bottom-0 h-3/5 bg-[radial-gradient(ellipse_70%_80%_at_72%_100%,rgb(255_255_255/0.9),rgb(214_240_255/0.5)_45%,transparent_75%)]" />
         <div className="absolute inset-x-0 bottom-0 h-2/5 bg-[radial-gradient(ellipse_60%_90%_at_15%_100%,rgb(220_242_255/0.7),transparent_70%)]" />
