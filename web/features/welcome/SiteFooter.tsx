@@ -27,7 +27,7 @@ export function SiteFooter() {
 
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         {/* Call to action: one quiet line and a button. */}
-        <div className="flex flex-col items-start gap-5 py-14 sm:flex-row sm:items-center sm:justify-between sm:py-16">
+        <div className="flex flex-col items-start gap-5 py-10 sm:flex-row sm:items-center sm:justify-between sm:py-12">
           <h2 id="contact-title" className="font-display text-xl font-medium tracking-[-0.02em] text-balance sm:text-2xl">
             Ready to hear what <span className="font-[family-name:var(--font-serif)] text-[1.15em] text-[#d8ecff] italic">your sales are saying?</span>
           </h2>
@@ -38,7 +38,7 @@ export function SiteFooter() {
         </div>
 
         {/* Brand on the left, link columns on the right. */}
-        <div className="grid gap-12 border-t border-white/20 py-14 lg:grid-cols-[1.2fr_2fr]">
+        <div className="grid gap-12 border-t border-white/20 py-10 lg:grid-cols-[1.2fr_2fr]">
           <div>
             <Link href="/" aria-label={`${SITE.name} home`} className="inline-flex">
               <Image src="/logo-192.png" alt="" width={36} height={36} />
@@ -75,7 +75,7 @@ export function SiteFooter() {
       </div>
 
       {/* The name finishes the sentence: "...? Yes, it's POS-sible." Blue on a white haze that rises out of the footer's blue. */}
-      <div className="bg-[linear-gradient(to_bottom,transparent,rgb(255_255_255/0.55)_45%,rgb(255_255_255/0.95))] pt-16 sm:pt-20">
+      <div className="bg-[linear-gradient(to_bottom,transparent,rgb(255_255_255/0.55)_45%,rgb(255_255_255/0.95))] pt-10 sm:pt-12">
         <p className="px-5 text-center font-[family-name:var(--font-serif)] text-2xl font-medium text-balance text-white italic sm:text-4xl">
           Managing your business with intelligence? Yes, it&apos;s
         </p>

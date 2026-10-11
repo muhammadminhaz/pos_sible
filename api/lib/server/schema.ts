@@ -306,4 +306,21 @@ CREATE TABLE IF NOT EXISTS waitlist (
 );
 `,
   },
+  {
+    id: 17,
+    name: "subscription cancellations",
+    sql: `
+-- When the platform owner cancelled a subscription, beside the payments, so the console can show one history of both.
+-- Kept when a business is deleted (the name is copied in), like its payments.
+CREATE TABLE IF NOT EXISTS subscription_cancellations (
+  id bigserial PRIMARY KEY,
+  business_id uuid REFERENCES businesses(id) ON DELETE SET NULL,
+  business_name text NOT NULL,
+  plan text NOT NULL,
+  plan_label text,
+  cancelled_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS subscription_cancellations_time ON subscription_cancellations (cancelled_at DESC);
+`,
+  },
 ];

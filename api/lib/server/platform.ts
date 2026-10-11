@@ -261,7 +261,12 @@ export async function setSubscription(businessId: string, patch: SubscriptionPat
   if (patch.modules) { args.push(MODULE_IDS.filter((m) => patch.modules!.includes(m))); sets.push(`modules = $${args.length}`); }
   if (patch.free !== undefined) { args.push(patch.free); sets.push(`free = $${args.length}`); }
   if (!sets.length) return (await pool().query("SELECT 1 FROM businesses WHERE id = $1", [businessId])).rowCount === 1;
-  const r = await pool().query(`UPDATE businesses SET ${sets.join(", ")} WHERE id = $1`, args);
+  // Switching a live subscription off is written down in the same statement; cancelling an already cancelled one is not.
+  const log = patch.status === "cancelled"
+    ? `WITH logged AS (INSERT INTO subscription_cancellations (business_id, business_name, plan, plan_label)
+         SELECT b.id, b.name, b.plan, p.label FROM businesses b LEFT JOIN plans p ON p.id = b.plan WHERE b.id = $1 AND b.subscription_status <> 'cancelled') `
+    : "";
+  const r = await pool().query(`${log}UPDATE businesses SET ${sets.join(", ")} WHERE id = $1`, args);
   // A cancelled business is signed out everywhere straight away.
   if (patch.status === "cancelled") await pool().query("DELETE FROM sessions WHERE business_id = $1", [businessId]);
   return r.rowCount === 1;
@@ -384,6 +389,29 @@ export async function listPayments(businessId: string): Promise<Payment[]> {
        FROM subscription_payments WHERE business_id = $1 ORDER BY paid_at DESC, id DESC`, [businessId]);
   const [shown, rates] = await Promise.all([getCurrency(), getRates()]);
   return rows.map((r) => ({ id: Number(r.id), planLabel: r.label, terms: r.terms, periodUnit: r.period_unit, periodCount: r.period_count, amount: convert(Number(r.amount), r.currency, shown, rates), paidAt: r.paid_at.toISOString(), reference: r.reference, hasProof: r.has_proof }));
+}
+
+export type HistoryEntry = {
+  id: string; kind: "activation" | "cancellation"; businessId: string | null; businessName: string; planLabel: string;
+  terms: number | null; periodUnit: PeriodUnit | null; periodCount: number | null; amount: number; at: string; reference: string | null; paymentId: number | null; hasProof: boolean;
+};
+
+/** Every activation (with its payment) and every cancellation across all businesses, newest first. Deleted businesses keep their rows. */
+export async function subscriptionHistory(): Promise<HistoryEntry[]> {
+  await ready();
+  // ponytail: the whole history in one response, like the business list; page it on the server if it grows past a few thousand rows.
+  const { rows } = await pool().query<{ kind: HistoryEntry["kind"]; id: string; business_id: string | null; business_name: string; label: string; terms: number | null; period_unit: PeriodUnit | null; period_count: number | null; amount: string; currency: string | null; at: Date; reference: string | null; has_proof: boolean }>(
+    `SELECT 'activation' AS kind, id, business_id, business_name, COALESCE(plan_label, plan) AS label, terms, period_unit, period_count, amount, currency, paid_at AS at, reference, proof IS NOT NULL AS has_proof
+       FROM subscription_payments
+     UNION ALL
+     SELECT 'cancellation', id, business_id, business_name, COALESCE(plan_label, plan), NULL, NULL, NULL, 0, NULL, cancelled_at, NULL, false
+       FROM subscription_cancellations
+     ORDER BY at DESC, id DESC`);
+  const [shown, rates] = await Promise.all([getCurrency(), getRates()]);
+  return rows.map((r) => ({
+    id: `${r.kind}-${r.id}`, kind: r.kind, businessId: r.business_id, businessName: r.business_name, planLabel: r.label, terms: r.terms, periodUnit: r.period_unit, periodCount: r.period_count,
+    amount: r.currency ? convert(Number(r.amount), r.currency, shown, rates) : 0, at: r.at.toISOString(), reference: r.reference, paymentId: r.kind === "activation" ? Number(r.id) : null, hasProof: r.has_proof,
+  }));
 }
 
 export async function paymentProof(id: number): Promise<{ data: Buffer; type: string } | null> {

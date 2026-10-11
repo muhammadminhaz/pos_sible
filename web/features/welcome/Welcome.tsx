@@ -30,13 +30,13 @@ export function Welcome() {
           </p>
 
           <div className="wl-rise mt-8 flex w-full items-center gap-2.5 sm:w-auto sm:gap-3" style={delay(320)}>
-            <StarBorder as="a" href={getStarted} radius={24} color="#9fd0ff" glow={0.9} sparkle backgroundColor="#05050a" className="group h-12 min-w-0 flex-1 justify-between gap-2 py-0 pr-1.5 pl-4 text-sm sm:flex-none sm:gap-3 sm:pl-6 sm:text-[15px] font-semibold shadow-[0_12px_40px_-12px_rgb(5_20_120/0.8)] active:scale-[0.98]">
-              Get started
+            <StarBorder as="a" href={getStarted} radius={24} color="#9fd0ff" glow={0.9} sparkle backgroundColor="#05050a" className="group h-12 min-w-0 flex-1 justify-between gap-2 py-0 pr-1.5 pl-2 text-sm sm:flex-none sm:gap-3 sm:pl-6 sm:text-[15px] font-semibold shadow-[0_12px_40px_-12px_rgb(5_20_120/0.8)] active:scale-[0.98]">
+              <span className="flex-1 text-center sm:flex-none">Get started</span>
               <ArrowSwap className="size-9 bg-white text-[#0a3cff]" />
             </StarBorder>
-            <Link href="/demo" className="group inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-white pr-4 pl-1.5 text-sm sm:flex-none sm:justify-start sm:gap-2.5 sm:pr-6 sm:text-[15px] font-semibold text-[#05050a] shadow-[0_12px_40px_-12px_rgb(5_20_120/0.5)] transition-[transform,background-color] hover:bg-[#eaf3ff] active:scale-[0.98]">
+            <Link href="/demo" className="group inline-flex h-12 min-w-0 flex-1 items-center gap-2 rounded-full bg-white pr-2 pl-1.5 text-sm sm:flex-none sm:gap-2.5 sm:pr-6 sm:text-[15px] font-semibold text-[#05050a] shadow-[0_12px_40px_-12px_rgb(5_20_120/0.5)] transition-[transform,background-color] hover:bg-[#eaf3ff] active:scale-[0.98]">
               <LiveBars />
-              See demo
+              <span className="flex-1 text-center sm:flex-none">See demo</span>
             </Link>
           </div>
         </main>
@@ -102,7 +102,7 @@ function TrustedClients() {
 /** Three bars that rise and fall like a live chart: a gentle idle pulse, a staggered bounce on hover. Stands for "real data inside". */
 function LiveBars() {
   return (
-    <span aria-hidden className="flex size-9 items-end justify-center gap-[3px] rounded-full bg-[#0a3cff]/10 pb-[11px] transition-colors duration-300 group-hover:bg-[#0a3cff]">
+    <span aria-hidden className="flex size-9 shrink-0 items-end justify-center gap-[3px] rounded-full bg-[#0a3cff]/10 pb-[11px] transition-colors duration-300 group-hover:bg-[#0a3cff]">
       {[0, 1, 2].map((i) => (
         <span
           key={i}

@@ -186,6 +186,28 @@ describe.runIf(up)("platform admin and subscriptions", () => {
     expect((await patchRoute.PATCH(asAdmin("/api/admin/businesses/00000000-0000-4000-8000-000000000000", { method: "PATCH", body: JSON.stringify({ status: "active" }) }), { params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000000" }) })).status).toBe(404);
   });
 
+  it("the subscription history lists every activation and cancellation, newest first, and keeps them after a delete", async () => {
+    const id = await open(`Hist ${tag}`, `hist${tag}`);
+    const cancel = (await import("@/app/api/admin/businesses/[id]/cancel/route")).POST;
+    const history = (await import("@/app/api/admin/subscriptions/route")).GET;
+    const mine = async () => ((await (await history(asAdmin("/api/admin/subscriptions"))).json()).history as { kind: string; businessName: string; amount: number; paymentId: number | null }[]).filter((h) => h.businessName === `Hist ${tag}`);
+
+    expect((await cancel(asAdmin(`/api/admin/businesses/${id}/cancel`, { method: "POST" }), { params: Promise.resolve({ id }) })).status).toBe(200);
+    expect((await cancel(asAdmin(`/api/admin/businesses/${id}/cancel`, { method: "POST" }), { params: Promise.resolve({ id }) })).status).toBe(200); // already cancelled: not logged twice
+    expect((await platform.activateSubscription(id, { terms: 1, reference: "TXN-H" })).ok).toBe(true);
+    // The manage form can switch it off too, through PATCH; that is a cancellation as well.
+    expect((await patchRoute.PATCH(asAdmin(`/api/admin/businesses/${id}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled" }) }), { params: Promise.resolve({ id }) })).status).toBe(200);
+    expect((await mine()).map((h) => h.kind)).toEqual(["cancellation", "activation", "cancellation", "activation"]);
+    expect((await mine())[1]).toMatchObject({ amount: (await platform.getPlans()).find((p) => p.id === "starter")!.price });
+    expect((await mine())[1].paymentId).not.toBeNull();
+    expect((await history(new NextRequest("http://localhost:3000/api/admin/subscriptions"))).status).toBe(401);
+
+    await poolMod.pool().query("DELETE FROM businesses WHERE id = $1", [id]);
+    expect(await mine()).toHaveLength(4);
+    await poolMod.pool().query("DELETE FROM subscription_payments WHERE business_name = $1", [`Hist ${tag}`]);
+    await poolMod.pool().query("DELETE FROM subscription_cancellations WHERE business_name = $1", [`Hist ${tag}`]);
+  });
+
   it("activating extends from the end date, restarts a lapsed one, and switches a cancelled one back on", async () => {
     const id = await open(`Renew ${tag}`, `renew${tag}`);
     const cancel = (await import("@/app/api/admin/businesses/[id]/cancel/route")).POST;
