@@ -121,6 +121,9 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.3.1 (2026-10-13)
+- **Improved: Landing page screenshot.** The dashboard picture on the landing page shows the new logo.
+
 ### v1.3.0 (2026-10-13)
 - **New: A new logo.** A folded receipt with a rising sales line on a blue tile, followed by the name in Nunito. The lockups and mark live in `web/public/brand/`, and the app icon, favicon, PWA icons, sidebar mark, landing page and social preview image use it.
 - **Fixed: Signing out lands on sign-in.** Signing out of the demo goes to the login screen instead of the home page, and signing out of the admin console goes to its sign-in at `/admin` instead of staying on the current page.
