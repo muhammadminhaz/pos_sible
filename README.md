@@ -121,6 +121,9 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.1.1 (2026-10-13)
+- **Improved: Manage account layout.** Account details and the password reset sit on the left, the free switch and modules on the right.
+
 ### v1.1.0 (2026-10-13)
 - **Improved: Manage account is just the editable details.** The subscription card is gone from the dialog (use the row menu for subscription actions).
 - **New: Edit a business username.** Platform admins can rename the owner sign-in; the owner is signed out.

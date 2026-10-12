@@ -286,25 +286,24 @@ function ManageForm({ business, modules, onClose, onDone }: { business: Business
         <DialogDescription>{business.ownerUsername ? `Username ${business.ownerUsername} · ` : ""}{business.users} user{business.users === 1 ? "" : "s"} · {formatBytes(business.storageBytes)} stored</DialogDescription>
       </DialogHeader>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <form id="manage-form" onSubmit={save} className="grid gap-5 md:grid-cols-2">
         <div className="grid content-start gap-4">
-          <div className="grid gap-3 rounded-lg border p-3">
+          <div className="grid gap-1.5"><Label htmlFor="m-user">Business username</Label><Input id="m-user" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} maxLength={40} pattern="[a-zA-Z0-9._-]+" autoComplete="off" /><p className="text-xs text-muted-foreground">The owner's sign-in name. Changing it signs the owner out.</p></div>
+          <div className="grid gap-1.5"><Label htmlFor="m-code">Business code</Label><Input id="m-code" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={40} autoComplete="off" /><p className="text-xs text-muted-foreground">What staff type at sign-in. Changing it means staff must use the new one straight away.</p></div>
+          <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
+          <div className="grid gap-1.5"><Label htmlFor="m-phone">Phone</Label><PhoneInput id="m-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
+          <div className="grid gap-3 rounded-lg border p-3" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (newPassword.length >= 8 && !resetting) void reset(); } }}>
             <span className="text-sm font-medium">Set a new owner password</span>
             <PasswordField id="m-pass" label="New password" value={newPassword} onChange={setNewPassword} />
             <p className="text-xs text-muted-foreground">Passwords can be replaced, never viewed. The owner is signed out.</p>
             <Button type="button" variant="outline" size="sm" className="justify-self-start" disabled={resetting || newPassword.length < 8} onClick={reset}>{resetting && <Loader2Icon className="animate-spin" />}Set password</Button>
           </div>
         </div>
-
-        <form id="manage-form" onSubmit={save} className="grid content-start gap-4">
-          <div className="grid gap-1.5"><Label htmlFor="m-user">Business username</Label><Input id="m-user" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} maxLength={40} pattern="[a-zA-Z0-9._-]+" autoComplete="off" /><p className="text-xs text-muted-foreground">The owner's sign-in name. Changing it signs the owner out.</p></div>
-          <div className="grid gap-1.5"><Label htmlFor="m-code">Business code</Label><Input id="m-code" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={40} autoComplete="off" /><p className="text-xs text-muted-foreground">What staff type at sign-in. Changing it means staff must use the new one straight away.</p></div>
+        <div className="grid content-start gap-4">
           <FreeSwitch id="m-free" value={free} onChange={setFree} />
           <ModulePicker modules={modules.filter((m) => business.planModules.includes(m.id))} value={picked} onChange={setPicked} disabled={free} />
-          <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
-          <div className="grid gap-1.5"><Label htmlFor="m-phone">Phone</Label><PhoneInput id="m-phone" value={phone} onChange={setPhone} />{!isPhoneOk(phone) && <p role="alert" className="text-xs text-danger">That phone number doesn&apos;t look right for the chosen country.</p>}</div>
-        </form>
-      </div>
+        </div>
+      </form>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onClose}>Close</Button>
         <Button type="submit" form="manage-form" disabled={busy || !isPhoneOk(phone)}>{busy && <Loader2Icon className="animate-spin" />}Save changes</Button>
