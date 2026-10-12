@@ -283,7 +283,7 @@ function ManageForm({ business, modules, onClose, onDone }: { business: Business
     <div className="grid gap-4">
       <DialogHeader>
         <DialogTitle>{business.name}</DialogTitle>
-        <DialogDescription>{business.ownerUsername ? `Username ${business.ownerUsername} · ` : ""}{business.users} user{business.users === 1 ? "" : "s"} · {formatBytes(business.storageBytes)} stored</DialogDescription>
+        <DialogDescription>{business.users} user{business.users === 1 ? "" : "s"} · {formatBytes(business.storageBytes)} stored</DialogDescription>
       </DialogHeader>
 
       <form id="manage-form" onSubmit={save} className="grid gap-5 md:grid-cols-2">
