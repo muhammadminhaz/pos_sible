@@ -121,6 +121,10 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.3.0 (2026-10-13)
+- **New: A new logo.** A folded receipt with a rising sales line on a blue tile, followed by the name in Nunito. The lockups and mark live in `web/public/brand/`, and the app icon, favicon, PWA icons, sidebar mark, landing page and social preview image use it.
+- **Fixed: Signing out lands on sign-in.** Signing out of the demo goes to the login screen instead of the home page, and signing out of the admin console goes to its sign-in at `/admin` instead of staying on the current page.
+
 ### v1.2.2 (2026-10-13)
 - **Improved: Back to the original logo.** The receipt and sales line icon is restored in the app, favicon, PWA icons and social preview image.
 
@@ -144,7 +148,7 @@ Newest first. Every push to `main` adds a version here (features bump the minor 
 - **Improved: Managing a subscription.** The business dialog has one Manage subscription button that opens the activate form inline, instead of a second popup. Cancel is now a quiet link.
 
 ### v1.0.1 (2026-10-11)
-- **Improved: Updated hero subheading.**
+- **Improved: Updated hero subheading.** The landing page hero has a clearer line under the headline.
 
 ### v1.0.0 (2026-10-11)
 - **New: Point of sale.** Sell fast from a product grid or a barcode scanner, with discounts, shipping and receipts.

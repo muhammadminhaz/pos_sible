@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { BanknoteIcon, Building2Icon, CreditCardIcon, LayoutDashboardIcon, Loader2Icon, LogOutIcon, MenuIcon, PackageIcon } from "lucide-react";
 import { cn } from "cn";
@@ -82,6 +82,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [revenue, setRevenue] = useState<RevenueReport | null | undefined>(null);
   const [menu, setMenu] = useState(false);
+  const router = useRouter();
 
   const refreshMe = useCallback(async () => {
     const res = await call("me").catch(() => null);
@@ -116,7 +117,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
     setBusinesses(null);
     setRevenue(null);
     setMe(null);
-  }, []);
+    router.replace("/admin");
+  }, [router]);
 
   const value = useMemo(() => (me && me !== "offline" ? { me, plans: me.plans, modules: me.modules, businesses, revenue, reload: async () => { await Promise.all([refreshMe(), reload(), reloadRevenue()]); }, signOut } : null), [me, businesses, revenue, reload, reloadRevenue, refreshMe, signOut]);
 

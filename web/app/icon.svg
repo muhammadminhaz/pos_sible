@@ -1,13 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#6366f1"/>
-      <stop offset="1" stop-color="#4338ca"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
-  <path d="M16 11h32a2 2 0 0 1 2 2v39l-4.5-3.2-4.5 3.2-4.5-3.2-4.5 3.2-4.5-3.2-4.5 3.2-1.5-1V13a2 2 0 0 1 2-2z" fill="#fff"/>
-  <path d="M20 40l7-8 6 5 10-13" fill="none" stroke="#4f46e5" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="43" cy="24" r="3.1" fill="#10b981"/>
-  <path d="M20 21h12" stroke="#c7d2fe" stroke-width="3" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="t"><title id="t">POS-sible</title><defs><linearGradient id="mt" gradientUnits="userSpaceOnUse" x1="0" y1="64" x2="64" y2="0"><stop offset="0" stop-color="#0a3cff"/><stop offset="1" stop-color="#3f82ff"/></linearGradient><linearGradient id="mf" gradientUnits="userSpaceOnUse" x1="34" y1="10" x2="20" y2="48"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#a9c4ff"/></linearGradient></defs>
+<rect width="64" height="64" rx="16" fill="url(#mt)"/>
+<path d="M13 14Q13 10 17 10H47Q51 10 51 14V54L47.83 51.4L44.67 54L41.50 51.4L38.33 54L35.17 51.4L32.00 54L28.83 51.4L25.67 54L22.50 51.4L19.33 54L16.17 51.4L13.00 54Z" fill="url(#mf)"/>
+<path d="M20 34L27 25.5L32.5 29.5L41.5 18" fill="none" stroke="url(#mt)" stroke-width="4.4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="41.5" cy="18" r="3.8" fill="#10b981"/>
+<path d="M51 31V54L47.83 51.4L44.67 54L41.50 51.4L38.33 54L35.17 51.4L32.00 54L28.83 51.4L25.67 54L22.50 51.4L19.33 54L16.17 51.4L13.00 54V50Z" fill="#05050a" fill-opacity=".14" transform="translate(0 -1.4)"/><path d="M51 31V54L47.83 51.4L44.67 54L41.50 51.4L38.33 54L35.17 51.4L32.00 54L28.83 51.4L25.67 54L22.50 51.4L19.33 54L16.17 51.4L13.00 54V50Z" fill="#fff"/></svg>

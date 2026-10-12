@@ -27,7 +27,7 @@ export function UserMenu() {
   if (!current) return null;
   const { user, role } = current;
   const signOut = async () => {
-    if (DEMO) return exitDemo();
+    if (DEMO) return exitDemo("/login");
     if (API_MODE) await signOutOnServer();
     else logout();
     router.replace("/login");
