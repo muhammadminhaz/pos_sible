@@ -121,6 +121,9 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.2.0 (2026-10-13)
+- **New: A new logo.** A blue tile with a register, a rising line, a printed receipt and a taka coin. The horizontal lockup and logomark live in `web/public/brand/`, and the app icon, favicon, PWA icons and sidebar mark use it.
+
 ### v1.1.1 (2026-10-13)
 - **Improved: Manage account layout.** Account details and the password reset sit on the left, the free switch and modules on the right.
 
