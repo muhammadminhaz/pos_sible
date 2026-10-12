@@ -272,6 +272,25 @@ export async function setSubscription(businessId: string, patch: SubscriptionPat
   return r.rowCount === 1;
 }
 
+/** Renames the owner's sign-in. Owner names are unique across every business; the owner is signed out. */
+export async function setOwnerUsername(businessId: string, username: string): Promise<"ok" | "no_owner" | "taken"> {
+  await ready();
+  const name = username.toLowerCase();
+  const owner = (await pool().query<{ user_id: string; username: string }>("SELECT user_id, username FROM logins WHERE business_id = $1 AND user_id = 'user_admin'", [businessId])).rows[0];
+  if (!owner) return "no_owner";
+  if (owner.username === name) return "ok";
+  try {
+    await pool().query("UPDATE logins SET username = $3 WHERE business_id = $1 AND user_id = $2", [businessId, owner.user_id, name]);
+  } catch (e) {
+    if ((e as { code?: string }).code === "23505") return "taken";
+    throw e;
+  }
+  await pool().query("UPDATE users SET data = jsonb_set(data, '{username}', to_jsonb($3::text)) WHERE business_id = $1 AND id = $2", [businessId, owner.user_id, name]);
+  await pool().query("UPDATE businesses SET version = version + 1 WHERE id = $1", [businessId]);
+  await pool().query("DELETE FROM sessions WHERE business_id = $1 AND user_id = $2", [businessId, owner.user_id]);
+  return "ok";
+}
+
 /**
  * Gives the business owner a new password (the one the platform owner chose) and signs them out. The platform owner
  * can never read a password, only replace it. Returns false when the business has no owner account.

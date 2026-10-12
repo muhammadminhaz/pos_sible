@@ -184,7 +184,7 @@ export function BusinessesPage() {
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">{adding && <AddForm plans={plans} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
       </Dialog>
       <Dialog open={managing !== null} onOpenChange={(o) => !o && setManaging(null)}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">{managing && <ManageForm key={managing.id} business={managing} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} plans={plans} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">{managing && <ManageForm key={managing.id} business={managing} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} />}</DialogContent>
       </Dialog>
       <Dialog open={activating !== null} onOpenChange={(o) => !o && setActivating(null)}>
         <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">{activating && <ActivateForm key={activating.id} business={activating} plans={plans} onClose={() => setActivating(null)} onDone={async () => { setActivating(null); await reload(); }} />}</DialogContent>
@@ -246,8 +246,8 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
   );
 }
 
-function ManageForm({ business, modules, plans, onClose, onDone, onCancel }: { business: Business; modules: ModuleDef[]; plans: Plan[]; onClose: () => void; onDone: () => void; onCancel: () => void }) {
-  const [subOpen, setSubOpen] = useState(false);
+function ManageForm({ business, modules, onClose, onDone }: { business: Business; modules: ModuleDef[]; onClose: () => void; onDone: () => void }) {
+  const [username, setUsername] = useState(business.ownerUsername ?? "");
   const [code, setCode] = useState(business.code);
   const [email, setEmail] = useState(business.contactEmail ?? "");
   const [phone, setPhone] = useState(business.contactPhone ?? "");
@@ -260,11 +260,11 @@ function ManageForm({ business, modules, plans, onClose, onDone, onCancel }: { b
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ ...(code.trim().toLowerCase() !== business.code ? { code: code.trim() } : {}), contactEmail: email, contactPhone: phone, modules: picked, free }) }).catch(() => null);
+    const res = await call(`businesses/${business.id}`, { method: "PATCH", body: JSON.stringify({ ...(code.trim().toLowerCase() !== business.code ? { code: code.trim() } : {}), ...(username.trim().toLowerCase() !== (business.ownerUsername ?? "").toLowerCase() ? { ownerUsername: username.trim() } : {}), contactEmail: email, contactPhone: phone, modules: picked, free }) }).catch(() => null);
     setBusy(false);
     if (!res?.ok) {
       const body = await res?.json().catch(() => null);
-      return void toast.error(body?.reason === "code_taken" ? "That business code is already used by another business." : res?.status === 400 && code.trim() ? "Check the business code: 3 to 40 letters, digits, dot, dash or underscore." : "Couldn't save the change.");
+      return void toast.error(body?.reason === "username_taken" ? "That username is already used by another business." : body?.reason === "code_taken" ? "That business code is already used by another business." : res?.status === 400 && code.trim() ? "Check the business code: 3 to 40 letters, digits, dot, dash or underscore." : "Couldn't save the change.");
     }
     toast.success("Account updated");
     onDone();
@@ -289,23 +289,6 @@ function ManageForm({ business, modules, plans, onClose, onDone, onCancel }: { b
       <div className="grid gap-5 md:grid-cols-2">
         <div className="grid content-start gap-4">
           <div className="grid gap-3 rounded-lg border p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="grid gap-0.5">
-                <span className="text-sm font-medium">Subscription</span>
-                <span className="text-xs text-muted-foreground">{business.state === "cancelled" ? "Cancelled. Nobody in this business can sign in." : business.free ? "Free account, no end date" : business.expiresAt ? `${business.state === "expired" ? "Ended" : "Ends"} ${day(business.expiresAt)}` : "No end date"}</span>
-              </div>
-              <StateBadge state={business.state} />
-            </div>
-            {subOpen ? (
-              <div className="border-t pt-3"><ActivateForm inline business={business} plans={plans} onClose={() => setSubOpen(false)} onDone={onDone} /></div>
-            ) : (
-              <div className="grid gap-2">
-                <Button type="button" variant="outline" className="h-8 w-full whitespace-nowrap" onClick={() => setSubOpen(true)}><RefreshCwIcon />Manage subscription</Button>
-                {business.state !== "cancelled" && <button type="button" onClick={onCancel} className="justify-self-start text-xs text-muted-foreground underline-offset-4 hover:text-danger hover:underline">Cancel subscription</button>}
-              </div>
-            )}
-          </div>
-          <div className="grid gap-3 rounded-lg border p-3">
             <span className="text-sm font-medium">Set a new owner password</span>
             <PasswordField id="m-pass" label="New password" value={newPassword} onChange={setNewPassword} />
             <p className="text-xs text-muted-foreground">Passwords can be replaced, never viewed. The owner is signed out.</p>
@@ -314,8 +297,8 @@ function ManageForm({ business, modules, plans, onClose, onDone, onCancel }: { b
         </div>
 
         <form id="manage-form" onSubmit={save} className="grid content-start gap-4">
+          <div className="grid gap-1.5"><Label htmlFor="m-user">Business username</Label><Input id="m-user" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={3} maxLength={40} pattern="[a-zA-Z0-9._-]+" autoComplete="off" /><p className="text-xs text-muted-foreground">The owner's sign-in name. Changing it signs the owner out.</p></div>
           <div className="grid gap-1.5"><Label htmlFor="m-code">Business code</Label><Input id="m-code" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={40} autoComplete="off" /><p className="text-xs text-muted-foreground">What staff type at sign-in. Changing it means staff must use the new one straight away.</p></div>
-          <div className="grid gap-0.5 text-sm"><span className="font-medium">Package</span><span className="text-muted-foreground">{business.planLabel}{business.nextPlanLabel ? `, then ${business.nextPlanLabel}` : ""}. Change it under Subscription.</span></div>
           <FreeSwitch id="m-free" value={free} onChange={setFree} />
           <ModulePicker modules={modules.filter((m) => business.planModules.includes(m.id))} value={picked} onChange={setPicked} disabled={free} />
           <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>
