@@ -121,6 +121,9 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.2.2 (2026-10-13)
+- **Improved: Back to the original logo.** The receipt and sales line icon is restored in the app, favicon, PWA icons and social preview image.
+
 ### v1.2.1 (2026-10-13)
 - **Improved: Manage account header.** It no longer repeats the username that the field below already shows.
 
