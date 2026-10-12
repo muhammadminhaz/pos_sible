@@ -121,6 +121,9 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.0.3 (2026-10-13)
+- **Fixed: Search page names no longer wrap.** Page results stay on one line, and the dashboard date range matches the height of the period tabs.
+
 ### v1.0.2 (2026-10-13)
 - **Improved: Managing a subscription.** The business dialog has one Manage subscription button that opens the activate form inline, instead of a second popup. Cancel is now a quiet link.
 

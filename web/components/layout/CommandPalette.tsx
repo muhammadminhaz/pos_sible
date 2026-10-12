@@ -170,9 +170,9 @@ export function CommandPalette() {
                     onSelect={() => go(i.href)}
                   >
                     <g.icon />
-                    {groupLabel && <span className="text-muted-foreground">{groupLabel} ›</span>}
-                    {label}
-                    <CornerDownLeftIcon className="ml-auto opacity-0 group-data-selected/command-item:opacity-60" />
+                    {groupLabel && <span className="shrink-0 whitespace-nowrap text-muted-foreground">{groupLabel} ›</span>}
+                    <span className="min-w-0 truncate">{label}</span>
+                    <CornerDownLeftIcon className="ml-auto shrink-0 opacity-0 group-data-selected/command-item:opacity-60" />
                   </CommandItem>
                 );
               }),

@@ -38,7 +38,7 @@ export function DashboardRange({ value, onChange, allFrom }: { value?: DateRange
         inset={3}
         size="md"
       />
-      <DateRangePicker value={value} onChange={onChange} align="end" showDates className="min-w-56" />
+      <DateRangePicker value={value} onChange={onChange} align="end" showDates className="h-9 min-w-56" />
     </div>
   );
 }
