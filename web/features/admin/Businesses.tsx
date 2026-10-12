@@ -146,7 +146,7 @@ export function BusinessesPage() {
       cell: ({ row }) => (
         <RowActions items={[
           { label: "Manage account", icon: SettingsIcon, onClick: () => setManaging(row.original) },
-          { label: "Activate or change package", icon: RefreshCwIcon, onClick: () => setActivating(row.original) },
+          { label: "Manage subscription", icon: RefreshCwIcon, onClick: () => setActivating(row.original) },
           { label: "Payments and proof", icon: ReceiptIcon, onClick: () => setViewing(row.original) },
           { label: "Cancel subscription", icon: BanIcon, destructive: true, onClick: () => setCancelling(row.original), hidden: row.original.state === "cancelled" },
           { label: "Delete business", icon: Trash2Icon, destructive: true, onClick: () => setDeleting(row.original) },
@@ -184,7 +184,7 @@ export function BusinessesPage() {
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">{adding && <AddForm plans={plans} onClose={() => setAdding(false)} onDone={async () => { setAdding(false); await reload(); }} />}</DialogContent>
       </Dialog>
       <Dialog open={managing !== null} onOpenChange={(o) => !o && setManaging(null)}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">{managing && <ManageForm key={managing.id} business={managing} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} onActivate={() => { setActivating(managing); setManaging(null); }} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">{managing && <ManageForm key={managing.id} business={managing} modules={modules} onClose={() => setManaging(null)} onDone={async () => { setManaging(null); await reload(); }} plans={plans} onCancel={() => { setCancelling(managing); setManaging(null); }} />}</DialogContent>
       </Dialog>
       <Dialog open={activating !== null} onOpenChange={(o) => !o && setActivating(null)}>
         <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-lg">{activating && <ActivateForm key={activating.id} business={activating} plans={plans} onClose={() => setActivating(null)} onDone={async () => { setActivating(null); await reload(); }} />}</DialogContent>
@@ -246,7 +246,8 @@ function AddForm({ plans, onClose, onDone }: { plans: Plan[]; onClose: () => voi
   );
 }
 
-function ManageForm({ business, modules, onClose, onDone, onActivate, onCancel }: { business: Business; modules: ModuleDef[]; onClose: () => void; onDone: () => void; onActivate: () => void; onCancel: () => void }) {
+function ManageForm({ business, modules, plans, onClose, onDone, onCancel }: { business: Business; modules: ModuleDef[]; plans: Plan[]; onClose: () => void; onDone: () => void; onCancel: () => void }) {
+  const [subOpen, setSubOpen] = useState(false);
   const [code, setCode] = useState(business.code);
   const [email, setEmail] = useState(business.contactEmail ?? "");
   const [phone, setPhone] = useState(business.contactPhone ?? "");
@@ -295,10 +296,14 @@ function ManageForm({ business, modules, onClose, onDone, onActivate, onCancel }
               </div>
               <StateBadge state={business.state} />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Button type="button" className="h-8" onClick={onActivate}><RefreshCwIcon />Activate or change package</Button>
-              {business.state !== "cancelled" && <Button type="button" variant="destructive" className="h-8" onClick={onCancel}><BanIcon />Cancel subscription</Button>}
-            </div>
+            {subOpen ? (
+              <div className="border-t pt-3"><ActivateForm inline business={business} plans={plans} onClose={() => setSubOpen(false)} onDone={onDone} /></div>
+            ) : (
+              <div className="grid gap-2">
+                <Button type="button" variant="outline" className="h-8 w-full whitespace-nowrap" onClick={() => setSubOpen(true)}><RefreshCwIcon />Manage subscription</Button>
+                {business.state !== "cancelled" && <button type="button" onClick={onCancel} className="justify-self-start text-xs text-muted-foreground underline-offset-4 hover:text-danger hover:underline">Cancel subscription</button>}
+              </div>
+            )}
           </div>
           <div className="grid gap-3 rounded-lg border p-3">
             <span className="text-sm font-medium">Set a new owner password</span>
@@ -310,7 +315,7 @@ function ManageForm({ business, modules, onClose, onDone, onActivate, onCancel }
 
         <form id="manage-form" onSubmit={save} className="grid content-start gap-4">
           <div className="grid gap-1.5"><Label htmlFor="m-code">Business code</Label><Input id="m-code" value={code} onChange={(e) => setCode(e.target.value)} required maxLength={40} autoComplete="off" /><p className="text-xs text-muted-foreground">What staff type at sign-in. Changing it means staff must use the new one straight away.</p></div>
-          <div className="grid gap-0.5 text-sm"><span className="font-medium">Package</span><span className="text-muted-foreground">{business.planLabel}{business.nextPlanLabel ? `, then ${business.nextPlanLabel}` : ""}. Change it with Activate or change package.</span></div>
+          <div className="grid gap-0.5 text-sm"><span className="font-medium">Package</span><span className="text-muted-foreground">{business.planLabel}{business.nextPlanLabel ? `, then ${business.nextPlanLabel}` : ""}. Change it under Subscription.</span></div>
           <FreeSwitch id="m-free" value={free} onChange={setFree} />
           <ModulePicker modules={modules.filter((m) => business.planModules.includes(m.id))} value={picked} onChange={setPicked} disabled={free} />
           <div className="grid gap-1.5"><Label htmlFor="m-email">Email</Label><Input id="m-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="off" /></div>

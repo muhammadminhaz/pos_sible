@@ -25,7 +25,7 @@ type When = "now" | "renew" | "end";
  * term ends and a new one begins), apply when the current term ends (nothing is paid yet), or, if it was already
  * scheduled, come in with this renewal.
  */
-export function ActivateForm({ business, plans, onClose, onDone }: { business: Business; plans: Plan[]; onClose: () => void; onDone: () => void }) {
+export function ActivateForm({ business, plans, onClose, onDone, inline }: { business: Business; plans: Plan[]; onClose: () => void; onDone: () => void; inline?: boolean }) {
   const [planId, setPlanId] = useState(business.nextPlan ?? business.plan);
   const [when, setWhen] = useState<When>(business.nextPlan ? "renew" : "now");
   const [terms, setTerms] = useState("1");
@@ -81,10 +81,12 @@ export function ActivateForm({ business, plans, onClose, onDone }: { business: B
 
   return (
     <form onSubmit={submit} className="grid gap-4">
-      <DialogHeader>
-        <DialogTitle>{business.state === "active" && live ? "Renew or change package" : "Activate subscription"}</DialogTitle>
-        <DialogDescription>{business.name}. Only activate after the payment has reached you: today is recorded as the day it was paid.</DialogDescription>
-      </DialogHeader>
+      {inline ? <p className="text-xs text-muted-foreground">Only activate after the payment has reached you: today is recorded as the day it was paid.</p> : (
+        <DialogHeader>
+          <DialogTitle>{business.state === "active" && live ? "Renew or change package" : "Activate subscription"}</DialogTitle>
+          <DialogDescription>{business.name}. Only activate after the payment has reached you: today is recorded as the day it was paid.</DialogDescription>
+        </DialogHeader>
+      )}
       <div className="grid gap-1.5">
         <Label htmlFor="a-plan">Package</Label>
         <Select value={planId} onValueChange={(v) => { setPlanId(v); setWhen(v === business.nextPlan ? "renew" : "now"); }}>
@@ -132,7 +134,7 @@ export function ActivateForm({ business, plans, onClose, onDone }: { business: B
         </>
       ) : <p className="text-sm text-muted-foreground">{business.name} stays on {business.planLabel} until {business.expiresAt ? day(business.expiresAt) : "its term ends"}.</p>}
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+        <Button type="button" variant="outline" onClick={onClose}>{inline ? "Back" : "Cancel"}</Button>
         <Button type="submit" disabled={busy || needsProof || badProof}>{busy && <Loader2Icon className="animate-spin" />}{mode === "end" ? "Schedule change" : "Activate"}</Button>
       </DialogFooter>
     </form>
