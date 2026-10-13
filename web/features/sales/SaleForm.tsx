@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Fragment, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "@/lib/toast";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +23,7 @@ import { SHIPPING_STATUSES, type PaymentMethod, type ShippingStatus, type Transa
 import { toCartItem } from "@/lib/data/services/pos";
 import type { SaleInput } from "@/lib/data/services/sales";
 import { useUI } from "@/lib/data/store/ui";
-import { addItem, patchCart, removeLine, setContact, setLineDiscount, setPrice, setQty, WALK_IN_ID, type Cart } from "@/lib/pos/cart";
+import { addItem, patchCart, removeLine, setContact, setLineDiscount, setPrice, setQty, setSerials, WALK_IN_ID, type Cart } from "@/lib/pos/cart";
 import { methodLabel, tillMethods } from "@/lib/pos/methods";
 import { cartTotals } from "@/lib/pos/selectors";
 import { usePosDialogs } from "@/features/pos/dialogStore";
@@ -38,6 +39,33 @@ const selectOf = (opts: { value: string; label: string }[], value: string, onCha
     <SelectContent>{opts.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
   </Select>
 );
+
+/** Serial / IMEI entry for one line: Enter adds a number, one per unit sold. */
+function SerialEntry({ serials, qty, onChange }: { serials: string[]; qty: number; onChange: (next: string[]) => void }) {
+  const t = useTranslations();
+  const [value, setValue] = useState("");
+  const add = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const v = value.trim();
+    if (v && !serials.includes(v)) onChange([...serials, v]);
+    setValue("");
+  };
+  return (
+    <div className="grid gap-1">
+      <Label className="text-xs">{`${t("pos.cart.serials")} (${serials.length}/${qty})`}</Label>
+      <div className="flex flex-wrap gap-1">
+        {serials.map((x) => (
+          <Badge key={x} variant="secondary" className="gap-1">
+            {x}
+            <button type="button" aria-label={t("common.remove")} onClick={() => onChange(serials.filter((y) => y !== x))}><XIcon className="size-3" /></button>
+          </Badge>
+        ))}
+      </div>
+      <Input value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={add} placeholder={t("pos.cart.serialsHint")} className="h-8" />
+    </div>
+  );
+}
 
 export function SaleForm({ init }: { init: SaleFormInit }) {
   const t = useTranslations();
@@ -166,7 +194,8 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
               </tr></thead>
               <tbody>
                 {cart.lines.map((l, i) => (
-                  <tr key={l.key} className="border-t align-middle">
+                  <Fragment key={l.key}>
+                  <tr className="border-t align-middle">
                     <td className="py-1.5 pr-2">{l.name}<div className="text-xs text-muted-foreground">{l.sku}</div></td>
                     <td className="px-1"><Input aria-label={t("sales.qty")} type="number" min={0} step="any" value={l.qty} onChange={(e) => setCart(setQty(cart, l.key, Number(e.target.value)))} className="tabular-nums" /></td>
                     <td className="px-1"><Input aria-label={t("sales.unitPrice")} type="number" min={0} step="any" value={l.unitPrice} onChange={(e) => setCart(setPrice(cart, l.key, Number(e.target.value)))} className="tabular-nums" /></td>
@@ -180,6 +209,8 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
                     <td className="px-1 text-right"><Money value={totals.lines[i].subtotal} /></td>
                     <td><Button type="button" variant="ghost" size="icon-sm" aria-label={t("common.remove")} onClick={() => setCart(removeLine(cart, l.key))}><Trash2Icon /></Button></td>
                   </tr>
+                  {l.enableSerial && <tr><td colSpan={7} className="pb-2"><SerialEntry serials={l.serials} qty={l.qty} onChange={(next) => setCart(setSerials(cart, l.key, next))} /></td></tr>}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
