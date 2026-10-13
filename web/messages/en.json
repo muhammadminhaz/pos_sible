@@ -654,7 +654,7 @@
     },
     "errors": {
       "walkInCredit": "Choose a named customer for a credit sale",
-      "serialsRequired": "Enter {count} serial numbers for {product}",
+      "serialsRequired": "Enter {count, plural, one {# serial number} other {# serial numbers}} for {product}",
       "productGone": "{product} is no longer available",
       "emptyCart": "Add at Least One Item",
       "notDeletable": "Final sales can't be deleted here",

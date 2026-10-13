@@ -121,6 +121,10 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.0.2 (2026-10-13)
+- **Fixed: Serial numbers on Add Sale.** Products that track Serial / IMEI numbers can now have them entered on the Add Sale form (press Enter after each number); before, such sales could not be saved there.
+- **Fixed: Serial number message.** The error now says "1 serial number" for one unit and "serial numbers" for more.
+
 ### v1.0.1 (2026-10-11)
 - **Improved: Updated hero subheading.**
 
