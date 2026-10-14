@@ -253,7 +253,7 @@
           "users": 3,
           "price": 500,
           "blurb": "For a single counter getting started.",
-          "usersLabel": "Up to 3 users",
+          "usersLabel": "3 user accounts",
           "modules": [
             "pos",
             "sales",
@@ -267,7 +267,7 @@
           "users": 10,
           "price": 1500,
           "blurb": "For a shop with a team and a few branches.",
-          "usersLabel": "Up to 10 users",
+          "usersLabel": "10 user accounts",
           "featured": true,
           "modules": [
             "pos",
@@ -284,7 +284,7 @@
           "users": null,
           "price": 3000,
           "blurb": "For growing chains with no user limit.",
-          "usersLabel": "Unlimited users",
+          "usersLabel": "Unlimited user accounts",
           "modules": [
             "pos",
             "sales",

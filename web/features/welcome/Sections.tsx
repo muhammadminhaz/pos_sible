@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { ArrowRightIcon, CheckIcon, PhoneCallIcon } from "lucide-react";
+import { ArrowRightIcon, CheckIcon, PhoneCallIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { contactHref } from "@/lib/site";
 import content from "@/features/landing/content.json";
@@ -147,14 +147,17 @@ function Chain() {
 }
 
 /**
- * Plans side by side in one porcelain card, split by hairlines like a spec sheet. Each plan adds modules to the one below,
- * so higher columns read "Everything in X, plus". The featured plan is a navy column lit by a blue beam from above.
+ * Plans side by side in one porcelain card, split by hairlines like a spec sheet. Every plan lists every module in the order
+ * the plans add them, so the ticks step down from plan to plan: a solid tick on a highlighted row for what this plan adds, a
+ * soft tick for what it keeps from the one below, a faint cross for what it lacks. The featured plan is a navy column lit by a blue beam.
  * Every button opens /contact with the plan chosen: accounts are set up by us after a call and payment.
  * Columns share rows (subgrid), so prices, dividers and buttons line up whatever the copy length.
  */
 export function PricingPlans() {
   const p = section<Pricing>("pricing");
   const label = (id: string) => p.modules.find((m) => m.id === id)!.label;
+  const tier = (id: string) => p.plans.findIndex((x) => x.modules.includes(id));
+  const ordered = [...p.modules].sort((a, b) => tier(a.id) - tier(b.id)).map((m) => m.id);
   return (
     <section id="pricing" aria-labelledby="pricing-title" className="scroll-mt-20 px-4 pt-20 pb-8 sm:px-8 sm:pt-28">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
@@ -185,52 +188,87 @@ export function PricingPlans() {
               key={plan.id}
               aria-labelledby={`plan-${plan.id}`}
               className={cn(
-                "relative isolate flex flex-col overflow-hidden rounded-[24px] ring-1 md:row-span-4 md:grid md:grid-rows-subgrid md:rounded-none md:ring-0",
+                "relative isolate flex flex-col rounded-[24px] ring-1 md:row-span-4 md:grid md:grid-rows-subgrid md:rounded-none md:ring-0",
                 lit
-                  ? "bg-[linear-gradient(180deg,#0b2bb8_0%,#071447_55%)] text-white shadow-[0_40px_80px_-30px_rgb(10_60_255/0.6)] ring-[#3f82ff]/40 md:z-10 md:-my-4 md:rounded-[28px] md:ring-1"
-                  : "bg-[linear-gradient(165deg,#ffffff,#eef3ff)] ring-[#071447]/[0.07] md:bg-none",
+                  ? "mt-9 text-white ring-0 md:z-10 md:-my-4"
+                  : "overflow-hidden bg-[linear-gradient(165deg,#ffffff,#eef3ff)] ring-[#071447]/[0.07] md:bg-none",
               )}
             >
+              {lit && (
+                <>
+                  {/* A blue shell with the card's own rounded corners, peeking out above it and running down behind its rounded top,
+                      so the label sits in a frame around the plan rather than on a flat strip. */}
+                  <p className="absolute inset-x-0 -top-9 -z-20 flex h-[calc(2.25rem+28px)] justify-center rounded-t-[24px] bg-[linear-gradient(180deg,#3f82ff,#1f55ff)] pt-2.5 text-[13px] font-semibold tracking-wide text-white shadow-[0_-10px_30px_-12px_rgb(63_130_255/0.6)] md:rounded-t-[28px]">
+                    <span className="wl-beacon">{p.best}</span>
+                  </p>
+                  {/* Light pooling under the label at the card's top edge, as if the rays below pour out of it. */}
+                  <span aria-hidden className="wl-beacon-halo pointer-events-none absolute top-0 left-1/2 -z-[5] h-36 w-72 -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgb(255_255_255/0.75),rgb(207_230_255/0.35)_30%,rgb(159_208_255/0.12)_55%,transparent_72%)] blur-[3px]" />
+                  <span aria-hidden className="absolute inset-0 -z-10 rounded-[24px] bg-[linear-gradient(180deg,#0b2bb8_0%,#071447_55%)] shadow-[0_40px_80px_-30px_rgb(10_60_255/0.6)] ring-1 ring-[#3f82ff]/40 md:rounded-[28px]" />
+                </>
+              )}
               {lit && <LightRay />}
-              <div className={cn("flex flex-col border-b p-6 sm:p-8", lit ? "border-white/10" : "border-[#071447]/[0.08]")}>
-                <div className="flex items-center justify-between gap-3">
-                  <h3 id={`plan-${plan.id}`} className="font-display text-xl font-semibold tracking-tight">{plan.label}</h3>
-                  {lit && <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-[#d8ecff] ring-1 ring-white/20">{p.best}</span>}
-                </div>
-                <p className={cn("mt-1.5 text-[15px]", lit ? "text-white/70" : "text-[#071447]/60")}>{plan.blurb}</p>
-                <p className="mt-auto flex items-baseline gap-1.5 pt-6">
-                  <span className="font-display text-5xl font-semibold tracking-[-0.04em] tabular-nums">৳{plan.price.toLocaleString("en-IN")}</span>
+              <div className={cn("flex flex-col border-b px-6 pt-6 pb-5", lit ? "border-white/10" : "border-[#071447]/[0.08]")}>
+                <h3 id={`plan-${plan.id}`} className="font-display text-xl font-semibold tracking-tight">{plan.label}</h3>
+                <p className={cn("mt-1 text-sm", lit ? "text-white/70" : "text-[#071447]/60")}>{plan.blurb}</p>
+                <p className="mt-auto flex items-baseline gap-1.5 pt-4">
+                  <span className="font-display text-4xl font-semibold tracking-[-0.04em] tabular-nums">৳{plan.price.toLocaleString("en-IN")}</span>
                   <span className={cn("text-sm", lit ? "text-white/60" : "text-[#071447]/55")}>/month</span>
                 </p>
               </div>
-              <div className="p-6 sm:p-8">
-                <p className="font-semibold">{plan.usersLabel}</p>
-                <p className={cn("mt-5 font-mono text-[11px] tracking-wide uppercase", lit ? "text-[#9fd0ff]" : "text-[#071447]/50")}>
-                  {below ? `Everything in ${below.label}, plus` : `${plan.modules.length} modules`}
-                </p>
-                <ul className="mt-3 grid gap-3 text-[15px]">
-                  {added.map((m) => (
-                    <li key={m} className={cn("flex gap-3", lit ? "text-white/85" : "text-[#071447]/75")}>
-                      <CheckIcon aria-hidden className={cn("mt-0.5 size-4 shrink-0", lit ? "text-[#9fd0ff]" : "text-[#0a3cff]")} />
-                      {label(m)}
-                    </li>
-                  ))}
+              <div className="px-6 py-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">{plan.usersLabel}</p>
+                  {below && (
+                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", lit ? "bg-[#9fd0ff]/15 text-[#cfe6ff] ring-1 ring-[#9fd0ff]/30" : "bg-[#0a3cff]/[0.08] text-[#0a3cff]")}>
+                      +{added.length} over {below.label}
+                    </span>
+                  )}
+                </div>
+                <ul className="mt-4 grid gap-1 text-sm">
+                  {ordered.map((m) => {
+                    const has = plan.modules.includes(m);
+                    const fresh = has && !!below && added.includes(m);
+                    return (
+                      // Every row has the same padding, so rows line up across plans; new modules get a soft highlight.
+                      <li
+                        key={m}
+                        className={cn(
+                          "-mx-2.5 flex items-center gap-2.5 rounded-lg px-2.5 py-1.5",
+                          !has && "opacity-45",
+                          fresh && (lit ? "bg-white/[0.08] ring-1 ring-[#9fd0ff]/25" : "bg-[#0a3cff]/[0.06] ring-1 ring-[#0a3cff]/15"),
+                        )}
+                      >
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "grid size-[18px] shrink-0 place-items-center rounded-full",
+                            !has ? (lit ? "ring-1 ring-white/25 text-white/60" : "ring-1 ring-[#071447]/20 text-[#071447]/50")
+                              : fresh ? (lit ? "bg-[#9fd0ff] text-[#071447]" : "bg-[#0a3cff] text-white")
+                              : lit ? "bg-white/10 text-[#9fd0ff]" : "bg-[#0a3cff]/10 text-[#0a3cff]",
+                          )}
+                        >
+                          {has ? <CheckIcon className="size-3" strokeWidth={3} /> : <XIcon className="size-2.5" strokeWidth={2.5} />}
+                        </span>
+                        <span className={cn("min-w-0 truncate font-medium", lit ? "text-white" : "text-[#071447]", !has && "line-through decoration-1")}>
+                          {label(m)}
+                          <span className="sr-only">{has ? (fresh ? `, new in ${plan.label}` : ", included") : ", not included"}</span>
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
-              <div className="mt-auto p-6 pt-0 sm:p-8 sm:pt-0">
+              <div className="mt-auto px-6 pb-6">
                 <a
                   href={contactHref({ plan: plan.id })}
                   className={cn(
-                    "group flex h-12 items-center justify-center gap-2 rounded-full text-[15px] font-semibold transition-[transform,background-color] active:scale-[0.98]",
+                    "group flex h-11 items-center justify-center gap-2 rounded-full text-[15px] font-semibold transition-[transform,background-color] active:scale-[0.98]",
                     lit ? "bg-white text-[#071447] hover:bg-[#d8ecff]" : "bg-[#071447] text-white hover:bg-[#0a3cff]",
                   )}
                 >
                   <PhoneCallIcon aria-hidden className="size-4" />
                   Contact sales
                 </a>
-                <p className={cn("mt-2.5 text-center text-xs text-pretty", lit ? "text-white/60" : "text-[#071447]/50")}>
-                  Next: book a call with sales about {plan.label}
-                </p>
               </div>
             </article>
           );
@@ -254,7 +292,8 @@ export function PricingPlans() {
 function LightRay() {
   const still = useStill();
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+    // The card no longer clips (its label shell sits outside it), so the rays clip here, to the card's rounded shape.
+    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[24px] md:rounded-[28px]">
       <div className="absolute inset-x-6 top-0 h-px bg-[linear-gradient(90deg,transparent,#9fd0ff,transparent)]" />
       {/* The rays are tuned for full-screen backgrounds; a canvas wider than the card keeps them crisp, and the card crops the middle. */}
       <div className="absolute top-0 left-1/2 h-[110%] w-[260%] -translate-x-1/2">

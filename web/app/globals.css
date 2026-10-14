@@ -599,6 +599,21 @@ html[data-magicui-theme-vt="active"]::view-transition-new(root) { clip-path: var
 @keyframes wl-sway { 50% { transform: translate3d(var(--x), var(--y), 0) rotate(var(--r)); } }
 @keyframes wl-pulse { 50% { opacity: 0.35; } }
 @keyframes wl-flow { to { stroke-dashoffset: -18; } }
+/*
+ * "Best for most shops" on the pricing card: a faint steady glow (a soft halo under it pours into the card's rays), and a
+ * band of light sweeping the letters only, left to right on a loop. The glow is a drop-shadow filter, not text-shadow, which
+ * would paint over the clipped gradient and hide the sweep; it stays faint so the letters keep their edges.
+ */
+.wl-beacon {
+  color: #fff;
+  background: linear-gradient(100deg, #d6e6ff 0%, #d6e6ff 42%, #ffffff 48%, #ffffff 52%, #d6e6ff 58%, #d6e6ff 100%) 0 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 5px rgb(255 255 255 / 0.3));
+}
+.wl-beacon-halo { opacity: 0.45; }
+@keyframes wl-beacon { from { background-position: 100% 0; } to { background-position: 0% 0; } }
 /* See demo icon on /welcome: bars at 45/80/60% idle like a small live chart. */
 .demo-bar:nth-child(1) { transform: scaleY(0.45); }
 .demo-bar:nth-child(2) { transform: scaleY(0.8); }
@@ -611,6 +626,6 @@ html[data-magicui-theme-vt="active"]::view-transition-new(root) { clip-path: var
   .wl-sway-b { --x: -28px; --y: 12px; --r: -1deg; animation: wl-sway 22s ease-in-out infinite; transform-origin: 80% 50%; }
   .wl-pulse { animation: wl-pulse 2.4s ease-in-out infinite; }
   .wl-flow { animation: wl-flow 0.9s linear infinite; }
-  .demo-bar { animation: demo-bar 1.8s ease-in-out calc(var(--i) * -0.6s) infinite; }
+  .wl-beacon { animation: wl-beacon 2.6s linear infinite; }  .demo-bar { animation: demo-bar 1.8s ease-in-out calc(var(--i) * -0.6s) infinite; }
   .group:hover .demo-bar { animation-duration: 0.7s; animation-delay: calc(var(--i) * 0.12s); }
 }
