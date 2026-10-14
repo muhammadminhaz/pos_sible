@@ -482,54 +482,52 @@ html.dark[data-accent="black"] { --primary: oklch(0.92 0 0); --primary-foregroun
   opacity: 0.14;
   border-radius: 1.5rem;
 }
-/* The resize handle: a small round button inside the corner, shown while the card is hovered, focused or being resized. */
-.react-grid-item > .react-resizable-handle {
+/*
+ * The resize grip: two short arcs that follow the card's rounded corner, like a window's resize corner. Faint at rest so
+ * it can be found, clear while the card is hovered, coloured while grabbed. Selectors match react-grid-layout's own
+ * (two classes) so they win over its stylesheet, which loads after this one.
+ */
+.react-grid-item > .react-resizable-handle.react-resizable-handle-se {
   z-index: 40;
-  right: 12px;
-  bottom: 12px;
+  right: 0;
+  bottom: 0;
   width: 28px;
   height: 28px;
   padding: 0;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 9999px;
-  background: var(--card);
-  background-image: none;
-  box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.25);
+  background: none;
+  cursor: nwse-resize;
   color: var(--muted-foreground);
-  opacity: 0;
-  transform: scale(0.8);
-  transition: opacity 0.18s, transform 0.18s cubic-bezier(0.23, 1, 0.32, 1), color 0.15s, border-color 0.15s;
-}
-.react-grid-item:hover > .react-resizable-handle,
-.react-grid-item > .react-resizable-handle:focus-visible,
-.react-grid-item.resizing > .react-resizable-handle {
-  opacity: 1;
+  opacity: 0.35;
   transform: none;
+  transition: opacity 0.18s, color 0.15s;
 }
-.react-grid-item > .react-resizable-handle:hover,
-.react-grid-item.resizing > .react-resizable-handle {
-  color: var(--primary-foreground);
-  background: var(--primary);
-  border-color: var(--primary);
+.react-grid-item:hover > .react-resizable-handle.react-resizable-handle-se,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-se:focus-visible {
+  opacity: 0.8;
 }
-/* Two arrows pointing along the corner's diagonal: the usual "resize" mark. */
-.react-grid-item > .react-resizable-handle::after {
-  position: static;
-  width: 14px;
-  height: 14px;
+.react-grid-item > .react-resizable-handle.react-resizable-handle-se:hover,
+.react-grid-item.resizing > .react-resizable-handle.react-resizable-handle-se {
+  opacity: 1;
+  color: var(--primary);
+}
+/* Arcs centred on the card corner's own curve (radius 20px, so its centre sits 8px into this 28px box). */
+.react-grid-item > .react-resizable-handle.react-resizable-handle-se::after {
+  inset: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
   background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 13v6h-6'/%3E%3Cpath d='M5 11V5h6'/%3E%3Cpath d='m5 5 14 14'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 13v6h-6'/%3E%3Cpath d='M5 11V5h6'/%3E%3Cpath d='m5 5 14 14'/%3E%3C/svg%3E") center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M22 9A14 14 0 0 1 9 22'/%3E%3Cpath d='M16.5 9A8.5 8.5 0 0 1 9 16.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M22 9A14 14 0 0 1 9 22'/%3E%3Cpath d='M16.5 9A8.5 8.5 0 0 1 9 16.5'/%3E%3C/svg%3E") center / contain no-repeat;
 }
-/* No hover on touch screens, so the handle stays visible there. */
+/* No hover on touch screens, so the grip stays clearly visible there. */
 @media (hover: none) {
-  .react-grid-item > .react-resizable-handle { opacity: 0.9; transform: none; }
+  .react-grid-item > .react-resizable-handle.react-resizable-handle-se { opacity: 0.8; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .react-grid-item > .react-resizable-handle { transition: none; }
+  .react-grid-item > .react-resizable-handle.react-resizable-handle-se { transition: none; }
 }
 .react-grid-item.react-draggable-dragging > section,
 .react-grid-item.resizing > section {
