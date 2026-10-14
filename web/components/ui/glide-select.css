@@ -318,6 +318,17 @@
   font-size: 13px;
 }
 
+/* A chip with a value: tinted like the active date range chip, chevron swapped for the clear button FilterBar lays over it. */
+.glide-select.gs-filter-chip--active .glide-select__trigger {
+  padding-right: 28px;
+  border-color: color-mix(in oklab, var(--primary) 30%, transparent);
+  background: color-mix(in oklab, var(--primary) 5%, transparent);
+}
+
+.glide-select.gs-filter-chip--active .glide-select__chevron {
+  display: none;
+}
+
 .glide-select.gs-filter-chip .glide-select__label[data-empty] {
   opacity: 1;
   color: var(--foreground);

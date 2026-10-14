@@ -52,10 +52,11 @@ function OptionsChip({ def, value, onChange }: { def: FilterDef; value?: string;
   const options = def.options ?? [];
 
   return (
-    <span className="inline-flex items-center gap-1">
+    // Once picked, the clear button takes the chevron's place inside the chip, like the date range chip.
+    <span className="relative inline-flex items-center">
       <GlideSelect
         field
-        className="gs-filter-chip"
+        className={cn("gs-filter-chip", selected.length > 0 && "gs-filter-chip--active")}
         searchable={options.length > 7}
         searchPlaceholder={def.label}
         emptyText={t("noResults")}
@@ -68,7 +69,7 @@ function OptionsChip({ def, value, onChange }: { def: FilterDef; value?: string;
           ? { multiple: true, values: selected, onValuesChange: (v: string[]) => onChange(v.length ? v.join(",") : undefined), summary: (count: number) => t("selected", { count }) }
           : { value: selected[0], onChange: (v: string) => onChange(v === selected[0] ? undefined : v) })}
       />
-      {selected.length > 0 && <ClearX onClear={() => onChange(undefined)} label={t("clear")} />}
+      {selected.length > 0 && <span className="absolute right-2.5 flex"><ClearX onClear={() => onChange(undefined)} label={`${t("clear")} ${def.label}`} /></span>}
     </span>
   );
 }

@@ -122,6 +122,9 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.4.1 (2026-10-14)
+- **Improved: Clearing a filter.** A dropdown filter with a value is tinted like an active date range, and its clear button sits inside the chip in place of the arrow, so it is clear which filter it clears.
+
 ### v1.4.0 (2026-10-14)
 - **New: Analytics filters.** Every analytics page can be narrowed by category, brand, product and customer, on top of location and date range. Cards a filter does not apply to, like expenses and supplier balances, are marked "Not filtered" so a whole-business number is never mistaken for a filtered one.
 - **Fixed: Landing page nav on phones.** Pulling down at the top of the landing page no longer drags the nav down and leaves a gap above it.
