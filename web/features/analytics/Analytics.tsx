@@ -50,18 +50,26 @@ function ScopeNote({ follows }: { follows: "items" | "customer" | "none" }) {
   );
 }
 
-function Tile({ label, hint, now, before, good, kind = "money", note }: { label: string; hint?: string; now?: number; before?: number; good?: "up" | "down"; kind?: "money" | "number" | "percent"; note?: ReactNode }) {
+/** `now: null` is a figure that cannot be worked out (shown as `none`); `caption` sits where the comparison pill would. */
+function Tile({ label, hint, now, before, good, kind = "money", note, suffix, none, caption }: { label: string; hint?: string; now?: number | null; before?: number; good?: "up" | "down"; kind?: "money" | "number" | "percent"; note?: ReactNode; suffix?: string; none?: string; caption?: string }) {
   const f = useFormat();
   return (
     <TileCard>
       <div title={hint} className="@container">
         {now === undefined ? <Skeleton className="h-4 w-28 rounded-md" /> : <div className="flex items-center gap-2"><h3 className="text-sm font-medium text-muted-foreground">{label}</h3>{note}</div>}
-        {now === undefined ? <Skeleton className="mt-3 h-9 w-40 max-w-full rounded-xl" /> : (
+        {now === undefined ? <Skeleton className="mt-3 h-9 w-40 max-w-full rounded-xl" /> : now === null ? (
+          <div className="mt-2 text-xl leading-9 font-medium text-muted-foreground">{none}</div>
+        ) : (
           <div className={cn("mt-2 text-3xl leading-tight font-semibold", now < 0 && "text-danger")}>
             {kind === "money" ? <BigMoney value={now} /> : <span className="tabular tracking-tight">{f.number(now)}{kind === "percent" ? "%" : ""}</span>}
+            {suffix && <span className="ml-1.5 text-base font-medium text-muted-foreground">{suffix}</span>}
           </div>
         )}
-        <div className="mt-1 min-h-6">{now === undefined ? <Skeleton className="mt-1 h-5 w-32 max-w-full rounded-full" /> : before !== undefined ? <DeltaPill now={now} before={before} good={good} /> : null}</div>
+        <div className="mt-1 min-h-6">
+          {now === undefined ? <Skeleton className="mt-1 h-5 w-32 max-w-full rounded-full" />
+            : before !== undefined && now !== null ? <DeltaPill now={now} before={before} good={good} />
+            : caption ? <p className="text-xs text-muted-foreground">{caption}</p> : null}
+        </div>
       </div>
     </TileCard>
   );
@@ -226,8 +234,17 @@ function CustomersSection({ rf, section }: SectionProps) {
 
 function InventorySection({ rf, section }: SectionProps) {
   const t = useTranslations("analytics");
+  const f = useFormat();
   const reorder = useReport("analytics-reorder", rf.filter, () => analyticsReports.reorder(rf.filter));
+  const inv = useReport("analytics-inventory", rf.filter, () => analyticsReports.inventory(rf.filter));
+  const a = inv.data;
   const load = reorder.isFetching && !reorder.data;
+  const invLoad = inv.isFetching && !a;
+  const items = <ScopeNote follows="items" />;
+  // Categories with stock but no sales in the period have no pace to measure; Stock health shows them instead.
+  const covered = (a?.byCategory ?? [])
+    .flatMap((x) => (x.coverDays === null ? [] : [{ label: x.label || t("uncategorised"), days: x.coverDays }]))
+    .sort((x, y) => y.days - x.days);
   const cols: Col<NonNullable<typeof reorder.data>["rows"][number]>[] = [
     { key: "label", label: t("product") },
     { key: "stock", label: t("onHand"), kind: "qty" },
@@ -237,6 +254,29 @@ function InventorySection({ rf, section }: SectionProps) {
   ];
   return (
     <CardGrid section={section} items={[
+      { id: "cost", ...TILE, node: <Tile label={t("stockAtCost")} hint={t("hint.stockAtCost")} now={a?.valueAtCost} caption={t("onHandNow")} note={items} /> },
+      { id: "sale", ...TILE, node: <Tile label={t("stockAtSale")} hint={t("hint.stockAtSale")} now={a?.valueAtSale} caption={t("onHandNow")} note={items} /> },
+      { id: "potential", ...TILE, node: <Tile label={t("potentialProfit")} hint={t("hint.potentialProfit")} now={a?.potentialProfit} caption={t("ifAllSold")} note={items} /> },
+      { id: "cover", ...TILE, node: <Tile label={t("stockCover")} hint={t("hint.stockCover")} now={a ? a.coverDays : undefined} kind="number" suffix={t("daysUnit")} none={t("noSalesYet")} caption={t("atPeriodPace")} note={items} /> },
+      { id: "byCategory", ...HALF, node: (
+        <GridCard loading={invLoad} title={t("stockByCategory")} subtitle={t("stockByCategoryHint")} note={items}>
+          <Chart loading={invLoad} empty={!a?.byCategory.length}><Donut data={(a?.byCategory ?? []).map((x) => ({ name: x.label || t("uncategorised"), value: x.value }))} label={t("stockByCategory")} other={t("other")} /></Chart>
+        </GridCard>
+      ) },
+      { id: "health", ...HALF, node: (
+        <GridCard loading={invLoad} title={t("stockHealth")} subtitle={t("stockHealthHint")} note={items}>
+          <Chart loading={invLoad} empty={!a || a.health.every((x) => x.value === 0)}>
+            <Bars layout="vertical" data={(a?.health ?? []).map((x) => ({ label: t(`healthBucket.${x.bucket}`), value: x.value }))} xKey="label" yKey="value" label={t("stockHealth")} />
+          </Chart>
+        </GridCard>
+      ) },
+      { id: "cover-by-category", ...FULL, node: (
+        <GridCard loading={invLoad} title={t("coverByCategory")} subtitle={t("coverByCategoryHint")} note={items}>
+          <Chart loading={invLoad} empty={!covered.length}>
+            <Bars layout="horizontal" data={covered} xKey="label" yKey="days" label={t("coverByCategory")} format={(n) => `${f.number(n)} ${t("daysUnit")}`} />
+          </Chart>
+        </GridCard>
+      ) },
       { id: "reorder", ...FULL, h: 11, node: (
         <GridCard loading={load} title={t("reorder", { days: reorder.data?.coverDays ?? 30 })} subtitle={t("reorderHint")} scroll note={<ScopeNote follows="items" />}>
           <ReportTable bare id="reorder" columns={cols} rows={reorder.data?.rows ?? []} loading={load} getRowId={(r) => r.variationId} />

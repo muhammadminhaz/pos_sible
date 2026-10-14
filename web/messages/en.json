@@ -2183,7 +2183,11 @@
       "receivables": "Unpaid balance on finalised sales, all time.",
       "payables": "Unpaid balance on received purchases, all time.",
       "repeatRate": "Share of buyers in this period who had bought before.",
-      "expenseRatio": "Expenses as a share of net sales."
+      "expenseRatio": "Expenses as a share of net sales.",
+      "stockAtCost": "What the stock on hand cost to buy, from the lots it sits in.",
+      "stockAtSale": "What the stock on hand would bring in at today's selling prices, excluding tax.",
+      "potentialProfit": "Stock value at selling price minus its value at cost.",
+      "stockCover": "Stock value at cost divided by the cost of goods sold per day in the selected period."
     },
     "salesVsProfit": "Sales and Profit Over Time",
     "busiestTimes": "Busiest times (sales by weekday and hour)",
@@ -2236,7 +2240,28 @@
       "items": "Category, brand and product filters do not apply to this figure.",
       "customer": "The customer filter does not apply to this figure.",
       "both": "Category, brand, product and customer filters do not apply to this figure."
-    }
+    },
+    "stockAtCost": "Stock Value at Cost",
+    "stockAtSale": "Stock Value at Selling Price",
+    "potentialProfit": "Potential Profit",
+    "stockCover": "Days of Stock",
+    "daysUnit": "days",
+    "noSalesYet": "No sales in this period",
+    "onHandNow": "On hand now",
+    "ifAllSold": "If all stock sells at today's prices",
+    "atPeriodPace": "At this period's selling pace",
+    "stockByCategory": "Where Your Stock Money Sits",
+    "stockByCategoryHint": "Stock on hand now, valued at cost, by category.",
+    "stockHealth": "Stock Health",
+    "stockHealthHint": "Stock on hand valued at cost, by when each item last sold.",
+    "healthBucket": {
+      "fresh": "Sold in 30 Days",
+      "slow": "31-60 Days Ago",
+      "dead": "Over 60 Days Ago",
+      "never": "Never Sold"
+    },
+    "coverByCategory": "How Long Stock Lasts, by Category",
+    "coverByCategoryHint": "Days the stock on hand lasts at this period's selling pace. Long bars mean money tied up; short ones need reordering soon."
   },
   "possible": {
     "opportunitiesTitle": "Opportunities",
