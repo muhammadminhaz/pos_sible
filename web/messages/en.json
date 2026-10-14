@@ -2186,8 +2186,7 @@
       "expenseRatio": "Expenses as a share of net sales.",
       "stockAtCost": "What the stock on hand cost to buy, from the lots it sits in.",
       "stockAtSale": "What the stock on hand would bring in at today's selling prices, excluding tax.",
-      "potentialProfit": "Stock value at selling price minus its value at cost.",
-      "stockCover": "Stock value at cost divided by the cost of goods sold per day in the selected period."
+      "potentialProfit": "Stock value at selling price minus its value at cost."
     },
     "salesVsProfit": "Sales and Profit Over Time",
     "busiestTimes": "Busiest times (sales by weekday and hour)",
@@ -2219,7 +2218,7 @@
       "d90plus": "90+ Days"
     },
     "reorder": "Running low: stock that will not last {days} days",
-    "reorderHint": "Based on how fast each item sold in the selected period. Reorder quantity covers the next 30 days.",
+    "reorderHint": "Based on how fast each item sold in the last 30 days. Reorder quantity covers the next 30 days.",
     "soldPerDay": "Sold per Day",
     "daysLeft": "Days Left",
     "reorderQty": "Suggested Reorder",
@@ -2244,12 +2243,8 @@
     "stockAtCost": "Stock Value at Cost",
     "stockAtSale": "Stock Value at Selling Price",
     "potentialProfit": "Potential Profit",
-    "stockCover": "Days of Stock",
-    "daysUnit": "days",
-    "noSalesYet": "No sales in this period",
     "onHandNow": "On hand now",
     "ifAllSold": "If all stock sells at today's prices",
-    "atPeriodPace": "At this period's selling pace",
     "stockByCategory": "Where Your Stock Money Sits",
     "stockByCategoryHint": "Stock on hand now, valued at cost, by category.",
     "stockHealth": "Stock Health",
@@ -2259,9 +2254,7 @@
       "slow": "31-60 Days Ago",
       "dead": "Over 60 Days Ago",
       "never": "Never Sold"
-    },
-    "coverByCategory": "How Long Stock Lasts, by Category",
-    "coverByCategoryHint": "Days the stock on hand lasts at this period's selling pace. Long bars mean money tied up; short ones need reordering soon."
+    }
   },
   "possible": {
     "opportunitiesTitle": "Opportunities",

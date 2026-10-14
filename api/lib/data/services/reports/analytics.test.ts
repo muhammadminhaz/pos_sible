@@ -65,6 +65,13 @@ describe("analytics reconcile with the reports", () => {
     const r = reorderSuggestions(seed, ranges[1]).rows;
     r.forEach((x, i) => i && expect(x.daysLeft).toBeGreaterThanOrEqual(r[i - 1].daysLeft));
   });
+
+  it("every reorder row is short of 30 days and suggests at least one unit", () => {
+    for (const f of [...ranges, {}]) for (const x of reorderSuggestions(seed, f).rows) {
+      expect(x.daysLeft).toBeLessThan(30);
+      expect(x.suggest).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe("inventory analytics", () => {
@@ -75,7 +82,10 @@ describe("inventory analytics", () => {
     near(inv.valueAtSale, stock.valueBySale ?? 0, 0.05);
     near(inv.byCategory.reduce((s, x) => s + x.value, 0), inv.valueAtCost, 0.5);
     near(inv.health.reduce((s, x) => s + x.value, 0), inv.valueAtCost, 0.5);
-    expect(inv.coverDays).toBeGreaterThan(0);
+  });
+
+  it("ignores the date range: any period shows today's stock", () => {
+    expect(inventoryAnalytics(seed, { from: "2026-01-01", to: "2026-01-31" })).toEqual(inventoryAnalytics(seed, r));
   });
 
   it("a category filter keeps only that category's stock", () => {
@@ -85,7 +95,6 @@ describe("inventory analytics", () => {
     const one = inventoryAnalytics(seed, { ...r, categoryId: id });
     near(one.valueAtCost, top.value, 0.05);
     expect(one.byCategory).toHaveLength(1);
-    expect(one.coverDays).toBe(top.coverDays);
   });
 });
 
