@@ -5,8 +5,8 @@ import { getDB } from "@/lib/data/store/db";
 import { balanceSheet, buildJournal, expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
-import { delay } from "../_util";
-import { dayOf, inScope, isFinalSale, isReceivedPurchase, lineCostOf, lineTax, names, sumBy, withTotals, type ReportFilter, type ReportResult } from "./_shared";
+import { anyOf, delay } from "../_util";
+import { dayOf, inScope, isFinalSale, isReceivedPurchase, lineCostOf, lineFilter, lineTax, names, sumBy, withTotals, type ReportFilter, type ReportResult, type SalesScope } from "./_shared";
 
 // ── Profit / loss ───────────────────────────────────────────────────────
 
@@ -53,18 +53,20 @@ export function profitLoss(d: DB, f: ReportFilter): ProfitLoss {
  * Profit grouped by one dimension; returns count negative. Each document's order-level discount, shipping and extra charges
  * are spread over its lines in proportion to their value, so every grouping adds up to the summary's gross profit.
  */
-export function profitBreakdown(d: DB, dim: ProfitDimension, f: ReportFilter): ReportResult<ProfitRow> {
+export function profitBreakdown(d: DB, dim: ProfitDimension, f: SalesScope): ReportResult<ProfitRow> {
+  const keep = lineFilter(d, f);
   const prod = new Map(d.products.map((p) => [p.id, p]));
   const cats = new Map(d.categories.map((c) => [c.id, c.name]));
   const brands = new Map(d.brands.map((b) => [b.id, b.name]));
   const vars = new Map(d.variations.map((v) => [v.id, v]));
   const acc = new Map<string, { label: string; sales: number; cost: number }>();
   for (const t of d.transactions) {
-    if (!inScope(t, f) || !(isFinalSale(t) || t.type === "sell_return")) continue;
+    if (!inScope(t, f) || !(isFinalSale(t) || t.type === "sell_return") || (f.contactId && !anyOf(f.contactId, t.contactId))) continue;
     const sign = t.type === "sell_return" ? -1 : 1;
     const lineEx = sumBy(t.lines, (l) => l.subtotal - lineTax(l));
     const adjust = lineEx > 0 ? (exTax(t) - lineEx) / lineEx : 0;
     for (const l of t.lines) {
+      if (!keep(l)) continue;
       const p = prod.get(l.productId);
       const v = vars.get(l.variationId);
       const [key, label] =

@@ -2153,7 +2153,7 @@
     "title": "Analytics",
     "description": "Trends and insights across sales, products, customers, stock and expenses.",
     "emptyTitle": "No Data for These Filters",
-    "emptyHint": "Try a wider date range or another location.",
+    "emptyHint": "Try a wider date range, another location or fewer filters.",
     "tab": {
       "overview": "Overview",
       "sales": "Sales",
@@ -2230,7 +2230,13 @@
     "dragHint": "Drag to Move This Card",
     "resetLayout": "Reset Layout",
     "layoutReset": "Layout Reset to Default",
-    "resizeHint": "Drag to Resize"
+    "resizeHint": "Drag to Resize",
+    "notFiltered": "Not filtered",
+    "notFilteredHint": {
+      "items": "Category, brand and product filters do not apply to this figure.",
+      "customer": "The customer filter does not apply to this figure.",
+      "both": "Category, brand, product and customer filters do not apply to this figure."
+    }
   },
   "possible": {
     "opportunitiesTitle": "Opportunities",

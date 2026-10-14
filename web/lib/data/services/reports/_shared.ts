@@ -7,6 +7,22 @@ export type ReportFilter = { from?: string; to?: string; locationId?: string | n
 export type Totals<R> = Partial<Record<keyof R & string, number>>;
 export type ReportResult<R> = { rows: R[]; totals: Totals<R> };
 
+/** Sales read narrowed to what was sold (category, brand, product) and who bought it. Each may be a comma list. */
+export type SalesScope = ReportFilter & { categoryId?: string; brandId?: string; productId?: string; contactId?: string };
+export const narrowsItems = (f: SalesScope) => !!(f.categoryId || f.brandId || f.productId);
+
+/** Whether a line's product passes the scope's item filters; a category matches as main or sub category. */
+export function lineFilter(d: DB, f: SalesScope): (l: Pick<TxnLine, "productId">) => boolean {
+  if (!narrowsItems(f)) return () => true;
+  const prod = new Map(d.products.map((p) => [p.id, p]));
+  return (l) => {
+    const p = prod.get(l.productId);
+    return (!f.productId || anyOf(f.productId, l.productId))
+      && (!f.categoryId || anyOf(f.categoryId, p?.categoryId) || anyOf(f.categoryId, p?.subCategoryId))
+      && (!f.brandId || anyOf(f.brandId, p?.brandId));
+  };
+}
+
 export const dayOf = (iso: string) => iso.slice(0, 10);
 
 export const inScope = (t: { date: string; locationId: string }, f: ReportFilter) => {

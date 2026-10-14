@@ -7,14 +7,37 @@ import { expenseSign } from "@/lib/domain/ledger";
 import { roundMoney } from "@/lib/domain/money";
 import { paymentSummary } from "@/lib/domain/payments";
 import { delay, anyOf } from "../_util";
-import { dayOf, inScope, isFinalSale, isReceivedPurchase, lineCostOf, names, sumBy, type ReportFilter } from "./_shared";
+import { dayOf, inScope, isFinalSale, isReceivedPurchase, lineCostOf, lineFilter, lineTax, names, narrowsItems, sumBy, type ReportFilter, type SalesScope } from "./_shared";
 import { profitBreakdown } from "./money";
 
-/** Business analytics: read-only aggregates over the same transactions the reports use. Returns are always netted off. */
+/**
+ * Business analytics: read-only aggregates over the same transactions the reports use. Returns are always netted off.
+ * Sales figures follow the item and customer filters; expenses, purchases and supplier balances are the whole business.
+ */
 
 const exTax = (t: Transaction) => t.totals.total - t.totals.orderTax;
-const cogsOf = (t: Transaction) => sumBy(t.lines, lineCostOf);
 const pct = (a: number, b: number) => (b ? roundMoney((a / b) * 100) : 0);
+
+type Slice = { share: number; cost: number };
+/**
+ * The part of a sale or return the filter keeps: its share of the document's ex-tax value (order-level discount and
+ * charges spread by line value, as in `profitBreakdown`) and the cost of the kept lines. Null when nothing is kept.
+ */
+export function slicer(d: DB, f: SalesScope): (t: Transaction) => Slice | null {
+  const keep = lineFilter(d, f);
+  const items = narrowsItems(f);
+  return (t) => {
+    if (f.contactId && !anyOf(f.contactId, t.contactId)) return null;
+    const costOf = (l: Transaction["lines"][number]) => (t.type === "sell_return" ? l.qty * l.unitCost : lineCostOf(l));
+    if (!items) return { share: 1, cost: sumBy(t.lines, costOf) };
+    const kept = t.lines.filter(keep);
+    if (!kept.length) return null;
+    const value = (l: Transaction["lines"][number]) => l.subtotal - lineTax(l);
+    const all = sumBy(t.lines, value);
+    return { share: all > 0 ? sumBy(kept, value) / all : kept.length / t.lines.length, cost: sumBy(kept, costOf) };
+  };
+}
+const unscoped = (f: SalesScope): ReportFilter => ({ from: f.from, to: f.to, locationId: f.locationId });
 
 type Range = { from: string; to: string };
 const rangeOf = (d: DB, f: ReportFilter): Range => {
@@ -39,24 +62,34 @@ export type AnalyticsOverview = {
   receivables: number; payables: number;
 };
 
-export function headline(d: DB, f: ReportFilter): Headline {
-  let sales = 0, cogs = 0, expenses = 0, purchases = 0, orders = 0;
+/** Net profit is always the whole business: a filtered gross profit minus every expense would mean nothing. */
+export function headline(d: DB, f: SalesScope): Headline {
+  const slice = slicer(d, f), whole = slicer(d, {});
+  let sales = 0, cogs = 0, allGross = 0, expenses = 0, purchases = 0, orders = 0;
   for (const t of d.transactions) {
     if (!inScope(t, f)) continue;
-    if (isFinalSale(t)) { sales += exTax(t); cogs += cogsOf(t); orders++; }
-    else if (t.type === "sell_return") { sales -= exTax(t); cogs -= sumBy(t.lines, (l) => l.qty * l.unitCost); }
+    if (isFinalSale(t) || t.type === "sell_return") {
+      const sign = t.type === "sell_return" ? -1 : 1;
+      const w = whole(t)!;
+      allGross += sign * (exTax(t) - w.cost);
+      const s = slice(t);
+      if (!s) continue;
+      sales += sign * exTax(t) * s.share;
+      cogs += sign * s.cost;
+      if (sign > 0) orders++;
+    }
     else if (t.type === "expense") expenses += expenseSign(t) * t.totals.total;
     else if (isReceivedPurchase(t)) purchases += t.totals.total;
     else if (t.type === "purchase_return") purchases -= t.totals.total;
   }
   const grossProfit = roundMoney(sales - cogs);
   return {
-    sales: roundMoney(sales), grossProfit, netProfit: roundMoney(grossProfit - expenses), margin: pct(grossProfit, sales),
+    sales: roundMoney(sales), grossProfit, netProfit: roundMoney(allGross - expenses), margin: pct(grossProfit, sales),
     orders, aov: orders ? roundMoney(sales / orders) : 0, expenses: roundMoney(expenses), purchases: roundMoney(purchases),
   };
 }
 
-export function overview(d: DB, f: ReportFilter): AnalyticsOverview {
+export function overview(d: DB, f: SalesScope): AnalyticsOverview {
   const r = rangeOf(d, f);
   const scope = { ...f, ...r };
   const days = differenceInCalendarDays(parseISO(r.to), parseISO(r.from)) + 1;
@@ -66,20 +99,24 @@ export function overview(d: DB, f: ReportFilter): AnalyticsOverview {
   // No empty buckets in the future: a month-to-date view ends today, not at month end.
   const shown = Math.min(days, Math.max(1, differenceInCalendarDays(parseISO(todayISO(d.settings.business.timeZone)), parseISO(r.from)) + 1));
   if (granularity === "day") for (let i = 0; i < shown; i++) { const b = format(addDays(parseISO(r.from), i), "yyyy-MM-dd"); acc.set(b, { bucket: b, sales: 0, profit: 0 }); }
+  const slice = slicer(d, f);
   for (const t of d.transactions) {
     if (!inScope(t, scope) || !(isFinalSale(t) || t.type === "sell_return")) continue;
+    const s = slice(t);
+    if (!s) continue;
     const sign = t.type === "sell_return" ? -1 : 1;
-    const cost = t.type === "sell_return" ? sumBy(t.lines, (l) => l.qty * l.unitCost) : cogsOf(t);
+    const value = exTax(t) * s.share;
     const row = acc.get(key(t.date)) ?? { bucket: key(t.date), sales: 0, profit: 0 };
-    row.sales += sign * exTax(t);
-    row.profit += sign * (exTax(t) - cost);
+    row.sales += sign * value;
+    row.profit += sign * (value - s.cost);
     acc.set(row.bucket, row);
   }
   const trend = [...acc.values()].sort((a, b) => a.bucket.localeCompare(b.bucket)).map((x) => ({ ...x, sales: roundMoney(x.sales), profit: roundMoney(x.profit) }));
+  // Balances are per document, so only the customer filter applies to what customers owe.
   let receivables = 0, payables = 0;
   for (const t of d.transactions) {
     if (f.locationId && !anyOf(f.locationId, t.locationId)) continue;
-    if (isFinalSale(t)) receivables += paymentSummary(t.totals.total, t.payments).due;
+    if (isFinalSale(t)) { if (!f.contactId || anyOf(f.contactId, t.contactId)) receivables += paymentSummary(t.totals.total, t.payments).due; }
     else if (isReceivedPurchase(t)) payables += paymentSummary(t.totals.total, t.payments).due;
   }
   return { current: headline(d, scope), previous: headline(d, { ...f, ...previousRange(r) }), trend, granularity, receivables: roundMoney(receivables), payables: roundMoney(payables) };
@@ -96,21 +133,25 @@ export type SalesPatterns = {
   returns: { amount: number; pctOfSales: number };
 };
 
-export function salesPatterns(d: DB, f: ReportFilter): SalesPatterns {
+/** With item filters, each sale counts for the share of it the kept lines make up. */
+export function salesPatterns(d: DB, f: SalesScope): SalesPatterns {
   const scope = { ...f, ...rangeOf(d, f) };
+  const slice = slicer(d, f);
   const heat = Array.from({ length: 7 }, () => Array<number>(24).fill(0));
   const pay = new Map<string, number>(), loc = new Map<string, number>();
   let gross = 0, discount = 0, returned = 0;
   for (const t of d.transactions) {
-    if (!inScope(t, scope)) continue;
+    if (!inScope(t, scope) || !(isFinalSale(t) || t.type === "sell_return")) continue;
+    const s = slice(t);
+    if (!s) continue;
     if (isFinalSale(t)) {
       const at = parseISO(t.date);
-      heat[getDay(at)][getHours(at)] += t.totals.total;
-      gross += t.totals.total;
-      discount += t.totals.discount;
-      loc.set(t.locationId, (loc.get(t.locationId) ?? 0) + exTax(t));
-      for (const p of t.payments) pay.set(p.method, (pay.get(p.method) ?? 0) + (p.isReturn ? -p.amount : p.amount));
-    } else if (t.type === "sell_return") returned += t.totals.total;
+      heat[getDay(at)][getHours(at)] += t.totals.total * s.share;
+      gross += t.totals.total * s.share;
+      discount += t.totals.discount * s.share;
+      loc.set(t.locationId, (loc.get(t.locationId) ?? 0) + exTax(t) * s.share);
+      for (const p of t.payments) pay.set(p.method, (pay.get(p.method) ?? 0) + (p.isReturn ? -p.amount : p.amount) * s.share);
+    } else returned += t.totals.total * s.share;
   }
   return {
     heat: heat.map((row) => row.map((v) => roundMoney(v))),
@@ -137,7 +178,7 @@ export type ProductAnalytics = {
 
 const DEAD_STOCK_DAYS = 60;
 
-export function productAnalytics(d: DB, f: ReportFilter): ProductAnalytics {
+export function productAnalytics(d: DB, f: SalesScope): ProductAnalytics {
   const scope = { ...f, ...rangeOf(d, f) };
   const rows = profitBreakdown(d, "product", scope).rows.filter((r) => r.sales > 0);
   const bySales = [...rows].sort((a, b) => b.sales - a.sales);
@@ -150,7 +191,8 @@ export function productAnalytics(d: DB, f: ReportFilter): ProductAnalytics {
   });
   const pareto = full.slice(0, 25);
 
-  // Dead stock: units on the shelf and nothing sold for DEAD_STOCK_DAYS, valued at what they cost.
+  // Dead stock: units on the shelf and nothing sold for DEAD_STOCK_DAYS, valued at what they cost. Item filters only.
+  const keep = lineFilter(d, f);
   const today = scope.to;
   const lastSale = new Map<string, string>();
   for (const t of d.transactions) {
@@ -168,7 +210,7 @@ export function productAnalytics(d: DB, f: ReportFilter): ProductAnalytics {
   for (const [variationId, h] of held) {
     const v = d.variations.find((x) => x.id === variationId);
     const p = v && d.products.find((x) => x.id === v.productId);
-    if (!v || !p) continue;
+    if (!v || !p || !keep({ productId: p.id })) continue;
     const last = lastSale.get(variationId);
     const since = last ? differenceInCalendarDays(parseISO(today), parseISO(last)) : null;
     if (since !== null && since < DEAD_STOCK_DAYS) continue;
@@ -192,7 +234,7 @@ export type CustomerAnalytics = {
   aging: { bucket: (typeof AGING_BUCKETS)[number]; amount: number }[];
 };
 
-export function customerAnalytics(d: DB, f: ReportFilter): CustomerAnalytics {
+export function customerAnalytics(d: DB, f: SalesScope): CustomerAnalytics {
   const r = rangeOf(d, f);
   const scope = { ...f, ...r };
   const topCustomers = profitBreakdown(d, "customer", scope).rows.filter((x) => x.key && x.sales > 0).slice(0, 10).map((x) => ({ label: x.label, sales: x.sales, profit: x.profit }));
@@ -202,8 +244,9 @@ export function customerAnalytics(d: DB, f: ReportFilter): CustomerAnalytics {
   for (const t of d.transactions) if (isFinalSale(t) && t.contactId && dayOf(t.date) < (first.get(t.contactId) ?? "9999")) first.set(t.contactId, dayOf(t.date));
   const monthly = new Map<string, { n: Set<string>; r: Set<string> }>();
   const seen = new Set<string>();
+  const slice = slicer(d, f);
   for (const t of d.transactions) {
-    if (!isFinalSale(t) || !t.contactId || !inScope(t, scope)) continue;
+    if (!isFinalSale(t) || !t.contactId || !inScope(t, scope) || !slice(t)) continue;
     const b = format(startOfMonth(parseISO(t.date)), "yyyy-MM");
     const m = monthly.get(b) ?? { n: new Set(), r: new Set() };
     (first.get(t.contactId)! >= r.from ? m.n : m.r).add(t.contactId);
@@ -214,7 +257,7 @@ export function customerAnalytics(d: DB, f: ReportFilter): CustomerAnalytics {
   const aging = new Map(AGING_BUCKETS.map((b) => [b, 0]));
   const today = todayISO(d.settings.business.timeZone);
   for (const t of d.transactions) {
-    if (!isFinalSale(t) || (f.locationId && !anyOf(f.locationId, t.locationId))) continue;
+    if (!isFinalSale(t) || (f.locationId && !anyOf(f.locationId, t.locationId)) || (f.contactId && !anyOf(f.contactId, t.contactId))) continue;
     const due = paymentSummary(t.totals.total, t.payments).due;
     if (due <= 0) continue;
     const age = differenceInCalendarDays(parseISO(today), parseISO(t.date));
@@ -235,14 +278,16 @@ export type ReorderRow = { variationId: string; label: string; stock: number; pe
 const COVER_DAYS = 30;
 
 /** Days of stock left at the period's selling pace, with a quantity that would cover the next 30 days. */
-export function reorderSuggestions(d: DB, f: ReportFilter): { rows: ReorderRow[]; coverDays: number } {
+export function reorderSuggestions(d: DB, f: SalesScope): { rows: ReorderRow[]; coverDays: number } {
   const r = rangeOf(d, f);
   const days = differenceInCalendarDays(parseISO(r.to), parseISO(r.from)) + 1;
+  // Selling pace comes from every buyer, so only the item filters narrow it.
+  const keep = lineFilter(d, f);
   const sold = new Map<string, number>();
   for (const t of d.transactions) {
     if (!inScope(t, { ...f, ...r }) || !(isFinalSale(t) || t.type === "sell_return")) continue;
     const sign = t.type === "sell_return" ? -1 : 1;
-    for (const l of t.lines) sold.set(l.variationId, (sold.get(l.variationId) ?? 0) + sign * l.qty);
+    for (const l of t.lines) if (keep(l)) sold.set(l.variationId, (sold.get(l.variationId) ?? 0) + sign * l.qty);
   }
   const stock = new Map<string, number>();
   for (const l of d.stockLots) if (!f.locationId || anyOf(f.locationId, l.locationId)) stock.set(l.variationId, (stock.get(l.variationId) ?? 0) + l.qtyRemaining);
@@ -264,8 +309,8 @@ export function reorderSuggestions(d: DB, f: ReportFilter): { rows: ReorderRow[]
 
 export type ExpenseAnalytics = { byCategory: { label: string; amount: number; share: number }[]; total: number; ratio: number };
 
-export function expenseAnalytics(d: DB, f: ReportFilter): ExpenseAnalytics {
-  const scope = { ...f, ...rangeOf(d, f) };
+export function expenseAnalytics(d: DB, f: SalesScope): ExpenseAnalytics {
+  const scope = { ...unscoped(f), ...rangeOf(d, f) };
   const acc = new Map<string, number>();
   for (const t of d.transactions) if (t.type === "expense" && inScope(t, scope)) acc.set(t.expenseCategoryId ?? "", (acc.get(t.expenseCategoryId ?? "") ?? 0) + expenseSign(t) * t.totals.total);
   const total = roundMoney([...acc.values()].reduce((s, v) => s + v, 0));
@@ -285,10 +330,10 @@ export function firstDate(d: DB): string | null {
 
 export const analyticsReports = service("analyticsReports", {
   async firstDate() { await delay(); return firstDate(getDB()); },
-  async overview(f: ReportFilter = {}) { await delay(); return overview(getDB(), f); },
-  async sales(f: ReportFilter = {}) { await delay(); return salesPatterns(getDB(), f); },
-  async products(f: ReportFilter = {}) { await delay(); return productAnalytics(getDB(), f); },
-  async customers(f: ReportFilter = {}) { await delay(); return customerAnalytics(getDB(), f); },
-  async reorder(f: ReportFilter = {}) { await delay(); return reorderSuggestions(getDB(), f); },
-  async expenses(f: ReportFilter = {}) { await delay(); return expenseAnalytics(getDB(), f); },
+  async overview(f: SalesScope = {}) { await delay(); return overview(getDB(), f); },
+  async sales(f: SalesScope = {}) { await delay(); return salesPatterns(getDB(), f); },
+  async products(f: SalesScope = {}) { await delay(); return productAnalytics(getDB(), f); },
+  async customers(f: SalesScope = {}) { await delay(); return customerAnalytics(getDB(), f); },
+  async reorder(f: SalesScope = {}) { await delay(); return reorderSuggestions(getDB(), f); },
+  async expenses(f: SalesScope = {}) { await delay(); return expenseAnalytics(getDB(), f); },
 });
