@@ -9,6 +9,7 @@ import { paymentSummary } from "@/lib/domain/payments";
 import { delay, anyOf } from "../_util";
 import { dayOf, inScope, isFinalSale, isReceivedPurchase, lineCostOf, lineFilter, lineTax, names, narrowsItems, sumBy, type ReportFilter, type SalesScope } from "./_shared";
 import { profitBreakdown } from "./money";
+import { stockReport } from "./stock";
 
 /**
  * Business analytics: read-only aggregates over the same transactions the reports use. Returns are always netted off.
@@ -274,6 +275,72 @@ export function customerAnalytics(d: DB, f: SalesScope): CustomerAnalytics {
 
 // ── Inventory ───────────────────────────────────────────────────────────
 
+export const STOCK_HEALTH = ["fresh", "slow", "dead", "never"] as const;
+export type StockHealth = (typeof STOCK_HEALTH)[number];
+export type InventoryAnalytics = {
+  valueAtCost: number; valueAtSale: number; potentialProfit: number;
+  /** Days the stock on hand lasts at the period's cost-of-sales pace; null when nothing in scope sold. */
+  coverDays: number | null;
+  byCategory: { label: string; value: number; coverDays: number | null }[];
+  /** Value at cost split by how long ago each item last sold: within 30 days, 31-60, over 60, never. */
+  health: { bucket: StockHealth; value: number }[];
+};
+
+/**
+ * Stock on hand now, valued like the Stock report (lots at cost, units at the selling price excluding tax), narrowed by
+ * location and the item filters. The date range only sets the selling pace behind days of cover.
+ */
+export function inventoryAnalytics(d: DB, f: SalesScope): InventoryAnalytics {
+  const r = rangeOf(d, f);
+  const days = differenceInCalendarDays(parseISO(r.to), parseISO(r.from)) + 1;
+  const today = todayISO(d.settings.business.timeZone);
+  const keep = lineFilter(d, f);
+  const productOf = new Map(d.variations.map((v) => [v.id, v.productId]));
+  const prod = new Map(d.products.map((p) => [p.id, p]));
+  const catOf = (productId: string) => prod.get(productId)?.categoryId ?? "";
+
+  const rows = stockReport(d, { locationId: f.locationId }).rows.filter((x) => x.stock > 0 && keep({ productId: productOf.get(x.variationId) ?? "" }));
+
+  // Cost of what sold in the period per main category, returns netted off, every buyer counted.
+  const sold = new Map<string, number>();
+  const lastSale = new Map<string, string>();
+  for (const t of d.transactions) {
+    if (!(isFinalSale(t) || t.type === "sell_return") || (f.locationId && !anyOf(f.locationId, t.locationId))) continue;
+    const sign = t.type === "sell_return" ? -1 : 1;
+    for (const l of t.lines) {
+      if (!keep(l)) continue;
+      if (sign > 0 && dayOf(t.date) > (lastSale.get(l.variationId) ?? "")) lastSale.set(l.variationId, dayOf(t.date));
+      if (!inScope(t, r)) continue;
+      const c = catOf(l.productId);
+      sold.set(c, (sold.get(c) ?? 0) + sign * (sign > 0 ? lineCostOf(l) : l.qty * l.unitCost));
+    }
+  }
+
+  const held = new Map<string, number>();
+  const health = new Map<StockHealth, number>(STOCK_HEALTH.map((b) => [b, 0]));
+  let valueAtCost = 0, valueAtSale = 0;
+  for (const x of rows) {
+    valueAtCost += x.valueByCost; valueAtSale += x.valueBySale;
+    const c = catOf(productOf.get(x.variationId) ?? "");
+    held.set(c, (held.get(c) ?? 0) + x.valueByCost);
+    const last = lastSale.get(x.variationId);
+    const age = last ? differenceInCalendarDays(parseISO(today), parseISO(last)) : null;
+    const b: StockHealth = age === null ? "never" : age <= 30 ? "fresh" : age <= DEAD_STOCK_DAYS ? "slow" : "dead";
+    health.set(b, (health.get(b) ?? 0) + x.valueByCost);
+  }
+  const cover = (value: number, cost: number) => (cost > 0 ? Math.round(value / (cost / days)) : null);
+  const totalSold = [...sold.values()].reduce((s, v) => s + v, 0);
+  return {
+    valueAtCost: roundMoney(valueAtCost), valueAtSale: roundMoney(valueAtSale), potentialProfit: roundMoney(valueAtSale - valueAtCost),
+    coverDays: cover(valueAtCost, totalSold),
+    byCategory: [...held]
+      .map(([id, value]) => ({ label: d.categories.find((c) => c.id === id)?.name ?? "", value: roundMoney(value), coverDays: cover(value, sold.get(id) ?? 0) }))
+      .filter((x) => x.value > 0)
+      .sort((a, b) => b.value - a.value),
+    health: STOCK_HEALTH.map((bucket) => ({ bucket, value: roundMoney(health.get(bucket) ?? 0) })),
+  };
+}
+
 export type ReorderRow = { variationId: string; label: string; stock: number; perDay: number; daysLeft: number; suggest: number };
 const COVER_DAYS = 30;
 
@@ -335,5 +402,6 @@ export const analyticsReports = service("analyticsReports", {
   async products(f: SalesScope = {}) { await delay(); return productAnalytics(getDB(), f); },
   async customers(f: SalesScope = {}) { await delay(); return customerAnalytics(getDB(), f); },
   async reorder(f: SalesScope = {}) { await delay(); return reorderSuggestions(getDB(), f); },
+  async inventory(f: SalesScope = {}) { await delay(); return inventoryAnalytics(getDB(), f); },
   async expenses(f: SalesScope = {}) { await delay(); return expenseAnalytics(getDB(), f); },
 });

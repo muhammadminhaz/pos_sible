@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createSeed } from "@/lib/data/seed";
 import { LOC_RANGO } from "@/lib/data/seed/mk";
-import { customerAnalytics, expenseAnalytics, overview, previousRange, productAnalytics, reorderSuggestions, salesPatterns } from "./analytics";
+import { stockReport } from "./stock";
+import { customerAnalytics, expenseAnalytics, inventoryAnalytics, overview, previousRange, productAnalytics, reorderSuggestions, salesPatterns } from "./analytics";
 import { profitBreakdown, profitLoss } from "./money";
 
 const seed = createSeed({ seed: 42, today: "2026-09-28" });
@@ -63,6 +64,28 @@ describe("analytics reconcile with the reports", () => {
   it("reorder list is sorted by urgency", () => {
     const r = reorderSuggestions(seed, ranges[1]).rows;
     r.forEach((x, i) => i && expect(x.daysLeft).toBeGreaterThanOrEqual(r[i - 1].daysLeft));
+  });
+});
+
+describe("inventory analytics", () => {
+  const r = ranges[0];
+  it("stock value matches the Stock report, and categories and health buckets add up to it", () => {
+    const inv = inventoryAnalytics(seed, r), stock = stockReport(seed, {}).totals;
+    near(inv.valueAtCost, stock.valueByCost ?? 0, 0.05);
+    near(inv.valueAtSale, stock.valueBySale ?? 0, 0.05);
+    near(inv.byCategory.reduce((s, x) => s + x.value, 0), inv.valueAtCost, 0.5);
+    near(inv.health.reduce((s, x) => s + x.value, 0), inv.valueAtCost, 0.5);
+    expect(inv.coverDays).toBeGreaterThan(0);
+  });
+
+  it("a category filter keeps only that category's stock", () => {
+    const all = inventoryAnalytics(seed, r);
+    const top = all.byCategory[0];
+    const id = seed.categories.find((c) => c.name === top.label)!.id;
+    const one = inventoryAnalytics(seed, { ...r, categoryId: id });
+    near(one.valueAtCost, top.value, 0.05);
+    expect(one.byCategory).toHaveLength(1);
+    expect(one.coverDays).toBe(top.coverDays);
   });
 });
 
