@@ -16,7 +16,7 @@ export function LandingShell({ backdrop, home = false, children }: { backdrop: R
       <div className="relative isolate h-full overflow-hidden rounded-[28px] text-white">
         {backdrop}
         {/* overflow-y alone would let it scroll sideways too. */}
-        <div data-scroller className="flex h-full flex-col overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-width:none]">
+        <div data-scroller className="flex h-full flex-col overflow-x-hidden overflow-y-auto overscroll-none [scrollbar-width:none]">
           {/* Fixed height: the nav floats in it, so the phone menu unfolds over the page instead of pushing it down. */}
           <header className="pointer-events-none sticky top-0 z-20 h-16 sm:h-[68px]">
             <WelcomeNav links={links} />

@@ -58,8 +58,8 @@ function Grip() {
   );
 }
 
-/** A dashboard card on the grid: the title bar is the handle to drag it, the corner resizes it. `scroll` lets tables scroll inside. */
-export function GridCard({ title, subtitle, scroll, loading, children }: { title: string; subtitle?: string; scroll?: boolean; loading?: boolean; children: ReactNode }) {
+/** A dashboard card on the grid: the title bar is the handle to drag it, the corner resizes it. `scroll` lets tables scroll inside; `note` sits beside the title. */
+export function GridCard({ title, subtitle, scroll, loading, note, children }: { title: string; subtitle?: string; scroll?: boolean; loading?: boolean; note?: ReactNode; children: ReactNode }) {
   const body = useRef<HTMLDivElement>(null);
   const [h, setH] = useState<number | null>(null);
   useEffect(() => {
@@ -71,7 +71,7 @@ export function GridCard({ title, subtitle, scroll, loading, children }: { title
   return (
     <section className={cn(CARD, "flex h-full flex-col pt-7 sm:pt-8")}>
       <Grip />
-      <header className="mb-3">
+      <header className="@container mb-3">
         {loading ? (
           <>
             <Skeleton className="h-5 w-48 max-w-full rounded-md" />
@@ -79,7 +79,7 @@ export function GridCard({ title, subtitle, scroll, loading, children }: { title
           </>
         ) : (
           <>
-            <h2 className="text-base font-semibold">{title}</h2>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><h2 className="text-base font-semibold">{title}</h2>{note}</div>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
           </>
         )}

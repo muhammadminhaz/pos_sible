@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { CheckIcon, LayoutGridIcon, LineChartIcon } from "lucide-react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { CheckIcon, FilterXIcon, LayoutGridIcon, LineChartIcon } from "lucide-react";
+import type { FilterDef } from "@/components/shared/FilterBar";
+import { useContacts } from "@/lib/data/hooks/contacts";
+import { useProducts } from "@/lib/data/hooks/products";
+import { useBrandLookup, useCategoryLookup } from "@/features/reports/lookups";
 import { useLocale, useTranslations } from "next-intl";
 import { cn } from "cn";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -25,12 +29,33 @@ import { useLayouts } from "./layoutStore";
 export const SEGMENTS = ["overview", "sales", "products", "customers", "inventory", "expenses"] as const;
 export type Segment = (typeof SEGMENTS)[number];
 
-function Tile({ label, hint, now, before, good, kind = "money" }: { label: string; hint?: string; now?: number; before?: number; good?: "up" | "down"; kind?: "money" | "number" | "percent" }) {
+/** Which kinds of filter are on: item filters (category, brand, product) and the customer filter. */
+const ActiveFilters = createContext({ items: false, customer: false });
+
+/**
+ * A quiet pill on a card the active filters do not reach, so a whole-business figure is never read as a filtered one.
+ * `follows` names the filters the card does apply.
+ */
+function ScopeNote({ follows }: { follows: "items" | "customer" | "none" }) {
+  const t = useTranslations("analytics");
+  const on = useContext(ActiveFilters);
+  const items = on.items && follows !== "items", customer = on.customer && follows !== "customer";
+  if (!items && !customer) return null;
+  const why = t(items && customer ? "notFilteredHint.both" : items ? "notFilteredHint.items" : "notFilteredHint.customer");
+  return (
+    // In a narrow tile only the icon shows; the tooltip and screen-reader text still say why.
+    <span title={why} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-xs font-normal text-muted-foreground @[16rem]:px-2">
+      <FilterXIcon className="size-3" aria-hidden /><span className="sr-only @[16rem]:not-sr-only">{t("notFiltered")}</span><span className="sr-only">: {why}</span>
+    </span>
+  );
+}
+
+function Tile({ label, hint, now, before, good, kind = "money", note }: { label: string; hint?: string; now?: number; before?: number; good?: "up" | "down"; kind?: "money" | "number" | "percent"; note?: ReactNode }) {
   const f = useFormat();
   return (
     <TileCard>
-      <div title={hint}>
-        {now === undefined ? <Skeleton className="h-4 w-28 rounded-md" /> : <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>}
+      <div title={hint} className="@container">
+        {now === undefined ? <Skeleton className="h-4 w-28 rounded-md" /> : <div className="flex items-center gap-2"><h3 className="text-sm font-medium text-muted-foreground">{label}</h3>{note}</div>}
         {now === undefined ? <Skeleton className="mt-3 h-9 w-40 max-w-full rounded-xl" /> : (
           <div className={cn("mt-2 text-3xl leading-tight font-semibold", now < 0 && "text-danger")}>
             {kind === "money" ? <BigMoney value={now} /> : <span className="tabular tracking-tight">{f.number(now)}{kind === "percent" ? "%" : ""}</span>}
@@ -62,19 +87,19 @@ function OverviewSection({ rf, section }: SectionProps) {
   const o = ov.data;
   const c = o?.current, p = o?.previous;
   const load = ov.isFetching && !o;
-  const tile = (id: string, label: string, hint: string | undefined, now: number | undefined, before: number | undefined, good?: "up", kind?: "money" | "number" | "percent"): CardDef => ({
-    id, ...TILE, node: <Tile label={label} hint={hint} now={now} before={before} good={good} kind={kind} />,
+  const tile = (id: string, label: string, hint: string | undefined, now: number | undefined, before: number | undefined, good?: "up", kind?: "money" | "number" | "percent", note?: ReactNode): CardDef => ({
+    id, ...TILE, node: <Tile label={label} hint={hint} now={now} before={before} good={good} kind={kind} note={note} />,
   });
   return (
     <CardGrid section={section} items={[
       tile("sales", t("netSales"), t("hint.netSales"), c?.sales, p?.sales, "up"),
       tile("gross", t("grossProfit"), t("hint.grossProfit"), c?.grossProfit, p?.grossProfit, "up"),
-      tile("net", t("netProfit"), t("hint.netProfit"), c?.netProfit, p?.netProfit, "up"),
+      tile("net", t("netProfit"), t("hint.netProfit"), c?.netProfit, p?.netProfit, "up", undefined, <ScopeNote follows="none" />),
       tile("margin", t("margin"), t("hint.margin"), c?.margin, p?.margin, "up", "percent"),
       tile("orders", t("orders"), undefined, c?.orders, p?.orders, "up", "number"),
       tile("aov", t("aov"), t("hint.aov"), c?.aov, p?.aov, "up"),
-      tile("recv", t("receivables"), t("hint.receivables"), o?.receivables, undefined),
-      tile("pay", t("payables"), t("hint.payables"), o?.payables, undefined),
+      tile("recv", t("receivables"), t("hint.receivables"), o?.receivables, undefined, undefined, undefined, <ScopeNote follows="customer" />),
+      tile("pay", t("payables"), t("hint.payables"), o?.payables, undefined, undefined, undefined, <ScopeNote follows="none" />),
       { id: "trend", ...FULL, node: (
         <GridCard loading={load} title={t("salesVsProfit")}>
           <Chart loading={ov.isFetching && !o} empty={!o || o.trend.every((r) => r.sales === 0 && r.profit === 0)}>
@@ -157,7 +182,7 @@ function ProductsSection({ rf, section }: SectionProps) {
         </GridCard>
       ) },
       { id: "dead", ...FULL, h: 10, node: (
-        <GridCard loading={load} title={t("deadStock", { days: a?.deadStockDays ?? 60 })} scroll>
+        <GridCard loading={load} title={t("deadStock", { days: a?.deadStockDays ?? 60 })} scroll note={<ScopeNote follows="items" />}>
           <ReportTable bare id="dead-stock" columns={dead} rows={a?.deadStock ?? []} loading={load} getRowId={(r) => r.variationId} />
         </GridCard>
       ) },
@@ -189,7 +214,7 @@ function CustomersSection({ rf, section }: SectionProps) {
         </GridCard>
       ) },
       { id: "aging", ...FULL, h: 9, node: (
-        <GridCard loading={load} title={t("aging")}>
+        <GridCard loading={load} title={t("aging")} note={<ScopeNote follows="customer" />}>
           <Chart loading={load} empty={!a || a.aging.every((r) => r.amount === 0)}>
             <Bars layout="vertical" data={(a?.aging ?? []).map((r) => ({ ...r, bucket: t(`agingBucket.${r.bucket}`) }))} xKey="bucket" yKey="amount" label={t("aging")} />
           </Chart>
@@ -213,7 +238,7 @@ function InventorySection({ rf, section }: SectionProps) {
   return (
     <CardGrid section={section} items={[
       { id: "reorder", ...FULL, h: 11, node: (
-        <GridCard loading={load} title={t("reorder", { days: reorder.data?.coverDays ?? 30 })} subtitle={t("reorderHint")} scroll>
+        <GridCard loading={load} title={t("reorder", { days: reorder.data?.coverDays ?? 30 })} subtitle={t("reorderHint")} scroll note={<ScopeNote follows="items" />}>
           <ReportTable bare id="reorder" columns={cols} rows={reorder.data?.rows ?? []} loading={load} getRowId={(r) => r.variationId} />
         </GridCard>
       ) },
@@ -228,15 +253,15 @@ function ExpensesSection({ rf, section }: SectionProps) {
   const load = exp.isFetching && !a;
   return (
     <CardGrid section={section} items={[
-      { id: "total", ...TILE, w: 6, node: <Tile label={t("totalExpenses")} now={a?.total} /> },
-      { id: "ratio", ...TILE, w: 6, node: <Tile label={t("expenseRatio")} hint={t("hint.expenseRatio")} now={a?.ratio} kind="percent" /> },
+      { id: "total", ...TILE, w: 6, node: <Tile label={t("totalExpenses")} now={a?.total} note={<ScopeNote follows="none" />} /> },
+      { id: "ratio", ...TILE, w: 6, node: <Tile label={t("expenseRatio")} hint={t("hint.expenseRatio")} now={a?.ratio} kind="percent" note={<ScopeNote follows="none" />} /> },
       { id: "share", ...HALF, node: (
-        <GridCard loading={load} title={t("expenseShare")}>
+        <GridCard loading={load} title={t("expenseShare")} note={<ScopeNote follows="none" />}>
           <Chart loading={load} empty={!a?.byCategory.length}><Donut data={(a?.byCategory ?? []).map((x) => ({ name: x.label || t("uncategorised"), value: x.amount }))} label={t("expenseShare")} other={t("other")} /></Chart>
         </GridCard>
       ) },
       { id: "category", ...HALF, node: (
-        <GridCard loading={load} title={t("expenseByCategory")}>
+        <GridCard loading={load} title={t("expenseByCategory")} note={<ScopeNote follows="none" />}>
           <Chart loading={load} empty={!a?.byCategory.length}><Bars layout="horizontal" data={(a?.byCategory ?? []).map((x) => ({ ...x, label: x.label || t("uncategorised") }))} xKey="label" yKey="amount" label={t("expenseByCategory")} /></Chart>
         </GridCard>
       ) },
@@ -256,10 +281,23 @@ const RANGE_KEY = "posible:analytics:range";
  */
 export function Analytics({ segment }: { segment: Segment }) {
   const t = useTranslations("analytics");
-  const rf = useReportFilters(["with"] as const);
+  const tr = useTranslations();
+  const rf = useReportFilters(["with", "category", "brand", "product", "customer"] as const);
   const { today, fyStartMonth } = useRangeContext();
   const range = rf.filter.from && rf.filter.to ? { from: rf.filter.from, to: rf.filter.to } : presetRange("thisMonth", today, fyStartMonth);
-  const reportFilters = { ...rf, filter: { ...rf.filter, ...range } };
+  const { category, brand, product, customer } = rf.url;
+  const reportFilters = { ...rf, filter: { ...rf.filter, ...range, categoryId: category, brandId: brand, productId: product, contactId: customer } };
+  const active = { items: !!(category || brand || product), customer: !!customer };
+  // The product list narrows to the chosen categories and brands, so every pick still has sales to show.
+  const categories = useCategoryLookup(), brands = useBrandLookup();
+  const { data: products } = useProducts({ pageSize: -1, categoryId: category, brandId: brand, sort: { id: "name", desc: false } });
+  const { data: customers } = useContacts({ type: "customer", pageSize: -1 });
+  const filterDefs: FilterDef[] = [
+    { key: "category", label: tr("reports.category"), type: "select", options: categories },
+    { key: "brand", label: tr("reports.brand"), type: "select", options: brands },
+    { key: "product", label: t("product"), type: "select", options: (products?.rows ?? []).map((p) => ({ value: p.id, label: p.name })) },
+    { key: "customer", label: tr("sales.customer"), type: "select", options: (customers?.rows ?? []).map((c) => ({ value: c.id, label: c.name })) },
+  ];
   const { setUrl } = rf;
   const first = useReport("analytics-first", {}, () => analyticsReports.firstDate());
   const urlRange = rf.url.range;
@@ -294,7 +332,8 @@ export function Analytics({ segment }: { segment: Segment }) {
   const resetLayouts = useLayouts((st) => st.reset);
 
   return (
-    <ReportShell title={t(`tab.${segment}`)} description={t("description")} rf={reportFilters} noDate actions={<DashboardRange allFrom={first.data} value={range} onChange={(r) => rf.setUrl({ range: r ? encodeRange(r) : undefined })} />}>
+    <ActiveFilters.Provider value={active}>
+    <ReportShell title={t(`tab.${segment}`)} description={t("description")} rf={reportFilters} extraDefs={filterDefs} noDate actions={<DashboardRange allFrom={first.data} value={range} onChange={(r) => rf.setUrl({ range: r ? encodeRange(r) : undefined })} />}>
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("compareWith")}>
         <span className="text-sm text-muted-foreground">{t("compareWith")}</span>
         {SEGMENTS.filter((x) => x !== segment).map((x) => (
@@ -316,5 +355,6 @@ export function Analytics({ segment }: { segment: Segment }) {
         );
       })}
     </ReportShell>
+    </ActiveFilters.Provider>
   );
 }
