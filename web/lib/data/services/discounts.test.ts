@@ -5,11 +5,12 @@ import { createSeed } from "@/lib/data/seed";
 import { getDB, resetDB } from "@/lib/data/store/db";
 import { findDiscount } from "@/lib/domain/discounts";
 import { discountsService, type DiscountInputData } from "./discounts";
+import { posService } from "./pos";
 
 const seed = createSeed({ seed: 42, today: "2026-09-28" });
 const rule = (over: Partial<DiscountInputData> = {}): DiscountInputData => ({
   name: "Eid offer", locationId: null, productIds: [getDB().products[0].id], brandId: null, categoryId: null, priority: 5,
-  type: "percentage", amount: 10, startsAt: "2026-09-01", endsAt: "2026-12-31", priceGroupIds: [], applyInCustomerGroups: false, active: true, ...over,
+  type: "percentage", amount: 10, startsAt: "2026-09-01", endsAt: "2026-12-31", priceGroupIds: [], applyInCustomerGroups: false, contactIds: [], active: true, ...over,
 });
 
 describe("discountsService", () => {
@@ -29,6 +30,23 @@ describe("discountsService", () => {
     await expect(discountsService.save(rule({ startsAt: "2026-10-02", endsAt: "2026-10-01" }))).rejects.toBeInstanceOf(ValidationError);
     await expect(discountsService.save(rule({ amount: 101 }))).rejects.toBeInstanceOf(ValidationError);
     await expect(discountsService.save(rule({ productIds: [] }))).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("a customer-scoped rule applies only to the listed customers, at the POS too", async () => {
+    const db = getDB();
+    const [cid, other] = db.contacts.filter((c) => !c.isDefault && c.type !== "supplier").map((c) => c.id);
+    const L = db.locations[0].id;
+    // A product no other rule touches, so the only discount it can get is ours.
+    const plain = (await posService.products({ locationId: L, pageSize: -1 })).rows.find((p) => p.discount === null)!;
+    const id = await discountsService.save(rule({ productIds: [], contactIds: [cid], amount: 12, priority: 99, startsAt: "2026-01-01", endsAt: "2099-12-31" }));
+    expect(findDiscount(getDB().discounts, { productId: plain.id, locationId: L, at: "2026-10-01", contactId: cid })?.id).toBe(id);
+    expect(findDiscount(getDB().discounts, { productId: plain.id, locationId: L, at: "2026-10-01", contactId: other })?.id).not.toBe(id);
+    expect(findDiscount(getDB().discounts, { productId: plain.id, locationId: L, at: "2026-10-01" })?.id).not.toBe(id);
+    const at = async (contactId?: string) => (await posService.products({ locationId: L, contactId, pageSize: -1 })).rows.find((p) => p.id === plain.id)!.discount;
+    expect(await at(cid)).toEqual({ type: "percentage", amount: 12 });
+    expect(await at(other)).toBeNull();
+    expect(await at()).toBeNull();
+    expect((await discountsService.list({ pageSize: -1 })).rows.find((x) => x.id === id)!.scope).toContain(db.contacts.find((c) => c.id === cid)!.name);
   });
 
   it("inactive and expired rules are not applied", async () => {

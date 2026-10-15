@@ -1,9 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { addDays, endOfMonth, format, parseISO, subMonths } from "date-fns";
 import { createSeed } from "@/lib/data/seed";
 import { todayISO } from "@/lib/dates";
 import { headline } from "./analytics";
-import { closeGap, forecast, goalProgress, opportunities, periodRange } from "./growth";
+import { getDB, resetDB } from "@/lib/data/store/db";
+import { roundMoney } from "@/lib/domain/money";
+import { contactsService } from "../contacts";
+import { closeGap, forecast, goalProgress, lapsedRegulars, opportunities, periodRange } from "./growth";
 
 // The engine reads "today" from the clock, so the demo history has to end today too.
 const today = todayISO(createSeed({ seed: 42 }).settings.business.timeZone);
@@ -35,6 +38,35 @@ describe("forecast", () => {
     const empty = forecast(dropFrom(28));
     const perDay = empty.lastMonth / Number(format(endOfMonth(subMonths(parseISO(today), 1)), "d"));
     near(empty.projected - empty.mtd, perDay * empty.daysLeft, 1);
+  });
+});
+
+describe("lapsedRegulars", () => {
+  beforeEach(() => resetDB(structuredClone(seed)));
+  const l = lapsedRegulars(seed);
+  it("is exactly what the winBack opportunity counts", () => {
+    expect(l.length).toBeGreaterThan(0);
+    const w = opportunities(seed).find((o) => o.kind === "winBack");
+    if (w?.kind !== "winBack") throw new Error("no winBack opportunity");
+    expect(w.count).toBe(l.length);
+    expect(w.impact).toBe(roundMoney(l.reduce((s, x) => s + x.basket, 0)));
+    expect(w.names).toEqual(l.slice(0, 3).map((x) => seed.contacts.find((c) => c.id === x.id)!.name));
+  });
+  it("the customer list filter returns the same customers, in order, with visits, basket and last visit", async () => {
+    const rows = (await contactsService.list({ type: "customer", lapsed: true, pageSize: -1 })).rows;
+    expect(rows.map((r) => r.id)).toEqual(l.map((x) => x.id));
+    expect(rows[0]).toMatchObject({ visits: l[0].visits, lastVisit: l[0].last, basket: roundMoney(l[0].basket) });
+    expect(getDB().contacts.length).toBe(seed.contacts.length);
+  });
+  it("never lists Walk-in, however its visits look", () => {
+    const walkIn = seed.contacts.find((c) => c.isDefault)!.id;
+    const old = (n: number) => format(addDays(parseISO(today), -n), "yyyy-MM-dd") + "T10:00:00.000Z";
+    const sale = seed.transactions.find((t) => t.type === "sell" && t.status === "final")!;
+    const walkInLapsed = { ...seed, transactions: [
+      ...seed.transactions.filter((t) => t.contactId !== walkIn),
+      { ...sale, id: "w1", contactId: walkIn, date: old(60) }, { ...sale, id: "w2", contactId: walkIn, date: old(70) },
+    ] };
+    expect(lapsedRegulars(walkInLapsed).some((x) => x.id === walkIn)).toBe(false);
   });
 });
 

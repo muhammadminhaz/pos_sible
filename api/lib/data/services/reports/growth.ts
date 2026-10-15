@@ -94,7 +94,31 @@ export type Opportunity =
   | { id: string; kind: "price"; impact: number; product: string; margin: number; raise: number }
   | { id: string; kind: "peak"; impact: 0; weekday: number; hour: number };
 
-const LAPSED_DAYS = 45, LOST_DAYS = 180, OVERDUE_DAYS = 30, URGENT_DAYS = 7, THIN_MARGIN = 15, PRICE_RAISE = 5;
+export const LAPSED_DAYS = 45, LOST_DAYS = 180;
+const OVERDUE_DAYS = 30, URGENT_DAYS = 7, THIN_MARGIN = 15, PRICE_RAISE = 5;
+
+export type LapsedRegular = { id: string; visits: number; spent: number; basket: number; last: string };
+
+/**
+ * Regulars who stopped coming: 2+ final sales, the last one LAPSED_DAYS to LOST_DAYS ago, biggest usual basket first.
+ * The winBack opportunity and the customer list filter both read this, so they can't drift apart.
+ */
+export function lapsedRegulars(d: DB, f: ReportFilter = {}): LapsedRegular[] {
+  const now = parseISO(today(d));
+  // Walk-in stands for everyone without an account, so it is never someone to win back.
+  const walkIn = new Set(d.contacts.filter((c) => c.isDefault).map((c) => c.id));
+  const visits = new Map<string, { n: number; spent: number; last: string }>();
+  for (const t of d.transactions) {
+    if (!isFinalSale(t) || !t.contactId || walkIn.has(t.contactId) || (f.locationId && !anyOf(f.locationId, t.locationId))) continue;
+    const v = visits.get(t.contactId) ?? { n: 0, spent: 0, last: "" };
+    v.n++; v.spent += exTax(t); if (dayOf(t.date) > v.last) v.last = dayOf(t.date);
+    visits.set(t.contactId, v);
+  }
+  return [...visits]
+    .filter(([, v]) => { const gap = differenceInCalendarDays(now, parseISO(v.last)); return v.n >= 2 && gap >= LAPSED_DAYS && gap <= LOST_DAYS; })
+    .map(([id, v]) => ({ id, visits: v.n, spent: v.spent, basket: v.spent / v.n, last: v.last }))
+    .sort((a, b) => b.basket - a.basket);
+}
 
 export function opportunities(d: DB, f: ReportFilter = {}): Opportunity[] {
   const to = today(d);
@@ -115,25 +139,18 @@ export function opportunities(d: DB, f: ReportFilter = {}): Opportunity[] {
     out.push({ id: `restock:${r.variationId}`, kind: "restock", impact: roundMoney(r.perDay * unit * (30 - r.daysLeft)), product: r.label, daysLeft: r.daysLeft, by: iso(addDays(now, Math.max(0, r.daysLeft - 1))), suggest: r.suggest });
   }
 
-  // Regulars who stopped coming: one more visit each, at their usual basket.
-  const visits = new Map<string, { n: number; spent: number; last: string }>();
   const dues = new Map<string, number>();
   // A return on a credit sale cuts what is still owed on it.
   const returned = new Map<string, number>();
   for (const t of d.transactions) if (t.type === "sell_return" && t.parentId) returned.set(t.parentId, (returned.get(t.parentId) ?? 0) + t.totals.total);
   for (const t of d.transactions) {
     if (!isFinalSale(t) || !t.contactId || (f.locationId && !anyOf(f.locationId, t.locationId))) continue;
-    const v = visits.get(t.contactId) ?? { n: 0, spent: 0, last: "" };
-    v.n++; v.spent += exTax(t); if (dayOf(t.date) > v.last) v.last = dayOf(t.date);
-    visits.set(t.contactId, v);
     const due = paymentSummary(t.totals.total, t.payments).due - (returned.get(t.id) ?? 0);
     if (due > 0 && differenceInCalendarDays(now, parseISO(dayOf(t.date))) > OVERDUE_DAYS) dues.set(t.contactId, (dues.get(t.contactId) ?? 0) + due);
   }
   const contactName = (id: string) => d.contacts.find((c) => c.id === id)?.name ?? "";
-  const lapsed = [...visits]
-    .filter(([, v]) => { const gap = differenceInCalendarDays(now, parseISO(v.last)); return v.n >= 2 && gap >= LAPSED_DAYS && gap <= LOST_DAYS; })
-    .map(([id, v]) => ({ id, basket: v.spent / v.n }))
-    .sort((a, b) => b.basket - a.basket);
+  // Regulars who stopped coming: one more visit each, at their usual basket.
+  const lapsed = lapsedRegulars(d, f);
   if (lapsed.length) out.push({ id: "winBack", kind: "winBack", impact: roundMoney(lapsed.reduce((s, x) => s + x.basket, 0)), count: lapsed.length, names: lapsed.slice(0, 3).map((x) => contactName(x.id)), days: LAPSED_DAYS });
 
   // Money customers have owed for over a month.

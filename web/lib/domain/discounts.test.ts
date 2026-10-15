@@ -15,3 +15,15 @@ it("picks highest priority matching rule", () => {
     findDiscount([{ ...base, endsAt: "2026-02-01" }], { productId: "p2", categoryId: "c1", locationId: "l1", at: "2026-06-01" }),
   ).toBeNull();
 });
+
+it("a customer-only rule covers the whole basket, for listed customers only", () => {
+  const vip: DiscountRule = { ...base, id: "vip", categoryId: null, contactIds: ["c1"] };
+  const ctx = { productId: "p9", categoryId: "c9", locationId: "l1", at: "2026-06-01" };
+  expect(findDiscount([vip], { ...ctx, contactId: "c1" })?.id).toBe("vip");
+  expect(findDiscount([vip], { ...ctx, contactId: "c2" })).toBeNull();
+  expect(findDiscount([vip], ctx)).toBeNull();
+  // With an item scope too, both have to match.
+  const vipCat: DiscountRule = { ...base, id: "vipCat", contactIds: ["c1"] };
+  expect(findDiscount([vipCat], { ...ctx, categoryId: "c1", contactId: "c1" })?.id).toBe("vipCat");
+  expect(findDiscount([vipCat], { ...ctx, contactId: "c1" })).toBeNull();
+});

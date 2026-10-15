@@ -976,7 +976,46 @@
       "default_contact": "The walk-in customer can't be changed",
       "contact_in_use": "This contact has transactions. Deactivate it instead.",
       "amount_invalid": "Enter an amount above zero and no more than what is owed"
-    }
+    },
+    "lapsedRegulars": "Lapsed Regulars",
+    "call": "Call",
+    "whatsApp": "WhatsApp",
+    "noMobile": "No mobile",
+    "winBackMessage": "Hi {name}, we miss you at {shop}! It's been a while, drop by soon.",
+    "noLapsed": "No lapsed regulars right now",
+    "noLapsedHint": "Customers with 2+ visits who haven't been back in 45 to 180 days show up here.",
+    "loadError": "We couldn't load this list",
+    "loadErrorHint": "Check your connection and try again. Nothing was changed.",
+    "winBackOfferName": "Win-back offer {date}",
+    "offerPercent": "Discount %",
+    "offerDays": "Valid for (days)",
+    "createOffer": "Create Offer and Send",
+    "winBackOfferSaved": "Offer created for {count, plural, one {# customer} other {# customers}}",
+    "offerOn": "Offer on",
+    "offerScopeAll": "Everything they buy",
+    "offerScopeProducts": "Chosen products",
+    "pickProducts": "Search and add at least one product.",
+    "offerOnEverything": "everything",
+    "offerOnSome": "{first} and {count, plural, one {# more} other {# more}}",
+    "sendOfferTitle": "Offer is live. Now let them know",
+    "sendOfferHint": "{percent}% off {items} until {until}. Tap WhatsApp to open a ready-written message for each customer.",
+    "winBackOfferMessage": "Hi {name}, we miss you at {shop}! Come back by {until} and get {percent}% off {items}, just for you.",
+    "sendOnWhatsApp": "Send on WhatsApp",
+    "offerSent": "Opened",
+    "sentProgress": "{done} of {total} opened in WhatsApp. Send them all before closing; the offer itself stays under Sell, Discounts.",
+    "viewDiscount": "View Discount",
+    "winBack": "Win Back",
+    "winBackTitle": "Win back {count, plural, one {# regular} other {# regulars}}",
+    "winBackWhy": "They bought 2 or more times but haven't been back in 45 to 180 days.",
+    "lapsedFacts": "Last {last} · {visits, plural, one {# visit} other {# visits}} · {basket} avg",
+    "addOffer": "Add an offer",
+    "offerOnlyThem": "Only these customers get it, at the POS and on sales.",
+    "messageWithoutOffer": "Just Message Them",
+    "sendMessageTitle": "Send a friendly hello",
+    "sendMessageHint": "Tap WhatsApp to open a ready-written message for each customer.",
+    "sentProgressPlain": "{done} of {total} opened in WhatsApp.",
+    "helloMessage": "Hi {name}, this is {shop}.",
+    "reachOut": "Reach Out"
   },
   "catalog": {
     "name": "Name",
@@ -1427,8 +1466,12 @@
       "before_start": "The end date is before the start date",
       "max_100": "A percentage can't be above 100",
       "scope_required": "Pick a brand, category or product",
-      "lines_required": "Add at Least One Product"
-    }
+      "lines_required": "Add at Least One Product",
+      "not_for_customer": "This sale has a discount meant for a different customer. Re-pick the customer or remove the discount."
+    },
+    "customers": "Customers",
+    "customersHint": "Only these customers get it. With no products, brand or category set, it covers everything they buy, so a fixed amount comes off every item. Leave empty for everyone.",
+    "searchCustomers": "Search customers"
   },
   "reports": {
     "empty": "Nothing to show for these filters",
@@ -2280,7 +2323,7 @@
       },
       "winBack": {
         "title": "Bring back {count, plural, one {# regular} other {# regulars}}",
-        "body": "{names} used to buy often but haven't come in for {days}+ days. One visit each is worth about {amount}.",
+        "body": "{names} used to buy often but haven't come in for {days}+ days. Together they usually spend about {amount} a visit.",
         "action": "See Customers"
       },
       "collect": {

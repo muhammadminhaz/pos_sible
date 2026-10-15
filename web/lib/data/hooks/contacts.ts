@@ -5,8 +5,8 @@ import { contactsService, type ContactFilters, type ContactInput } from "@/lib/d
 import type { PaymentMethod } from "@/lib/data/schemas";
 import { keys } from "./keys";
 
-export function useContacts(f: ContactFilters) {
-  return useQuery({ queryKey: keys.contacts.list(f), queryFn: () => contactsService.list(f), placeholderData: keepPreviousData });
+export function useContacts(f: ContactFilters, opts: { enabled?: boolean; staleTime?: number } = {}) {
+  return useQuery({ queryKey: keys.contacts.list(f), queryFn: () => contactsService.list(f), placeholderData: keepPreviousData, ...opts });
 }
 
 export function useContact(id: string | undefined) {

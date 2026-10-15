@@ -11,6 +11,7 @@ export type DiscountRule = {
   amount: number;
   startsAt: string;
   endsAt: string;
+  contactIds?: string[];
 };
 
 export type DiscountContext = {
@@ -19,12 +20,17 @@ export type DiscountContext = {
   categoryId?: string | null;
   locationId: string;
   at: string;
+  contactId?: string;
 };
 
 function matches(r: DiscountRule, c: DiscountContext): boolean {
   if (!r.active) return false;
   if (c.at < r.startsAt.slice(0, c.at.length) || c.at > r.endsAt.slice(0, c.at.length)) return false;
   if (r.locationId && r.locationId !== c.locationId) return false;
+  const who = r.contactIds ?? [];
+  if (who.length && !(c.contactId && who.includes(c.contactId))) return false;
+  // A customer-only rule with no item scope covers the whole basket.
+  if (who.length && !r.productIds.length && !r.brandId && !r.categoryId) return true;
   if (r.productIds.includes(c.productId)) return true;
   if (r.brandId && r.brandId === c.brandId) return true;
   if (r.categoryId && r.categoryId === c.categoryId) return true;

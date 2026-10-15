@@ -10,6 +10,7 @@ import { todayISO } from "@/lib/dates";
 import { customerPoints } from "@/lib/domain/rewards";
 import { delay, matches, nowISO, paginate, takeRef, uid, type ListQuery, type ListResult, anyOf } from "./_util";
 import { defaultAccountId } from "./_ledger";
+import { lapsedRegulars } from "./reports/growth";
 
 export type ContactRow = Contact & {
   groupName?: string;
@@ -26,6 +27,10 @@ export type ContactRow = Contact & {
   /** `points` above is what can be spent; these say what lapsed and what is about to. */
   pointsExpired: number;
   pointsExpiring: { points: number; on: string } | null;
+  /** Set only with the `lapsed` filter. */
+  visits?: number;
+  basket?: number;
+  lastVisit?: string;
 };
 
 export type ContactFilters = ListQuery & {
@@ -43,6 +48,8 @@ export type ContactFilters = ListQuery & {
   opening?: boolean;
   /** Customers with no sale in the last N months (never bought counts too). */
   noSellMonths?: number;
+  /** Lapsed regulars, the same rule as the winBack opportunity. */
+  lapsed?: boolean;
   today?: string;
 };
 
@@ -130,7 +137,8 @@ export const contactsService = service("contactsService", {
           return x.toISOString().slice(0, 10);
         })()
       : null;
-    const rows = toRows(getDB()).filter(
+    const lapsed = f.lapsed ? new Map(lapsedRegulars(getDB()).map((x, i) => [x.id, { ...x, i }])) : null;
+    let rows = toRows(getDB()).filter(
       (c) =>
         (!f.type || anyOf(f.type, c.type) || c.type === "both") &&
         (!f.customerGroupId || anyOf(f.customerGroupId, c.customerGroupId)) &&
@@ -143,9 +151,14 @@ export const contactsService = service("contactsService", {
         (!f.purchaseReturn || c.purchaseReturnDue > 0) &&
         (!f.advance || c.advanceBalance > 0) &&
         (!f.opening || c.openingBalance !== 0) &&
+        (!lapsed || lapsed.has(c.id)) &&
         (!cutoff || (!c.isDefault && (c.type !== "supplier") && (!c.lastSellDate || c.lastSellDate.slice(0, 10) < cutoff))) &&
         matches(f.search, c.name, c.businessName, c.mobile, c.code, c.email, c.taxNumber),
     );
+    if (lapsed) {
+      rows = rows.map((c) => { const x = lapsed.get(c.id)!; return { ...c, visits: x.visits, basket: roundMoney(x.basket), lastVisit: x.last }; });
+      if (!f.sort) rows.sort((a, b) => lapsed.get(a.id)!.i - lapsed.get(b.id)!.i);
+    }
     return paginate(f.sort ? rows : rows.filter((c) => c.isDefault).concat(rows.filter((c) => !c.isDefault)), f);
   },
 

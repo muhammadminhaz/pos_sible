@@ -33,6 +33,7 @@ export type PosProduct = {
   stock: number;
   priceInc: number;
   discount: DiscountInput | null;
+  discountRuleId: string | null;
   variations: PosVariation[];
 };
 
@@ -74,7 +75,7 @@ function catalog(db: DB, locationId: string, contactId?: string): PosProduct[] {
         const priceInc = p.taxType === "inclusive" ? unitPrice : roundMoney(unitPrice * (1 + taxRate / 100));
         return { id: v.id, name: v.name, sku: v.sku, unitPrice, priceInc, stock: roundMoney(stock.get(v.id) ?? 0, 4) };
       });
-      const rule = findDiscount(db.discounts, { productId: p.id, brandId: p.brandId, categoryId: p.categoryId, locationId, at: today });
+      const rule = findDiscount(db.discounts, { productId: p.id, brandId: p.brandId, categoryId: p.categoryId, locationId, at: today, contactId });
       const unit = units.get(p.unitId);
       return {
         id: p.id, name: p.name, sku: p.sku, image: p.image, type: p.type, categoryId: p.categoryId, brandId: p.brandId,
@@ -83,6 +84,7 @@ function catalog(db: DB, locationId: string, contactId?: string): PosProduct[] {
         stock: roundMoney(variations.reduce((s, v) => s + v.stock, 0), 4),
         priceInc: variations[0]?.priceInc ?? 0,
         discount: rule ? { type: rule.type, amount: rule.amount } : null,
+        discountRuleId: rule?.id ?? null,
         variations,
       };
     });
@@ -103,6 +105,7 @@ export function toCartItem(p: PosProduct, v: PosVariation, qty = 1): AddItemInpu
     taxRate: p.taxRate,
     taxType: p.taxType,
     discount: p.discount,
+    ruleId: p.discountRuleId,
     enableSerial: p.enableSerial,
     maxQty: p.manageStock ? v.stock : null,
   };
@@ -119,6 +122,12 @@ function rank(p: PosProduct, v: PosVariation, term: string): number {
 }
 
 export const posService = service("posService", {
+  /** The rule discount each product gets for this customer, for re-pricing a cart when the customer changes. */
+  async ruleDiscounts(q: { locationId: string; contactId: string; productIds: string[] }): Promise<Record<string, { discount: DiscountInput | null; ruleId: string | null }>> {
+    await delay();
+    const want = new Set(q.productIds);
+    return Object.fromEntries(catalog(getDB(), q.locationId, q.contactId).filter((p) => want.has(p.id)).map((p) => [p.id, { discount: p.discount, ruleId: p.discountRuleId }]));
+  },
   async products(q: PosCatalogQuery): Promise<ListResult<PosProduct>> {
     await delay();
     const db = getDB();

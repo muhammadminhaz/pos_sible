@@ -26,6 +26,7 @@ export const discountsService = service("discountsService", {
           x.brandId && d.brands.find((b) => b.id === x.brandId)?.name,
           x.categoryId && d.categories.find((c) => c.id === x.categoryId)?.name,
           ...x.productIds.map((id) => d.products.find((p) => p.id === id)?.name),
+          ...(x.contactIds ?? []).map((id) => d.contacts.find((c) => c.id === id)?.name),
         ].filter(Boolean).join(", "),
       }));
     return paginate(rows, f);
@@ -36,7 +37,7 @@ export const discountsService = service("discountsService", {
     assertCan(data.id ? "discount.update" : "discount.create");
     if (data.endsAt < data.startsAt) throw new ValidationError({ endsAt: "before_start" });
     if (data.type === "percentage" && data.amount > 100) throw new ValidationError({ amount: "max_100" });
-    if (!data.productIds.length && !data.brandId && !data.categoryId) throw new ValidationError({ scope: "required" });
+    if (!data.productIds.length && !data.brandId && !data.categoryId && !data.contactIds?.length) throw new ValidationError({ scope: "required" });
     let id = data.id ?? "";
     commit((d) => {
       if (data.id) {

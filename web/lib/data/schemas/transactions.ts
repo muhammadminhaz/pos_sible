@@ -43,6 +43,8 @@ export const txnLine = z.object({
   taxRate: z.number().default(0),
   taxType: z.enum(["inclusive", "exclusive"]).default("exclusive"),
   discount: discountInput.nullable().default(null),
+  /** Discount rule that priced the line, kept so a resumed or edited sale still follows its customer. */
+  ruleId: z.string().nullable().optional(),
   subtotal: z.number(),
   /** Unit cost allocated from stock (sales) — used for profit. */
   unitCost: z.number().default(0),
