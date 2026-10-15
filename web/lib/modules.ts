@@ -11,6 +11,8 @@ const PREFIXES: [string, ModuleKey][] = [
   ["/stock/adjustments", "stockAdjustment"],
   ["/expenses", "expenses"],
   ["/accounts", "account"],
+  // ponytail: hidden with the Tables switch until a table picker exists in POS; nothing can put a table on a sale yet.
+  ["/reports/table", "tables"],
 ];
 
 export function moduleForPath(pathname: string): ModuleKey | null {

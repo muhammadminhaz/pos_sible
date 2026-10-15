@@ -15,6 +15,8 @@ describe("modules", () => {
     expect(isPathEnabled(m, "/sales/new")).toBe(false);
     expect(isPathEnabled(m, "/sales")).toBe(true);
     expect(isPathEnabled(m, "/expenses")).toBe(true);
+    expect(isPathEnabled(m, "/reports/table")).toBe(base.modules.tables);
+    expect(isPathEnabled({ ...m, modules: { ...m.modules, tables: true } }, "/reports/table")).toBe(true);
     expect(isPathEnabled(m, "/sales/orders")).toBe(false);
     expect(isPathEnabled({ ...m, sale: { ...m.sale, enableSalesOrder: true } }, "/sales/orders")).toBe(true);
   });
