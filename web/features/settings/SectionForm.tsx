@@ -117,7 +117,7 @@ function Field({ schema, path, ctx }: { schema: z.ZodTypeAny; path: Path; ctx: C
   }
   if (tn === "ZodBoolean")
     return (
-      <div className="flex items-center gap-2 sm:col-span-1">
+      <div className="flex h-8 pointer-coarse:h-11 items-center gap-2 self-end sm:col-span-1">
         <Switch id={id} checked={!!value} onCheckedChange={set} />
         <Label htmlFor={id}>{label}</Label>
       </div>

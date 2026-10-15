@@ -1,7 +1,7 @@
 import { service } from "@/lib/data/api/facade";
 import { commit, getDB } from "@/lib/data/store/db";
 import { AppError, NotFoundError, ValidationError } from "@/lib/data/errors";
-import type { DB, Row, TableName } from "@/lib/data/schemas";
+import { address, type DB, type Row, type TableName } from "@/lib/data/schemas";
 import { assertCan } from "@/lib/auth/assertCan";
 import { crudPerm, permissionFor, type CrudAction, type WritePermission } from "@/lib/auth/permissions";
 import { passwordHasher } from "@/lib/auth/password";
@@ -31,6 +31,8 @@ type Rules = {
   onUpdate?: (db: DB, before: Record<string, unknown>, after: Record<string, unknown>) => void;
   /** Shapes incoming data before it is stored (e.g. hashing a password). */
   prepare?: (row: Record<string, unknown>) => Record<string, unknown>;
+  /** Filled in on create for fields the form doesn't send. */
+  defaults?: () => Record<string, unknown>;
 };
 
 /** Is there an active user with a full-access role other than the given user (or in a role other than the given one)? */
@@ -192,6 +194,7 @@ const RULES: Partial<Record<TableName, Rules>> = {
   },
   locations: {
     permission: "settings.location",
+    defaults: () => ({ address: address.parse({}) }),
     check: (db, row, id) => {
       if (!(row.name as string)?.trim()) throw new ValidationError({ name: "required" });
       if (row.active === false && !db.locations.some((l) => l.id !== id && l.active)) throw new ValidationError({ active: "last_location" });
@@ -282,7 +285,7 @@ function crudLocal<N extends TableName, T extends Row<N> & { id: string } = Row<
       guard("create");
       rules.check?.(getDB(), input as Record<string, unknown>);
       const data = (rules.prepare ? rules.prepare(input as Record<string, unknown>) : input) as typeof input;
-      const row = { ...data, id: uid(table.slice(0, 3)), createdAt: nowISO(), createdBy: activeUserId() } as unknown as T;
+      const row = { ...rules.defaults?.(), ...data, id: uid(table.slice(0, 3)), createdAt: nowISO(), createdBy: activeUserId() } as unknown as T;
       commit((d) => void (d[table] as unknown as T[]).push(row));
       return row;
     },

@@ -122,6 +122,11 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.5.3 (2026-10-15)
+- **Fixed: Business Locations page.** A location added from the form was saved without an address, which crashed the locations list and its receipts. New locations get an empty address, and older ones without one load fine.
+- **Fixed: Settings switches line up.** On/off switches in Business Settings sit level with the text fields beside them.
+- **Improved: Fewer unused modules.** Tables and Bookings no longer appear on the Modules tab, since nothing in the app uses them yet.
+
 ### v1.5.2 (2026-10-15)
 - **Improved: Pricing shows every module.** Each plan lists all seven modules with a tick or a cross, and highlights what it adds over the plan below, with a "+2 over Starter" style pill. The plans are more compact and fit on one screen.
 - **Improved: Best for most shops.** The label sits in a blue tab above the Standard plan, with a soft glow and a band of light sweeping through the text.
