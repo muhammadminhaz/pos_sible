@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { endOfMonth, format, parseISO } from "date-fns";
+import { addDays, endOfMonth, format, parseISO, subMonths } from "date-fns";
 import { createSeed } from "@/lib/data/seed";
 import { todayISO } from "@/lib/dates";
 import { headline } from "./analytics";
@@ -22,6 +22,19 @@ describe("forecast", () => {
     expect(f.projected).toBeGreaterThanOrEqual(f.mtd);
     const t = f.series.find((p) => p.day === today)!;
     expect(t.projected).toBe(t.actual);
+  });
+  const dropFrom = (back: number) => {
+    const cut = format(addDays(parseISO(today), -back), "yyyy-MM-dd");
+    return { ...seed, transactions: seed.transactions.filter((x) => x.date.slice(0, 10) < cut || x.date.slice(0, 10) >= today) };
+  };
+  it("a gap of days with no sales doesn't drag the rest of the month down", () => {
+    const gap = forecast(dropFrom(10));
+    expect(gap.projected - gap.mtd).toBeGreaterThan((f.projected - f.mtd) * 0.8);
+  });
+  it("falls back to last month's daily average when the last four weeks barely traded", () => {
+    const empty = forecast(dropFrom(28));
+    const perDay = empty.lastMonth / Number(format(endOfMonth(subMonths(parseISO(today), 1)), "d"));
+    near(empty.projected - empty.mtd, perDay * empty.daysLeft, 1);
   });
 });
 
