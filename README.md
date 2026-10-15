@@ -122,6 +122,9 @@ It runs in two modes from one codebase: a **browser-only demo** (mock data gener
 
 Newest first. Every push to `main` adds a version here (features bump the minor number, fixes the patch), and the public [changelog page](https://pos-sible.vercel.app/changelog) is built from this section. Format: `### vX.Y.Z (yyyy-mm-dd)`, then one line per change, `- **New|Improved|Fixed: Title.** One-line summary.`, with optional indented detail lines.
 
+### v1.6.1 (2026-10-15)
+- **Improved: Table report hidden.** It leaves the Reports menu until restaurant tables can be picked at the POS, since no sale can carry a table yet. It follows the hidden Tables switch, so turning that on brings it back.
+
 ### v1.6.0 (2026-10-15)
 - **New: Win Back.** A Win Back button on Customers lists your lapsed regulars with their last visit, visits and average basket, lets you add an offer on everything or chosen products that only they get, and sends each one a ready-written WhatsApp message.
 - **New: Call and WhatsApp on every customer.** Both are in each customer's row menu.
