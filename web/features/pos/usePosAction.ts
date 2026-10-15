@@ -27,6 +27,7 @@ export function usePosError() {
       if (e.fields.payments) return toast.error(t("pos.pay.nonCashOverpaid"));
       if (e.fields.serviceStaff) return toast.error(t("pos.errors.serviceStaffRequired"));
       if (e.fields.pointsRedeemed) return toast.error(t("pos.errors.pointsInvalid"));
+      if (e.fields.discount) return toast.error(t("sales.errors.not_for_customer"));
     }
     if (e instanceof AppError) {
       const byCode: Record<string, string> = {

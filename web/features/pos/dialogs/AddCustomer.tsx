@@ -12,17 +12,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { ValidationError } from "@/lib/data/errors";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import { usePosMutations } from "@/lib/data/hooks/pos";
-import { setContact } from "@/lib/pos/cart";
 import { useCart } from "@/lib/pos/store";
 import { usePosDialogs } from "../dialogStore";
 import { focusSearch } from "../focus";
+import { changeCustomer } from "../customerChange";
 import { usePosError } from "../usePosAction";
 
 function AddCustomerForm({ locationId }: { locationId: string }) {
   const t = useTranslations();
   const { data: lookups } = useLookups();
   const { createCustomer } = usePosMutations();
-  const { update } = useCart(locationId);
+  const { cart, update } = useCart(locationId);
   const hide = usePosDialogs((s) => s.hide);
   const onError = usePosError();
   const [form, setForm] = useState({ name: "", mobile: "", customerGroupId: "none", address: "" });
@@ -36,7 +36,7 @@ function AddCustomerForm({ locationId }: { locationId: string }) {
         name: form.name, mobile: form.mobile, address: form.address,
         customerGroupId: form.customerGroupId === "none" ? null : form.customerGroupId,
       });
-      update((cart) => setContact(cart, c.id));
+      void changeCustomer(update, cart, c.id, locationId).catch(onError);
       toast.success(t("pos.customer.added"));
       hide();
       focusSearch();

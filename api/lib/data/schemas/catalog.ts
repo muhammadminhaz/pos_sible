@@ -130,6 +130,8 @@ export const discount = base.extend({
   endsAt: isoDate,
   priceGroupIds: z.array(z.string()).default([]),
   applyInCustomerGroups: z.boolean().default(false),
+  /** Only these customers get it; empty means everyone. */
+  contactIds: z.array(z.string()).default([]),
   active: z.boolean().default(true),
 });
 export type Discount = z.infer<typeof discount>;

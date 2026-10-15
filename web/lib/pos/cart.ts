@@ -19,6 +19,8 @@ export type CartLine = {
   taxRate: number;
   taxType: "inclusive" | "exclusive";
   discount: DiscountInput | null;
+  /** Discount rule the line's discount came from (null: none applied). Undefined once the cashier sets it by hand. */
+  ruleId?: string | null;
   note: string;
   serials: string[];
   serviceStaffId: string | null;
@@ -93,7 +95,7 @@ export const setQty = (c: Cart, key: string, qty: number) => mapLine(c, key, (l)
 export const setPrice = (c: Cart, key: string, unitPrice: number) =>
   mapLine(c, key, (l) => ({ ...l, unitPrice: Math.max(0, roundMoney(unitPrice)) }));
 export const setLineDiscount = (c: Cart, key: string, discount: DiscountInput | null) =>
-  mapLine(c, key, (l) => ({ ...l, discount: discount && discount.amount > 0 ? discount : null }));
+  mapLine(c, key, (l) => ({ ...l, discount: discount && discount.amount > 0 ? discount : null, ruleId: undefined }));
 export const setLineNote = (c: Cart, key: string, note: string) => mapLine(c, key, (l) => ({ ...l, note }));
 export const setSerials = (c: Cart, key: string, serials: string[]) =>
   mapLine(c, key, (l) => ({ ...l, serials: serials.map((s) => s.trim()).filter(Boolean) }));
@@ -102,6 +104,11 @@ export const setServiceStaff = (c: Cart, key: string, serviceStaffId: string | n
 export const removeLine = (c: Cart, key: string): Cart => ({ ...c, lines: c.lines.filter((l) => l.key !== key) });
 export const patchCart = (c: Cart, patch: Partial<Omit<Cart, "lines">>): Cart => ({ ...c, ...patch });
 export const setContact = (c: Cart, contactId: string): Cart => ({ ...c, contactId, pointsRedeemed: 0 });
+
+/** After a customer change: lines whose discount came from a rule take the rule that fits the new customer. Hand-set discounts stay. */
+export function reapplyRuleDiscounts(c: Cart, rules: Record<string, { discount: DiscountInput | null; ruleId: string | null }>): Cart {
+  return { ...c, lines: c.lines.map((l) => (l.ruleId === undefined ? l : { ...l, discount: rules[l.productId]?.discount ?? null, ruleId: rules[l.productId]?.ruleId ?? null })) };
+}
 
 export function exceedsStock(line: CartLine, qty: number = line.qty): boolean {
   return line.maxQty != null && qty > line.maxQty;

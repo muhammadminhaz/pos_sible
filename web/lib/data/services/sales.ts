@@ -103,7 +103,7 @@ function txnToCart(d: DB, t: Transaction): Cart {
         key: uid("k"), productId: l.productId, variationId: l.variationId,
         name: p ? (p.type === "variable" && v ? `${p.name} (${v.name})` : p.name) : l.productId,
         sku: v?.sku ?? "", unitId: l.unitId, unitName: u?.shortName ?? "", allowDecimal: u?.allowDecimal ?? false,
-        qty: l.qty, unitPrice: l.unitPrice, taxId: l.taxId, taxRate: l.taxRate, taxType: l.taxType, discount: l.discount,
+        qty: l.qty, unitPrice: l.unitPrice, taxId: l.taxId, taxRate: l.taxRate, taxType: l.taxType, discount: l.discount, ruleId: l.ruleId,
         note: l.note, serials: l.serials, serviceStaffId: l.serviceStaffId, enableSerial: p?.enableSerial ?? false,
         maxQty: p?.manageStock ? stockOf(l.variationId) : null,
       };
@@ -127,6 +127,11 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
   const totals = cartTotals(cart, { rounding: s.sale.roundingMethod, rewards: s.rewards, additional: (input.additionalExpenses ?? []).map((e) => e.amount) });
   const tid = prev?.id ?? uid("t");
 
+  // A customer-only discount stays with that customer: the cart re-prices on a customer change, and this catches a stale one.
+  for (const l of cart.lines) {
+    const who = typeof l.ruleId === "string" ? d.discounts.find((r) => r.id === l.ruleId)?.contactIds ?? [] : [];
+    if (who.length && !who.includes(cart.contactId)) throw new ValidationError({ discount: "not_for_customer" });
+  }
   const built = cart.lines.map((l, i) => {
     const p = d.products.find((x) => x.id === l.productId);
     if (!p || !p.active || p.notForSale || !p.locationIds.includes(locationId)) throw new ProductUnavailableError(l.name);
@@ -145,7 +150,7 @@ function writeSale(d: DB, input: SaleInput, prev?: Transaction): CheckoutResult 
     }
     return {
       id: uid("l"), productId: l.productId, variationId: l.variationId, unitId: l.unitId, qty: l.qty, unitPrice: l.unitPrice,
-      taxId: l.taxId, taxRate: l.taxRate, taxType: l.taxType, discount: l.discount, subtotal: totals.lines[i].subtotal,
+      taxId: l.taxId, taxRate: l.taxRate, taxType: l.taxType, discount: l.discount, ruleId: l.ruleId, subtotal: totals.lines[i].subtotal,
       unitCost, allocations, note: l.note, serials: l.serials, serviceStaffId: l.serviceStaffId,
     };
   });

@@ -17,6 +17,7 @@ import { DataTable, RowActions, useTableQuery } from "@/components/shared/DataTa
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useCan } from "@/lib/auth/useCan";
+import { useContacts } from "@/lib/data/hooks/contacts";
 import { useLookups } from "@/lib/data/hooks/lookups";
 import { useProducts } from "@/lib/data/hooks/products";
 import { useDiscountMutations, useDiscounts } from "@/lib/data/hooks/sales";
@@ -33,13 +34,17 @@ function DiscountForm({ row, onClose }: { row: DiscountRow | null; onClose: () =
   const { save } = useDiscountMutations();
   const [term, setTerm] = useState("");
   const { data: all } = useProducts({ pageSize: -1 });
-  const [v, setV] = useState<DiscountInputData & { id?: string }>(row ?? {
+  const [v, setV] = useState<DiscountInputData & { id?: string }>(row ? { ...row, contactIds: row.contactIds ?? [] } : {
     name: "", locationId: null, productIds: [], brandId: null, categoryId: null, priority: 1, type: "percentage", amount: 0,
-    startsAt: today(), endsAt: today(), priceGroupIds: [], applyInCustomerGroups: false, active: true,
+    startsAt: today(), endsAt: today(), priceGroupIds: [], applyInCustomerGroups: false, contactIds: [], active: true,
   });
   const set = (p: Partial<typeof v>) => setV({ ...v, ...p });
   const names = new Map((all?.rows ?? []).map((p) => [p.id, p.name]));
   const found = (all?.rows ?? []).filter((p) => term && !v.productIds.includes(p.id) && p.name.toLowerCase().includes(term.toLowerCase())).slice(0, 8);
+  const [cterm, setCterm] = useState("");
+  const { data: customers } = useContacts({ type: "customer", pageSize: -1 });
+  const cnames = new Map((customers?.rows ?? []).map((c) => [c.id, c.name]));
+  const cfound = (customers?.rows ?? []).filter((c) => cterm && !c.isDefault && !v.contactIds.includes(c.id) && `${c.name} ${c.mobile}`.toLowerCase().includes(cterm.toLowerCase())).slice(0, 8);
   const pick = (label: string, value: string | null, opts: { id: string; name: string }[], onChange: (id: string | null) => void) => (
     <div className="grid gap-2">
       <Label>{label}</Label>
@@ -99,6 +104,19 @@ function DiscountForm({ row, onClose }: { row: DiscountRow | null; onClose: () =
             <Badge key={id} variant="secondary" className="gap-1">{names.get(id) ?? id}<button type="button" aria-label={t("common.remove")} onClick={() => set({ productIds: v.productIds.filter((x) => x !== id) })}><XIcon className="size-3" /></button></Badge>
           ))}
         </div>
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="d-cust">{t("sales.customers")}</Label>
+        <Input id="d-cust" placeholder={t("sales.searchCustomers")} value={cterm} onChange={(e) => setCterm(e.target.value)} />
+        {cfound.map((c) => (
+          <button key={c.id} type="button" className="rounded-md px-2 py-1 text-left text-sm hover:bg-accent" onClick={() => { set({ contactIds: [...v.contactIds, c.id] }); setCterm(""); }}>{c.name}</button>
+        ))}
+        <div className="flex flex-wrap gap-1.5">
+          {v.contactIds.map((id) => (
+            <Badge key={id} variant="secondary" className="gap-1">{cnames.get(id) ?? id}<button type="button" aria-label={t("common.remove")} onClick={() => set({ contactIds: v.contactIds.filter((x) => x !== id) })}><XIcon className="size-3" /></button></Badge>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">{t("sales.customersHint")}</p>
       </div>
       <label className="flex items-center gap-2 text-sm"><Switch checked={v.active} onCheckedChange={(x) => set({ active: x })} />{t("common.active")}</label>
       <DialogFooter>

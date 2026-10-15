@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CoinsIcon, EyeIcon, PencilIcon, PlusIcon, PowerIcon, PowerOffIcon, Trash2Icon, UsersIcon } from "lucide-react";
+import { CoinsIcon, EyeIcon, HeartHandshakeIcon, PencilIcon, PhoneIcon, PlusIcon, PowerIcon, PowerOffIcon, Trash2Icon, TriangleAlertIcon, UsersIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "@/lib/toast";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -17,15 +17,19 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useCan } from "@/lib/auth/useCan";
 import { useContactMutations, useContacts } from "@/lib/data/hooks/contacts";
 import { useLookups } from "@/lib/data/hooks/lookups";
+import { useSettings } from "@/lib/data/hooks/settings";
 import { contactsService, type ContactFilters, type ContactRow } from "@/lib/data/services/contacts";
+import { WhatsAppIcon } from "@/components/shared/WhatsAppIcon";
 import { useFormat } from "@/lib/i18n/format";
+import { telHref, waHref } from "@/lib/phone";
 import { ContactFormDialog } from "./ContactForm";
 import { opsErrorMessage } from "./opsError";
 import { PayDueDialog } from "./PayDueDialog";
+import { WinBackOfferDialog } from "./WinBackOfferDialog";
 
 type Kind = "customer" | "supplier";
-type UrlFilters = { group?: string; assigned?: string; status?: "active" | "inactive"; sellDue?: "1"; purchaseDue?: "1"; sellReturn?: "1"; purchaseReturn?: "1"; advance?: "1"; opening?: "1"; noSell?: string };
-const KEYS = ["group", "assigned", "status", "sellDue", "purchaseDue", "sellReturn", "purchaseReturn", "advance", "opening", "noSell"] as const;
+type UrlFilters = { group?: string; assigned?: string; status?: "active" | "inactive"; sellDue?: "1"; purchaseDue?: "1"; sellReturn?: "1"; purchaseReturn?: "1"; advance?: "1"; opening?: "1"; noSell?: string; lapsed?: "1" };
+const KEYS = ["group", "assigned", "status", "sellDue", "purchaseDue", "sellReturn", "purchaseReturn", "advance", "opening", "noSell", "lapsed"] as const;
 
 export function ContactsList({ kind }: { kind: Kind }) {
   const t = useTranslations();
@@ -44,8 +48,14 @@ export function ContactsList({ kind }: { kind: Kind }) {
     customerGroupId: url.group, assignedTo: url.assigned, active: url.status, sellDue: !!url.sellDue || undefined, purchaseDue: !!url.purchaseDue || undefined,
     sellReturn: !!url.sellReturn || undefined, purchaseReturn: !!url.purchaseReturn || undefined, advance: !!url.advance || undefined, opening: !!url.opening || undefined,
     noSellMonths: url.noSell ? Number(url.noSell) : undefined,
+    lapsed: (kind === "customer" && !!url.lapsed) || undefined,
   };
   const list = useContacts(filters);
+  const lapsed = kind === "customer" && !!url.lapsed;
+  const shop = useSettings().data?.business.name ?? "";
+  const [offer, setOffer] = useState(false);
+  const lapsedAll = useContacts({ type: "customer", lapsed: true, pageSize: -1 }, { enabled: kind === "customer", staleTime: 5 * 60_000 });
+  const lapsedCount = lapsedAll.data?.total ?? 0;
   const m = useContactMutations();
   const [edit, setEdit] = useState<string | null>(null);
   const [pay, setPay] = useState<string | null>(null);
@@ -83,6 +93,8 @@ export function ContactsList({ kind }: { kind: Kind }) {
       return (
         <RowActions items={[
           { label: t("common.view"), icon: EyeIcon, href: `/contacts/${c.id}` },
+          { label: t("ops.call"), icon: PhoneIcon, onClick: () => { const h = telHref(c.mobile); if (h) window.location.href = h; }, hidden: c.isDefault || !telHref(c.mobile), group: t("ops.reachOut") },
+          { label: t("ops.whatsApp"), icon: WhatsAppIcon, group: t("ops.reachOut"), onClick: () => { const h = waHref(c.mobile, t("ops.helloMessage", { name: c.name.split(" ")[0], shop })); if (h) window.open(h, "_blank", "noopener,noreferrer"); }, hidden: c.isDefault || !waHref(c.mobile, "") },
           { label: t("common.edit"), icon: PencilIcon, onClick: () => setEdit(c.id), hidden: !canEdit || c.isDefault },
           { label: t("ops.payDue"), icon: CoinsIcon, onClick: () => setPay(c.id), hidden: !canPay || c.isDefault || c.due <= 0 },
           { label: c.active ? t("common.deactivate") : t("common.activate"), icon: c.active ? PowerOffIcon : PowerIcon, onClick: () => toggle(c), hidden: !canEdit || c.isDefault },
@@ -91,7 +103,7 @@ export function ContactsList({ kind }: { kind: Kind }) {
       );
     } },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [t, f, kind, canEdit, canPay, canRemove]);
+  ], [t, f, kind, canEdit, canPay, canRemove, shop]);
 
   const named = (xs: { id: string; name: string }[]) => xs.map((x) => ({ value: x.id, label: x.name }));
   const defs: FilterDef[] = [
@@ -100,6 +112,7 @@ export function ContactsList({ kind }: { kind: Kind }) {
     { key: "status", label: t("common.status"), type: "select", options: [{ value: "active", label: t("common.active") }, { value: "inactive", label: t("common.inactive") }] },
     ...(kind === "customer"
       ? ([
+          { key: "lapsed", label: t("ops.lapsedRegulars"), type: "toggle" },
           { key: "sellDue", label: t("ops.sellDue"), type: "toggle" }, { key: "sellReturn", label: t("ops.sellReturnDue"), type: "toggle" },
           { key: "noSell", label: t("ops.noSell"), type: "select", options: [1, 3, 6, 12].map((n) => ({ value: String(n), label: t("ops.noSellMonths", { count: n }) })) },
         ] as FilterDef[])
@@ -112,7 +125,16 @@ export function ContactsList({ kind }: { kind: Kind }) {
     <>
       <PageHeader
         title={t(kind === "customer" ? "nav.customers" : "nav.suppliers")} description={t(kind === "customer" ? "ops.customersDescription" : "ops.suppliersDescription")}
-        actions={canAdd && <Button onClick={() => setEdit("new")}><PlusIcon />{t(kind === "customer" ? "ops.addCustomer" : "ops.addSupplier")}</Button>}
+        actions={
+          <>
+            {kind === "customer" && lapsedCount > 0 && (
+              <Button variant="outline" onClick={() => setOffer(true)}>
+                <HeartHandshakeIcon />{t("ops.winBack")}<span className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-xs font-medium tabular text-primary">{lapsedCount}</span>
+              </Button>
+            )}
+            {canAdd && <Button onClick={() => setEdit("new")}><PlusIcon />{t(kind === "customer" ? "ops.addCustomer" : "ops.addSupplier")}</Button>}
+          </>
+        }
       />
       <div className="mb-4">
         <FilterBar defs={defs} value={url} onChange={(p) => { setUrl(p); setQuery({ page: 0 }); }} onReset={() => { resetUrl(); setQuery({ page: 0 }); }} />
@@ -121,10 +143,17 @@ export function ContactsList({ kind }: { kind: Kind }) {
         tableId={`contacts-${kind}`} columns={columns} data={list.data?.rows ?? []} total={list.data?.total ?? 0} loading={list.isFetching} query={query} onQueryChange={setQuery}
         exportName={kind === "customer" ? "customers" : "suppliers"} exportRows={() => contactsService.list({ ...filters, page: 0, pageSize: -1 }).then((r) => r.rows)}
         defaultHidden={["email", "taxNumber", "creditLimit", "openingBalance", "advanceBalance", "points", "returnDue"]} onRowClick={(c) => router.push(`/contacts/${c.id}`)}
-        empty={<EmptyState icon={UsersIcon} title={t("ops.noContacts")} />}
+        empty={
+          list.isError && !list.data
+            ? <EmptyState icon={TriangleAlertIcon} title={t("ops.loadError")} description={t("ops.loadErrorHint")} action={<Button variant="outline" onClick={() => list.refetch()}>{t("common.tryAgain")}</Button>} />
+            : lapsed
+              ? <EmptyState icon={HeartHandshakeIcon} title={t("ops.noLapsed")} description={t("ops.noLapsedHint")} />
+              : <EmptyState icon={UsersIcon} title={t("ops.noContacts")} />
+        }
       />
       <ContactFormDialog editId={edit} defaultType={kind} onClose={() => setEdit(null)} />
       <PayDueDialog contactId={pay} onClose={() => setPay(null)} />
+      <WinBackOfferDialog open={offer} customers={lapsedAll.data?.rows ?? []} onClose={() => setOffer(false)} />
       <ConfirmDialog
         open={del !== null} onOpenChange={(o) => !o && setDel(null)} destructive title={t("common.areYouSure")} confirmLabel={t("common.delete")}
         onConfirm={async () => {

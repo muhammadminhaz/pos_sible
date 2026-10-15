@@ -4,8 +4,9 @@ import { ValidationError } from "@/lib/data/errors";
 import { createSeed } from "@/lib/data/seed";
 import { LOC_RANGO } from "@/lib/data/seed/mk";
 import { commit, getDB, resetDB } from "@/lib/data/store/db";
-import { addItem, emptyCart, patchCart, setContact } from "@/lib/pos/cart";
+import { addItem, emptyCart, patchCart, reapplyRuleDiscounts, setContact, setLineDiscount } from "@/lib/pos/cart";
 import { contactsService } from "./contacts";
+import { discountsService } from "./discounts";
 import { posService, toCartItem } from "./pos";
 import { registersService } from "./registers";
 import { salesService } from "./sales";
@@ -28,6 +29,39 @@ describe("POS follow-ups", () => {
       for (const r of d.cashRegisters) if (r.status === "open") Object.assign(r, { status: "close", closedAt: r.openedAt });
     });
     await registersService.open(LOC_RANGO, 0);
+  });
+
+  it("a customer-only offer follows the customer: re-priced on a switch, refused at checkout if stale", async () => {
+    const [vip, other] = getDB().contacts.filter((c) => c.type !== "supplier" && !c.isDefault).map((c) => c.id);
+    const p = (await posService.products({ locationId: LOC_RANGO, pageSize: -1 })).rows.find((x) => x.manageStock && x.variations[0].stock > 5 && x.discount === null)!;
+    const id = await discountsService.save({
+      name: "Win-back", locationId: null, productIds: [], brandId: null, categoryId: null, priority: 99, type: "percentage", amount: 15,
+      startsAt: "2026-01-01", endsAt: "2099-12-31", priceGroupIds: [], applyInCustomerGroups: false, contactIds: [vip], active: true,
+    });
+    const priced = async (contactId: string) => {
+      const rows = (await posService.products({ locationId: LOC_RANGO, contactId, pageSize: -1 })).rows;
+      const q = rows.find((x) => x.id === p.id)!;
+      return addItem(setContact(emptyCart(), contactId), toCartItem(q, q.variations[0], 1), "new_row");
+    };
+    // Offer in the cart, then the cashier switches to someone else.
+    const vipCart = await priced(vip);
+    expect(vipCart.lines[0]).toMatchObject({ discount: { type: "percentage", amount: 15 }, ruleId: id });
+    const stale = setContact(vipCart, other);
+    await expect(salesService.checkout({ cart: stale, locationId: LOC_RANGO, status: "suspended", payments: [] })).rejects.toBeInstanceOf(ValidationError);
+    const fixed = reapplyRuleDiscounts(stale, await posService.ruleDiscounts({ locationId: LOC_RANGO, contactId: other, productIds: [p.id] }));
+    expect(fixed.lines[0]).toMatchObject({ discount: null, ruleId: null });
+    await salesService.checkout({ cart: fixed, locationId: LOC_RANGO, status: "suspended", payments: [] });
+    // Suspended with the offer, resumed, then switched to someone else: the rule comes back with the cart, so it is still caught.
+    const parked = await salesService.checkout({ cart: vipCart, locationId: LOC_RANGO, status: "suspended", payments: [] });
+    const resumed = await salesService.toCart(parked.id);
+    expect(resumed.lines[0].ruleId).toBe(id);
+    await expect(salesService.checkout({ cart: setContact(resumed, other), locationId: LOC_RANGO, status: "suspended", payments: [] })).rejects.toBeInstanceOf(ValidationError);
+    // Items scanned first, customer picked after: they get their offer.
+    const late = reapplyRuleDiscounts(setContact(await priced(other), vip), await posService.ruleDiscounts({ locationId: LOC_RANGO, contactId: vip, productIds: [p.id] }));
+    expect(late.lines[0].discount).toEqual({ type: "percentage", amount: 15 });
+    // A discount the cashier set by hand is theirs to keep.
+    const manual = setLineDiscount(vipCart, vipCart.lines[0].key, { type: "fixed", amount: 5 });
+    expect(reapplyRuleDiscounts(setContact(manual, other), {}).lines[0].discount).toEqual({ type: "fixed", amount: 5 });
   });
 
   it("points can't be spent twice across a customer's suspended sales", async () => {

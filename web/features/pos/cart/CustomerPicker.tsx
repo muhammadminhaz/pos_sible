@@ -10,10 +10,11 @@ import { useCan } from "@/lib/auth/useCan";
 import { useContact } from "@/lib/data/hooks/contacts";
 import { usePosCustomers } from "@/lib/data/hooks/pos";
 import { useFormat } from "@/lib/i18n/format";
-import { setContact } from "@/lib/pos/cart";
 import { useCart } from "@/lib/pos/store";
 import { usePosDialogs } from "../dialogStore";
+import { changeCustomer } from "../customerChange";
 import { focusSearch } from "../focus";
+import { usePosError } from "../usePosAction";
 
 export function CustomerPicker({ locationId }: { locationId: string }) {
   const t = useTranslations();
@@ -21,6 +22,7 @@ export function CustomerPicker({ locationId }: { locationId: string }) {
   const can = useCan();
   const { cart, update } = useCart(locationId);
   const show = usePosDialogs((s) => s.show);
+  const onError = usePosError();
   const [term, setTerm] = useState("");
   const list = usePosCustomers(useDeferredValue(term));
   const { data: current } = useContact(cart.contactId);
@@ -30,7 +32,7 @@ export function CustomerPicker({ locationId }: { locationId: string }) {
   if (current && !rows.some((c) => c.id === current.id)) options.unshift({ value: current.id, label: current.isDefault ? current.name : `${current.name} · ${current.mobile}`, tag: undefined });
 
   const pick = (id: string) => {
-    update((c) => setContact(c, id));
+    void changeCustomer(update, cart, id, locationId).catch(onError);
     focusSearch();
   };
 

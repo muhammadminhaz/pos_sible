@@ -23,11 +23,12 @@ import { SHIPPING_STATUSES, type PaymentMethod, type ShippingStatus, type Transa
 import { toCartItem } from "@/lib/data/services/pos";
 import type { SaleInput } from "@/lib/data/services/sales";
 import { useUI } from "@/lib/data/store/ui";
-import { addItem, patchCart, removeLine, setContact, setLineDiscount, setPrice, setQty, setSerials, WALK_IN_ID, type Cart } from "@/lib/pos/cart";
+import { addItem, patchCart, removeLine, setLineDiscount, setPrice, setQty, setSerials, WALK_IN_ID, type Cart } from "@/lib/pos/cart";
 import { methodLabel, tillMethods } from "@/lib/pos/methods";
 import { cartTotals } from "@/lib/pos/selectors";
 import { usePosDialogs } from "@/features/pos/dialogStore";
 import { saleErrorMessage } from "./saleError";
+import { changeCustomer } from "@/features/pos/customerChange";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 
 type Status = "final" | "draft" | "quotation" | "proforma";
@@ -144,7 +145,7 @@ export function SaleForm({ init }: { init: SaleFormInit }) {
       <PageHeader title={title} />
       <div className={box}>
         {field(t("common.location"), "sf-loc", selectOf(named(lookups?.locations ?? []), locationId, (v) => { setLocationId(v); setCart({ ...cart, lines: [] }); }, "sf-loc"))}
-        {field(t("sales.customer"), "sf-cust", selectOf([{ value: WALK_IN_ID, label: t("sales.walkIn") }, ...named((customers?.rows ?? []).filter((c) => !c.isDefault))], cart.contactId, (v) => setCart(setContact(cart, v)), "sf-cust"))}
+        {field(t("sales.customer"), "sf-cust", selectOf([{ value: WALK_IN_ID, label: t("sales.walkIn") }, ...named((customers?.rows ?? []).filter((c) => !c.isDefault))], cart.contactId, (v) => void changeCustomer(setCart, cart, v, locationId).catch((e) => toast.error(saleErrorMessage(e, t))), "sf-cust"))}
         {field(t("sales.saleDate"), "sf-date", <Input id="sf-date" type="datetime-local" value={(cart.date ?? "").slice(0, 16)} onChange={(e) => setCart(patchCart(cart, { date: e.target.value ? `${e.target.value}:00` : null }))} />)}
         {field(t("sales.saleStatus"), "sf-status", selectOf((["final", "draft", "quotation", "proforma"] as const).map((v) => ({ value: v, label: statusLabel(v) })), status, (v) => setStatus(v as Status), "sf-status"))}
         {field(t("sales.invoiceNoManual"), "sf-ref", <Input id="sf-ref" value={refNo} onChange={(e) => setRefNo(e.target.value)} disabled={!!init.id || status !== "final"} />)}

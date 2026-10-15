@@ -19,7 +19,7 @@ const ICON: Record<Opportunity["kind"], LucideIcon> = {
   restock: PackagePlusIcon, winBack: HeartHandshakeIcon, collect: HandCoinsIcon, clearStock: TagIcon, price: TrendingUpIcon, peak: ClockIcon,
 };
 const HREF: Record<Opportunity["kind"], string> = {
-  restock: "/purchases/new", winBack: "/contacts/customers", collect: "/reports/contacts", clearStock: "/sales/discounts", price: "/products/update-price", peak: "/analytics/sales",
+  restock: "/purchases/new", winBack: "/contacts/customers?lapsed=1", collect: "/reports/contacts", clearStock: "/sales/discounts", price: "/products/update-price", peak: "/analytics/sales",
 };
 
 function Retry({ onRetry }: { onRetry: () => void }) {
