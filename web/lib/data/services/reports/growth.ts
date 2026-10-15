@@ -40,14 +40,25 @@ export type Forecast = { mtd: number; projected: number; lastMonth: number; days
 
 /**
  * Month-end sales: what is in so far, plus each remaining day at the average of the same weekday over the last four
- * weeks (a shop's Friday is not its Tuesday). The series is cumulative so the projection reads as a line that keeps going.
+ * weeks (a shop's Friday is not its Tuesday). Only days that had sales count, so a closure or a gap in the data doesn't
+ * read as a run of zero days; with under half the four weeks trading, every day gets last month's daily average instead.
+ * The series is cumulative so the projection reads as a line that keeps going.
  */
 export function forecast(d: DB, f: ReportFilter = {}): Forecast {
   const now = parseISO(today(d));
   const from = startOfMonth(now), end = endOfMonth(now);
+  const prev = subMonths(now, 1);
+  const lastMonth = headline(d, { ...f, from: iso(startOfMonth(prev)), to: iso(endOfMonth(prev)) }).sales;
   const byDay = dailySales(d, { ...f, from: iso(addDays(now, -28)), to: iso(now) });
-  const weekday = Array<number>(7).fill(0);
-  for (let i = 1; i <= 28; i++) { const day = addDays(now, -i); weekday[getDay(day)] += (byDay.get(iso(day)) ?? 0) / 4; }
+  const sum = Array<number>(7).fill(0), days = Array<number>(7).fill(0);
+  for (let i = 1; i <= 28; i++) {
+    const day = addDays(now, -i), v = byDay.get(iso(day));
+    if (v === undefined) continue;
+    sum[getDay(day)] += v;
+    days[getDay(day)]++;
+  }
+  const trading = days.reduce((a, b) => a + b, 0);
+  const weekday = trading < 14 ? Array<number>(7).fill(lastMonth / Number(format(endOfMonth(prev), "d"))) : sum.map((s, i) => (days[i] ? s / days[i] : 0));
 
   const month = dailySales(d, { ...f, from: iso(from), to: iso(now) });
   const series: ForecastPoint[] = [];
@@ -63,11 +74,10 @@ export function forecast(d: DB, f: ReportFilter = {}): Forecast {
     }
   }
   const mtd = series.find((p) => p.day === iso(now))?.actual ?? 0;
-  const prev = subMonths(now, 1);
   return {
     mtd,
     projected: roundMoney(run),
-    lastMonth: headline(d, { ...f, from: iso(startOfMonth(prev)), to: iso(endOfMonth(prev)) }).sales,
+    lastMonth,
     daysLeft: differenceInCalendarDays(end, now),
     series,
   };

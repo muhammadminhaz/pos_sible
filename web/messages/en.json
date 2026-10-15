@@ -2265,7 +2265,7 @@
     "actual": "Sales So Far",
     "projected": "Forecast",
     "forecastChart": "Sales this month so far, and the forecast to month end",
-    "forecastHow": "Each day left is forecast from the same weekday over the last four weeks.",
+    "forecastHow": "Each day left is forecast from the same weekday over the last four weeks, counting only days that had sales.",
     "nextMoves": "What's Possible Next",
     "totalPossible": "{amount} is possible across {count, plural, one {# move} other {# moves}}",
     "possibleAmount": "+{amount} Possible",
