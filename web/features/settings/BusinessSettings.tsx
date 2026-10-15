@@ -24,7 +24,7 @@ const HIDDEN: Partial<Record<(typeof TABS)[number], string[]>> = {
   purchase: ["enablePurchaseOrder", "enablePurchaseRequisition"],
   payment: ["denominationOn"],
   system: ["showHelpText"],
-  modules: ["kitchen", "modifiers", "typesOfService"],
+  modules: ["kitchen", "modifiers", "typesOfService", "tables", "bookings"],
 };
 
 function SetupAgain() {

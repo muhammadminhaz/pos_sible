@@ -35,7 +35,7 @@ export function ThermalReceipt({ data }: { data: ReceiptData }) {
         )}
         {layout.showBusinessName && <h2 className="text-sm font-bold">{data.businessName}</h2>}
         {layout.showLocationName && <p>{location.name}</p>}
-        {layout.showAddress && <p>{[location.address.line1, location.address.city].filter(Boolean).join(", ")}</p>}
+        {layout.showAddress && <p>{[location.address?.line1, location.address?.city].filter(Boolean).join(", ")}</p>}
         {layout.showMobile && location.mobile && <p>{`${t("pos.receipt.mobile")}: ${location.mobile}`}</p>}
         {layout.headerText && <p className="mt-1 whitespace-pre-line">{layout.headerText}</p>}
       </header>
